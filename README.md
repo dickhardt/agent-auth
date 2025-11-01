@@ -795,7 +795,6 @@ The agent token is a signed JWT that binds an agent instance to the agent server
 
 - `iss` (REQUIRED): The agent server's HTTPS URL (issuer)
 - `sub` (REQUIRED): A unique identifier for this specific agent instance
-- `agent_id` (REQUIRED): The agent server's HTTPS URL
 - `iat` (REQUIRED): Issued at time (Unix timestamp)
 - `exp` (REQUIRED): Expiration time (Unix timestamp)
 - `cnf` (REQUIRED): Confirmation claim object containing:
@@ -826,7 +825,6 @@ Recipients **MUST** validate:
 5. Verify the `exp` claim (current time **MUST** be less than the expiration time)
 6. Verify the `iat` claim (token **MUST NOT** be issued in the future)
 7. Verify the `iss` claim matches the expected agent server
-8. Verify the `agent_id` claim is present and matches the `iss` claim
 9. Verify the `sub` claim is present and unique to this agent instance
 10. Verify the `cnf.jwk` contains a valid public key
 11. Verify that the key in `cnf.jwk` matches the key used to sign the HTTPSIG request
@@ -836,7 +834,6 @@ Recipients **MUST** validate:
 {
   "iss": "https://agent.example",
   "sub": "agent-instance-abc123",
-  "agent_id": "https://agent.example",
   "iat": 1730217600,
   "exp": 1730218200,
   "jti": "unique-token-id-123",
