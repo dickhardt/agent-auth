@@ -142,7 +142,7 @@ AAuth's protocol features directly address each trend:
 
 > **auth** was chosen over **access**, **authorization** or **authentication** to indicate a new token that can represent both authn and authz.
 
-- **request token**: An opaque string issued by the auth server representing a pending authorization request. The agent uses this token at the `agent_authorization_endpoint` to initiate user consent. Similar to `request_uri` in PAR (RFC 9126) but represented as an opaque token value rather than a URI.
+- **request token**: An opaque string issued by the auth server representing a pending authorization request. The agent uses this token at the `agent_auth_endpoint` to initiate user consent. Similar to `request_uri` in PAR (RFC 9126) but represented as an opaque token value rather than a URI.
 
 - **resource**: A protected HTTPS endpoint that enforces authorization. Multiple API endpoints may share a single resource identifier for authorization purposes.
 
@@ -160,7 +160,9 @@ The following terms are defined in existing specifications and reused in AAuth:
 
 AAuth supports progressive authentication levels—pseudonymous, identified, and authorized—allowing resources to request the appropriate level of protection for each operation using the Agent-Auth response header ([Section 4](#4-agent-auth-response-header)). The protocol involves three participants: agents (applications and autonomous processes), resources (protected APIs), and auth servers (systems that issue authorization). Agents prove their identity using HTTP Message Signatures ([Section 9](#9-http-message-signing-profile)) with agent tokens ([Section 5](#5-agent-tokens)) or auth tokens ([Section 6](#6-auth-tokens)). This section illustrates how these participants interact through common use cases.
 
-Resources use the Agent-Auth response header to dynamically challenge agents for appropriate authentication ([§4](#4-agent-auth-response-header)). However, agents that already know the required scope or request_uri can request authorization directly from the auth server without first calling the resource. The use cases below illustrate the dynamic challenge pattern; direct authorization requests follow the same flow starting from the auth server interaction.
+Resources use the Agent-Auth response header to dynamically challenge agents for appropriate authentication ([§4](#4-agent-auth-response-header)). However, agents that already know the required scope or auth_request can request authorization directly from the auth server without first calling the resource. The use cases below illustrate the dynamic challenge pattern; direct authorization requests follow the same flow starting from the auth server interaction.
+
+**Note:** The sequence diagrams in this section are simplified for clarity. Full parameter lists, validation steps, and security considerations are detailed in [Section 8 (Protocol Details)](#8-protocol-details).
 
 ### 3.1 Authentication Upgrade
 
@@ -221,7 +223,7 @@ sequenceDiagram
 
 ### 3.4 Autonomous Access
 
-A data sync service copies customer records between CRM and billing systems hourly, authorized based on the service's identity (may request authorization directly if scope or request_uri is pre-configured). The auth server ([Section 8.3](#83-agent-auth-request)) issues an auth token ([Section 6](#6-auth-tokens)) without user interaction.
+A data sync service copies customer records between CRM and billing systems hourly, authorized based on the service's identity (may request authorization directly if scope or auth_request is pre-configured). The auth server ([Section 8.3](#83-agent-auth-request)) issues an auth token ([Section 6](#6-auth-tokens)) without user interaction.
 
 ```mermaid
 sequenceDiagram
@@ -271,7 +273,7 @@ sequenceDiagram
 
 ### 3.6 Auth Refresh
 
-An agent maintains long-lived access by refreshing expired auth tokens ([Section 8.7](#87-auth-token-refresh)) using refresh tokens bound to its identity.
+An agent maintains long-lived access by refreshing expired auth tokens ([Section 8.9](#89-auth-token-refresh)) using refresh tokens bound to its identity.
 
 ```mermaid
 sequenceDiagram
@@ -364,7 +366,7 @@ Resources use the `Agent-Auth` response header (using HTTP structured fields per
 
 ### 4.1. Signature Required
 
-Requires HTTP Message Signing with any authentication level (see Section 3.1).
+Requires HTTP Message Signing with any signature scheme (pseudonymous, identified, or authorized).
 
 ```
 Agent-Auth: httpsig
@@ -374,7 +376,7 @@ Agent-Auth: httpsig
 
 ### 4.2. Identity Required
 
-Requires agent identity verification (see Section 3.1 for authentication levels).
+Requires agent identity verification using verifiable agent identifiers.
 
 ```
 Agent-Auth: httpsig; identity=?1
@@ -391,7 +393,7 @@ Resources with specific algorithm requirements MAY include the `algs` parameter 
 
 ### 4.3. Authorization Required
 
-Requires authorization from an auth server (see Section 3.1 for authentication levels). Includes the resource identifier and access requirements.
+Requires authorization from an auth server. Includes the resource identifier and access requirements.
 
 **With scope:**
 ```
@@ -400,7 +402,7 @@ Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="dat
 
 **With rich authorization request:**
 ```
-Agent-Auth: httpsig; auth-token; resource="https://resource.example"; request_uri="https://resource.example/authz/req/3f5a"
+Agent-Auth: httpsig; auth-token; resource="https://resource.example"; auth_request="https://resource.example/authz/req/3f5a"
 ```
 
 **Agent response:** Obtain auth token from the specified resource's auth server, then retry request with `sig=jwt` and the auth token.
@@ -451,7 +453,7 @@ This allows resources to block abusive pseudonymous traffic while still acceptin
 - `auth-token`: Bare token indicating authorization is required
 - `resource`: String parameter with the resource identifier for authorization
 - `scope`: String parameter with space-separated scopes
-- `request_uri`: String parameter with URL to fetch rich authorization requirements
+- `auth_request`: String parameter with URL to fetch rich authorization requirements (used both in Agent-Auth headers and in token exchange scenarios)
 - `algs`: Inner list of supported HTTPSig algorithms (OPTIONAL; if omitted, all standard algorithms are accepted)
 
 ### 4.6. Compatibility with WWW-Authenticate
@@ -832,7 +834,7 @@ Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="dat
 **Example: Authorization with rich context**
 ```http
 HTTP/1.1 401 Unauthorized
-Agent-Auth: httpsig; auth-token; resource="https://resource.example"; request_uri="https://resource.example/authz/req/3f5a"
+Agent-Auth: httpsig; auth-token; resource="https://resource.example"; auth_request="https://resource.example/authz/req/3f5a"
 ```
 
 ### 8.3. Agent Auth Request
@@ -891,13 +893,65 @@ The `request_token` is an opaque value representing the pending auth request. Th
 
 ### 8.5. User Consent Flow
 
-If `request_token` was provided, the agent directs the user to the `agent_auth_endpoint`:
+If the auth server responds with a `request_token` (indicating user consent is required), the agent directs the user to the `agent_auth_endpoint` for authentication and authorization.
 
-```
-https://auth.example/agent/auth?request_token=eyJhbGciOiJub25lIn0.eyJleHAiOjE3MzAyMTgyMDB9.
-```
+**Flow:**
 
-## 8.6. Resource-Initiated User Interaction
+1. **Agent receives request_token**: After making an auth request ([Section 8.3](#83-agent-auth-request)), the auth server responds with:
+   ```json
+   {
+     "request_token": "eyJhbGciOiJub25lIn0.eyJleHAiOjE3MzAyMTgyMDB9.",
+     "expires_in": 600
+   }
+   ```
+
+2. **Agent redirects user**: The agent redirects the user to the `agent_auth_endpoint` from auth server metadata ([Section 7.2](#72-auth-server-metadata)), including the `request_token` and a `redirect_uri` for callback:
+   ```
+   https://auth.example/agent/auth?request_token=eyJhbGciOiJub25lIn0.eyJleHAiOjE3MzAyMTgyMDB9.&redirect_uri=https://agent.example/callback&state=abc123
+   ```
+
+3. **User authenticates and consents**: At the auth server:
+   - User authenticates (if not already authenticated via SSO)
+   - Auth server displays the authorization request details (resource, scopes, agent identity)
+   - User reviews and grants or denies consent
+   - Auth server generates an authorization code
+
+4. **Auth server redirects back**: The auth server redirects the user back to the agent's `redirect_uri`:
+   ```http
+   HTTP/1.1 303 See Other
+   Location: https://agent.example/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=abc123
+   ```
+
+5. **Agent exchanges code for tokens**: The agent makes an HTTPSig request to the `agent_token_endpoint` ([Section 8.8](#88-auth-token-request)) with the authorization code:
+   ```http
+   POST /agent/token HTTP/1.1
+   Host: auth.example
+   Content-Type: application/x-www-form-urlencoded
+   Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+   Signature: sig=:...signature bytes...:
+   Signature-Key: sig=jwt; jwt="eyJhbGc..."
+
+   request_type=token&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https://agent.example/callback
+   ```
+
+6. **Auth server issues tokens**: The auth server validates the code and agent signature, then responds with tokens:
+   ```json
+   {
+     "auth_token": "eyJhbGc...",
+     "expires_in": 3600,
+     "refresh_token": "eyJhbGc..."
+   }
+   ```
+
+**Parameters:**
+- `state` (OPTIONAL): Opaque value used by the agent to maintain state between the authorization request and callback
+
+**Security considerations:**
+- The `request_token` MUST be short-lived (recommended: 10 minutes)
+- The `redirect_uri` MUST match the value provided in the initial auth request
+- Authorization codes MUST be single-use and short-lived (recommended: 60 seconds)
+
+### 8.6. Resource-Initiated User Interaction
 
 When a resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access), the resource returns a `user_interaction` parameter directing the agent to facilitate the interaction.
 
@@ -937,7 +991,7 @@ Agent-Auth: httpsig; user_interaction="https://resource-r.example/auth-flow?sess
 - Agents MUST NOT include sensitive data in the `return_url` query parameters
 - Resources MUST expire session state after reasonable timeout and failed attempts
 
-## 8.7. Token Exchange and Chaining
+### 8.7. Token Exchange and Chaining
 
 Token exchange enables authorization chains where one resource acts as an agent to access downstream resources. When a resource needs to call another resource to fulfill a request, it exchanges the auth token it received for a new auth token bound to its own key.
 
@@ -1974,6 +2028,112 @@ This integration demonstrates AAuth's interoperability with existing OAuth/OIDC 
 
 ---
 
+## Appendix B: Long Tail Agent Servers
+
+### B.1. Overview
+
+Long-tail web applications—WordPress, Drupal, Joomla, and similar platforms—often run on shared or self-hosted environments without access to hardware security modules or secrets management systems. These applications act as **agent servers** with their own agent identifier and published JWKS, but face key management challenges:
+
+- Database backups are frequent and widely distributed
+- Developers export database dumps for local testing
+- Securing persistent private keys adds operational complexity
+- File system security may be limited
+
+**The ephemeral key pattern** solves this by keeping both private keys and JWKS in memory only—nothing is persisted to disk or database.
+
+**Key advantage over OAuth/OIDC:** AAuth with ephemeral keys eliminates the need for secret management entirely. OAuth and OIDC typically require client secrets or long-lived credentials that must be securely stored, rotated, and protected from exposure in backups and logs. With AAuth's ephemeral keys, there are no secrets to manage and no persistent keys to protect.
+
+### B.2. The Pattern
+
+**Core principle:** Both private and public keys are ephemeral and memory-only. JWKS is served from memory, not persisted.
+
+**How it works:**
+
+1. **Startup:** Generate new key pair, store both private key and JWKS in memory only
+2. **Operation:** Sign requests with in-memory private key, serve JWKS from memory
+3. **Restart:** Previous private key is lost, generate new key, serve new JWKS
+4. **Auth token impact:** Outstanding auth tokens become unusable (contain old key in `cnf.jwk`)
+5. **Recovery:** Use refresh token with new key to obtain new auth token
+
+**Why not persist JWKS:** If JWKS is stored in database, an attacker with database write access could inject their own public key and impersonate the server. Memory-only JWKS prevents this attack.
+
+### B.3. Security Benefits
+
+Memory-only keys and JWKS **dramatically reduce attack surface:**
+
+**Attacks prevented:**
+- Backup theft - no keys in backups
+- Database dumps - developers exporting DB don't leak keys
+- SQL injection - can't steal keys or inject malicious public keys
+- Credential theft - stolen DB credentials don't expose keys
+- Public key injection - attacker can't add their own keys to JWKS via DB write
+- Persistent compromise - keys don't survive indefinitely
+
+**Remaining risk:**
+- Sophisticated malicious plugin using reflection/memory inspection (rare, requires active code execution)
+
+**Key insight:** Common attacks (backup theft, DB dumps, SQLi, key injection) are prevented. The remaining attack requires sophisticated active exploitation, far less common in practice.
+
+### B.4. Implementation Notes
+
+**Recommended pattern:** Use PHP closures to encapsulate both the key pair and policy enforcement. The private key remains in closure scope and cannot be exfiltrated. Malicious code can still call the signing function, but cannot extract the key for use elsewhere or after process restart.
+
+**Defense in depth:** Agent servers in AAuth only sign HTTP Message Signatures, so the closure should provide a specific HTTP request signing function, not a general-purpose signing oracle. Validate the target origin inside the closure - only sign requests to pre-configured resources and auth servers.
+
+**Example structure:**
+```php
+$signer = (function() {
+    $keyPair = generateKeyPair();
+    $kid = 'key-' . time();
+    $allowedOrigins = [
+        'https://resource.example',
+        'https://auth.example'
+    ];
+
+    return [
+        'signHTTPRequest' => function($method, $uri, $headers, $body = null)
+            use ($privateKey, $kid, $allowedOrigins) {
+
+            // Validate origin inside closure
+            $origin = parse_url($uri, PHP_URL_SCHEME) . '://' . parse_url($uri, PHP_URL_HOST);
+            if (!in_array($origin, $allowedOrigins)) {
+                throw new Exception('Unauthorized origin');
+            }
+
+            // Generate HTTP Message Signature
+            return [
+                'Signature-Input' => /* ... */,
+                'Signature' => /* ... */
+            ];
+        },
+        'getJWKS' => function() use ($publicKey, $kid) { /* ... */ }
+    ];
+})();
+```
+
+**Multi-instance consideration:** Each instance generates its own key pair and serves its own JWKS. For high-availability deployments where instances need to share keys, consider a shared signing service instead.
+
+**Restart behavior:** Auth tokens become temporarily unusable on restart until refreshed. Refresh tokens remain valid and can be used with the new key to obtain new auth tokens.
+
+### B.5. When to Use
+
+**Ideal for:**
+- Single-instance applications (WordPress, Drupal, Joomla)
+- Shared or self-hosted environments
+- Plugin/module architectures
+- Applications without secrets infrastructure
+
+**Not recommended for:**
+- High-availability multi-instance deployments (use shared signing service)
+- Applications with HSM or secrets manager access (use those instead)
+- Scenarios requiring key escrow or recovery
+
+### B.6. Comparison to Agent Delegates
+
+Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `sig=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `sig=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
+
+---
+
 ## Appendix C: Agent Token Acquisition Patterns
 
 ### C.1. Overview
@@ -2227,112 +2387,6 @@ Access-Control-Max-Age: 86400
 - **Platform integration**: Leverages Web Crypto API standard
 - **Session-level identity**: Each session has unique `sub` for tracking
 - **Cross-origin API calls**: CORS-compatible HTTP Message Signatures
-
----
-
-## Appendix B: Long Tail Agent Servers
-
-### B.1. Overview
-
-Long-tail web applications—WordPress, Drupal, Joomla, and similar platforms—often run on shared or self-hosted environments without access to hardware security modules or secrets management systems. These applications act as **agent servers** with their own agent identifier and published JWKS, but face key management challenges:
-
-- Database backups are frequent and widely distributed
-- Developers export database dumps for local testing
-- Securing persistent private keys adds operational complexity
-- File system security may be limited
-
-**The ephemeral key pattern** solves this by keeping both private keys and JWKS in memory only—nothing is persisted to disk or database.
-
-**Key advantage over OAuth/OIDC:** AAuth with ephemeral keys eliminates the need for secret management entirely. OAuth and OIDC typically require client secrets or long-lived credentials that must be securely stored, rotated, and protected from exposure in backups and logs. With AAuth's ephemeral keys, there are no secrets to manage and no persistent keys to protect.
-
-### B.2. The Pattern
-
-**Core principle:** Both private and public keys are ephemeral and memory-only. JWKS is served from memory, not persisted.
-
-**How it works:**
-
-1. **Startup:** Generate new key pair, store both private key and JWKS in memory only
-2. **Operation:** Sign requests with in-memory private key, serve JWKS from memory
-3. **Restart:** Previous private key is lost, generate new key, serve new JWKS
-4. **Auth token impact:** Outstanding auth tokens become unusable (contain old key in `cnf.jwk`)
-5. **Recovery:** Use refresh token with new key to obtain new auth token
-
-**Why not persist JWKS:** If JWKS is stored in database, an attacker with database write access could inject their own public key and impersonate the server. Memory-only JWKS prevents this attack.
-
-### B.3. Security Benefits
-
-Memory-only keys and JWKS **dramatically reduce attack surface:**
-
-**Attacks prevented:**
-- Backup theft - no keys in backups
-- Database dumps - developers exporting DB don't leak keys
-- SQL injection - can't steal keys or inject malicious public keys
-- Credential theft - stolen DB credentials don't expose keys
-- Public key injection - attacker can't add their own keys to JWKS via DB write
-- Persistent compromise - keys don't survive indefinitely
-
-**Remaining risk:**
-- Sophisticated malicious plugin using reflection/memory inspection (rare, requires active code execution)
-
-**Key insight:** Common attacks (backup theft, DB dumps, SQLi, key injection) are prevented. The remaining attack requires sophisticated active exploitation, far less common in practice.
-
-### B.4. Implementation Notes
-
-**Recommended pattern:** Use PHP closures to encapsulate both the key pair and policy enforcement. The private key remains in closure scope and cannot be exfiltrated. Malicious code can still call the signing function, but cannot extract the key for use elsewhere or after process restart.
-
-**Defense in depth:** Agent servers in AAuth only sign HTTP Message Signatures, so the closure should provide a specific HTTP request signing function, not a general-purpose signing oracle. Validate the target origin inside the closure - only sign requests to pre-configured resources and auth servers.
-
-**Example structure:**
-```php
-$signer = (function() {
-    $keyPair = generateKeyPair();
-    $kid = 'key-' . time();
-    $allowedOrigins = [
-        'https://resource.example',
-        'https://auth.example'
-    ];
-
-    return [
-        'signHTTPRequest' => function($method, $uri, $headers, $body = null)
-            use ($privateKey, $kid, $allowedOrigins) {
-
-            // Validate origin inside closure
-            $origin = parse_url($uri, PHP_URL_SCHEME) . '://' . parse_url($uri, PHP_URL_HOST);
-            if (!in_array($origin, $allowedOrigins)) {
-                throw new Exception('Unauthorized origin');
-            }
-
-            // Generate HTTP Message Signature
-            return [
-                'Signature-Input' => /* ... */,
-                'Signature' => /* ... */
-            ];
-        },
-        'getJWKS' => function() use ($publicKey, $kid) { /* ... */ }
-    ];
-})();
-```
-
-**Multi-instance consideration:** Each instance generates its own key pair and serves its own JWKS. For high-availability deployments where instances need to share keys, consider a shared signing service instead.
-
-**Restart behavior:** Auth tokens become temporarily unusable on restart until refreshed. Refresh tokens remain valid and can be used with the new key to obtain new auth tokens.
-
-### B.5. When to Use
-
-**Ideal for:**
-- Single-instance applications (WordPress, Drupal, Joomla)
-- Shared or self-hosted environments
-- Plugin/module architectures
-- Applications without secrets infrastructure
-
-**Not recommended for:**
-- High-availability multi-instance deployments (use shared signing service)
-- Applications with HSM or secrets manager access (use those instead)
-- Scenarios requiring key escrow or recovery
-
-### B.6. Comparison to Agent Delegates
-
-Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `sig=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `sig=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
 
 ---
 
