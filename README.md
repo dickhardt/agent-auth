@@ -320,26 +320,37 @@ sequenceDiagram
 
 ### 3.8 Token Exchange
 
-A resource needs to access a downstream resource to fulfill a request. The resource exchanges the auth token it received for a new token bound to its own key ([Section 8.7](#87-token-exchange-and-chaining)), preserving the authorization chain.
+A resource needs to access a downstream resource to fulfill a request. Resource 1 discovers it needs authorization for Resource 2, returns an auth_request with an `exchange` object, Agent 1 gets a new auth token with the `exchange` claim, and Resource 1 exchanges it for an auth token from Auth Server 2 ([Section 8.7](#87-token-exchange-and-chaining)).
 
 ```mermaid
 sequenceDiagram
-    participant Agent as agent
-    participant Resource as resource
+    participant Agent1 as agent 1
+    participant Auth1 as auth server 1
+    participant Resource1 as resource 1 / agent 2
     participant Auth2 as auth server 2
     participant Resource2 as resource 2
 
-    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
-    Note over Resource: auth-token contains exchange claim
+    Agent1->>Resource1: HTTPSig request
+    Resource1->>Resource2: HTTPSig request (attempt)
+    Resource2->>Resource1: 401 Agent-Auth: auth-token required
 
-    Resource->>Auth2: HTTPSig exchange request with subject_token
-    Auth2->>Auth2: validate exchange authorization
-    Auth2->>Resource: auth_token (bound to Resource's key)
+    Resource1->>Agent1: 401 Agent-Auth: auth_request="https://r1.example/req/xyz"
+    Note over Resource1,Agent1: auth_request contains exchange property
 
-    Resource->>Resource2: HTTPSig request (sig=jwt with new auth-token)
-    Resource2->>Resource: 200 OK
+    Agent1->>Auth1: Request auth token with exchange
+    Auth1->>Agent1: auth_token (with exchange claim)
 
-    Resource->>Agent: 200 OK (aggregated response)
+    Agent1->>Resource1: HTTPSig request (sig=jwt with auth-token)
+    Note over Resource1: Extract auth-token from sig=jwt
+
+    Resource1->>Auth2: request_type=exchange&exchange_token=...
+    Auth2->>Auth2: Validate exchange authorization
+    Auth2->>Resource1: auth_token (bound to Resource 1's key)
+
+    Resource1->>Resource2: HTTPSig request (sig=jwt with new auth-token)
+    Resource2->>Resource1: 200 OK
+
+    Resource1->>Agent1: 200 OK (aggregated response)
 ```
 
 ## 4. Agent-Auth Response Header
@@ -713,10 +724,10 @@ Auth servers **MUST** publish metadata at `/.well-known/auth-server`.
 
 - `issuer` (string): The auth server's HTTPS URL
 - `jwks_uri` (string): URL to the auth server's JSON Web Key Set
-- `agent_token_endpoint` (string): Endpoint for auth requests, token exchange, and refresh
+- `agent_token_endpoint` (string): Endpoint for auth requests, code exchange, token exchange, and refresh
 - `agent_auth_endpoint` (string): Endpoint for user authentication and consent flow
 - `agent_signing_algs_supported` (array): Supported HTTPSig algorithms
-- `request_types_supported` (array): Supported request_type values (e.g., `["auth", "code", "refresh"]`)
+- `request_types_supported` (array): Supported request_type values (e.g., `["auth", "code", "exchange", "refresh"]`)
 
 **Optional fields:**
 
@@ -736,6 +747,7 @@ Auth servers **MUST** publish metadata at `/.well-known/auth-server`.
   "request_types_supported": [
     "auth",
     "code",
+    "exchange",
     "refresh"
   ],
   "scopes_supported": [
@@ -904,49 +916,9 @@ If `request_token` was provided, the agent directs the user to the `agent_auth_e
 https://auth.example/agent/auth?request_token=eyJhbGciOiJub25lIn0.eyJleHAiOjE3MzAyMTgyMDB9.
 ```
 
-**Redirect Headers:**
+## 8.6. Resource-Initiated User Interaction
 
-When redirecting the user to the `agent_auth_endpoint`, agents **MUST** include the `Redirect-Query` header with the request parameters per the [Redirect Headers specification](https://github.com/dickhardt/redirect-headers). This keeps sensitive parameters out of URLs and browser history.
-
-```http
-HTTP/1.1 302 Found
-Location: https://auth.example/agent/auth?request_token=eyJhbGc...
-Redirect-Query: "request_token=eyJhbGc..."
-```
-
-The auth server **MUST** verify that the `Redirect-Origin` header (if present) matches the expected agent origin from the agent metadata. This provides mutual origin authentication through the browser.
-
-If the auth server receives a `Redirect-Query` header in the initial request, it **MUST** return the authorization code using `Redirect-Query` rather than URL parameters:
-
-```http
-HTTP/1.1 302 Found
-Location: https://agent.example/callback
-Redirect-Query: "code=AUTH_CODE_123&state=af0ifjsldkj"
-```
-
-If `Redirect-Query` was not provided in the initial request, the auth server returns parameters in the URL:
-
-```
-https://agent.example/callback?code=AUTH_CODE_123&state=af0ifjsldkj
-```
-
-Agents **MUST** verify that the `Redirect-Origin` header (if present) matches the expected auth server origin. See the [Redirect Headers specification](https://github.com/dickhardt/redirect-headers) for complete details on header usage and security considerations.
-
-### 8.5.1. Resources Acting as Agents
-
-Resources often need to act as agents themselves to access downstream resources. For example, an API gateway may need to call backend services, or a data aggregation service may need to access multiple data sources to fulfill a request.
-
-When a resource needs to access a downstream resource, it has two options:
-
-1. **Autonomous access (Token Exchange)**: If the resource can acquire authorization autonomously based on its identity or delegated authorization, it uses token exchange (Section 8.7)
-
-2. **User interaction required**: If the downstream resource requires user consent or authentication that the resource cannot provide directly, the resource initiates a user interaction flow (Section 8.6)
-
-The choice depends on the authorization requirements of the downstream resource and the authorization already granted in the original request.
-
-### 8.6. Resource-Initiated Authorization with User Interaction
-
-When a resource needs user interaction to authorize access (e.g., consent or authentication), but the resource cannot interact directly with the user, the resource returns a `user_interaction` parameter directing the agent to facilitate the interaction.
+When a resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access), the resource returns a `user_interaction` parameter directing the agent to facilitate the interaction.
 
 **Agent-Auth response:**
 ```http
@@ -984,11 +956,11 @@ Agent-Auth: httpsig; user_interaction="https://resource-r.example/auth-flow?sess
 - Agents MUST NOT include sensitive data in the `return_url` query parameters
 - Resources MUST expire session state after reasonable timeout and failed attempts
 
-### 8.7. Token Exchange and Chaining
+## 8.7. Token Exchange and Chaining
 
 Token exchange enables authorization chains where one resource acts as an agent to access downstream resources. When a resource needs to call another resource to fulfill a request, it exchanges the auth token it received for a new auth token bound to its own key.
 
-#### 8.7.1. Exchange Claim
+### 8.7.1. Exchange Claim
 
 Auth tokens MAY include an `exchange` claim indicating the token holder is authorized to exchange the token for downstream access.
 
@@ -1019,39 +991,40 @@ Auth tokens MAY include an `exchange` claim indicating the token holder is autho
 
 If `auth_request` is present, it is authoritative for downstream authorization details including scope and potential nested exchange claims.
 
-#### 8.7.2. Exchange Flow
+### 8.7.2. Exchange Flow
 
 **Step 1: Resource requests token exchange**
 
-Resource R makes an HTTPSig-authenticated request to the downstream auth server:
+Resource R makes an HTTPSig-authenticated request to the downstream auth server's `agent_token_endpoint`:
 
 ```http
-POST /agent/exchange
+POST /agent/token
 Host: auth2.example
 Signature-Key: sig=jwks; id="https://resource-r.example"; kid="key-1"
 Content-Type: application/x-www-form-urlencoded
 
-subject_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF1dGgrand0Ii...
+request_type=exchange&exchange_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF1dGgrand0Ii...
 ```
 
 **Parameters:**
-- `subject_token` (REQUIRED): The auth token received from the upstream agent
+- `request_type` (REQUIRED): Must be `"exchange"` to indicate token exchange
+- `exchange_token` (REQUIRED): The auth token (with `exchange` claim) received from the upstream agent
 
-The resource's identity is authenticated via HTTP Message Signatures. The `subject_token` contains the `exchange` parameters authorizing this exchange.
+The resource's identity is authenticated via HTTP Message Signatures. The `exchange_token` contains the `exchange` claim authorizing this exchange.
 
 **Step 2: Auth server validates and issues new token**
 
 The downstream auth server:
 
 1. Validates the HTTPSig request signature (authenticates Resource R)
-2. Parses and validates the `subject_token`:
+2. Parses and validates the `exchange_token`:
    - Verifies JWT signature from the issuing auth server
    - Validates expiration, audience, and claims
    - Extracts the `exchange` claim
 3. Validates the exchange is authorized:
    - `exchange.resource` matches a resource this auth server governs
    - `exchange.auth_server` matches this auth server's identifier
-   - The presenter (Resource R from HTTPSig) matches `subject_token.aud`
+   - The presenter (Resource R from HTTPSig) matches `exchange_token.aud`
 4. Determines if the issuing auth server is trusted (federation policy)
 5. Issues a new auth token bound to Resource R's key
 
@@ -1079,7 +1052,7 @@ The downstream auth server:
 - `act`: Contains the previous agent in the chain
 - `cnf.jwk`: Resource R's key (extracted from HTTPSig or agent token)
 
-#### 8.7.3. Nested Exchange Chains
+### 8.7.3. Nested Exchange Chains
 
 Auth tokens issued during exchange MAY themselves contain an `exchange` claim, enabling multi-level chains. Each token in the chain is bound to the current agent's key and preserves the authorization chain via nested `act` claims.
 
@@ -1130,13 +1103,13 @@ Token 3 (Resource R2 → Resource R3):
 
 **Privacy property:** Each party only sees one hop ahead. Resource R knows it will access R2, but does not know that R2 will access R3 unless R2's token is disclosed.
 
-#### 8.7.4. Cross-Auth-Server Exchange
+### 8.7.4. Cross-Auth-Server Exchange
 
 When the downstream resource uses a different authorization server than the original request, the exchange crosses auth server boundaries. The downstream auth server MUST decide whether to trust tokens from the upstream auth server through pre-configured trust, federation protocols, or dynamic validation.
 
 The downstream auth server MUST NOT require user interaction during exchange, as user consent was obtained by the original auth server. The `sub` claim MUST be preserved across auth server boundaries to maintain user identity context through the chain.
 
-#### 8.7.5. Authorization Request with Exchange
+### 8.7.5. Authorization Request with Exchange
 
 When initiating authorization that includes exchange, the authorization request object includes the `exchange` property:
 
@@ -1164,11 +1137,11 @@ Agent A requests access to:
 
 User consent applies to the entire chain. Subsequent exchanges occur without additional user interaction.
 
-#### 8.7.6. Multiple Downstream Resources
+### 8.7.6. Multiple Downstream Resources
 
 If a resource needs to access multiple downstream resources, it MUST perform separate exchanges for each. Auth tokens contain at most one `exchange` claim.
 
-#### 8.7.7. Refresh Tokens with Exchange
+### 8.7.7. Refresh Tokens with Exchange
 
 When an auth server issues a token via exchange, it MAY also issue a refresh token bound to the resource's identity. This enables the resource to maintain long-lived access to the downstream resource independently of the original agent's session.
 
