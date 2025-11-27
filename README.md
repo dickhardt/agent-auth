@@ -384,10 +384,10 @@ Agent-Auth: httpsig; identity=?1
 
 **With algorithm restrictions:**
 ```
-Agent-Auth: httpsig; identity=?1; algs="eddsa-ed25519 rsa-pss-sha256"
+Agent-Auth: httpsig; identity=?1; algs=("eddsa-ed25519" "rsa-pss-sha256")
 ```
 
-Resources with specific algorithm requirements MAY include the `algs` parameter. If omitted, all standard algorithms are accepted.
+Resources with specific algorithm requirements MAY include the `algs` parameter as an inner list. If omitted, all standard algorithms are accepted.
 
 ### 4.3. Authorization Required
 
@@ -452,7 +452,7 @@ This allows resources to block abusive pseudonymous traffic while still acceptin
 - `resource`: String parameter with the resource identifier for authorization
 - `scope`: String parameter with space-separated scopes
 - `request_uri`: String parameter with URL to fetch rich authorization requirements
-- `algs`: String parameter with space-separated list of supported HTTPSig algorithms (OPTIONAL; if omitted, all standard algorithms are accepted)
+- `algs`: Inner list of supported HTTPSig algorithms (OPTIONAL; if omitted, all standard algorithms are accepted)
 
 ### 4.6. Compatibility with WWW-Authenticate
 
