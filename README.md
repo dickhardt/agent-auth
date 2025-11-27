@@ -177,10 +177,10 @@ sequenceDiagram
     Note over Agent,Resource: ... more requests ...
 
     Agent->>Resource: unsigned request
-    Resource->>Agent: 429 with Agent-Auth challenge
+    Resource->>Agent: 429 with<br/>Agent-Auth challenge
 
-    Agent->>Resource: HTTPSig request (sig=hwk)
-    Resource->>Agent: 200 OK (higher rate limit)
+    Agent->>Resource: HTTPSig request<br/>(sig=hwk)
+    Resource->>Agent: 200 OK<br/>(higher rate limit)
 ```
 
 ### 3.2 Agent Identity
@@ -192,10 +192,10 @@ sequenceDiagram
     participant Agent as agent server
     participant Resource as resource
 
-    Agent->>Resource: HTTPSig request (sig=jwks)
+    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
     Resource->>Agent: fetch JWKS
     Agent->>Resource: JWKS
-    Resource->>Resource: verify signature and identity
+    Resource->>Resource: verify signature<br/>and identity
     Resource->>Agent: 200 OK
 ```
 
@@ -212,10 +212,10 @@ sequenceDiagram
     Delegate->>Server: request agent token
     Server->>Delegate: agent token
 
-    Delegate->>Resource: HTTPSig request (sig=jwt with agent-token)
+    Delegate->>Resource: HTTPSig request<br/>(sig=jwt with agent-token)
     Resource->>Server: fetch JWKS
     Server->>Resource: JWKS
-    Resource->>Resource: verify agent token and signature
+    Resource->>Resource: verify agent token<br/>and signature
     Resource->>Delegate: 200 OK
 ```
 
@@ -229,14 +229,14 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request (sig=jwks)
-    Resource->>Agent: 401 with Agent-Auth challenge
+    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Resource->>Agent: 401 with<br/>Agent-Auth challenge
 
-    Agent->>Auth: HTTPSig request with resource, scope
+    Agent->>Auth: HTTPSig request<br/>with resource, scope
     Auth->>Auth: evaluate policy
-    Auth->>Agent: auth_token + refresh_token
+    Auth->>Agent: auth_token +<br/>refresh_token
 
-    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
     Resource->>Resource: verify auth token
     Resource->>Agent: 200 OK
 ```
@@ -252,20 +252,20 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request (sig=jwks)
-    Resource->>Agent: 401 with Agent-Auth challenge
+    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Resource->>Agent: 401 with<br/>Agent-Auth challenge
 
-    Agent->>Auth: HTTPSig request with resource, scope
+    Agent->>Auth: HTTPSig request<br/>with resource, scope
     Auth->>Agent: request_token
 
     Agent->>User: redirect to auth server
     User->>Auth: authenticate and consent
-    Auth->>Agent: authorization_code (via redirect)
+    Auth->>Agent: authorization_code<br/>(via redirect)
 
-    Agent->>Auth: HTTPSig request with authorization_code
-    Auth->>Agent: auth_token + refresh_token
+    Agent->>Auth: HTTPSig request<br/>with authorization_code
+    Auth->>Agent: auth_token +<br/>refresh_token
 
-    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
     Resource->>Agent: 200 OK
 ```
 
@@ -281,11 +281,11 @@ sequenceDiagram
 
     Note over Agent: auth_token expired
 
-    Agent->>Auth: HTTPSig request with refresh_token
-    Auth->>Auth: verify agent identity and token binding
+    Agent->>Auth: HTTPSig request<br/>with refresh_token
+    Auth->>Auth: verify agent identity<br/>and token binding
     Auth->>Agent: new auth_token
 
-    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
     Resource->>Agent: 200 OK
 ```
 
@@ -300,11 +300,11 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
-    Resource->>Agent: 401 Agent-Auth: user_interaction="https://resource.example/auth?session=xyz"
+    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
+    Resource->>Agent: 401 Agent-Auth:<br/>user_interaction="https://resource.example/auth?session=xyz"
 
-    Agent->>User: redirect to user_interaction URL (with return_url)
-    User->>Resource: GET /auth?session=xyz&return_url=...
+    Agent->>User: redirect to user_interaction URL<br/>(with return_url)
+    User->>Resource: GET /auth?session=xyz&<br/>return_url=...
 
     Note over Resource,Auth: Resource may perform AAuth, login,<br/>SSO, OIDC, or OAuth flow
     Resource->>User: redirect to auth server
@@ -317,7 +317,7 @@ sequenceDiagram
 
     Resource->>User: redirect back to agent return_url
 
-    Agent->>Resource: HTTPSig request (retry with session)
+    Agent->>Resource: HTTPSig request<br/>(retry with session)
     Resource->>Agent: 200 OK
 
     Note over Agent,Auth: This flow enables AAuth resources<br/>to consume OAuth/OIDC protected APIs<br/>(see Appendix A.8)
@@ -337,25 +337,25 @@ sequenceDiagram
 
     Agent1->>Resource1: HTTPSig request
     Resource1->>Resource2: HTTPSig request (attempt)
-    Resource2->>Resource1: 401 Agent-Auth: auth-token required
+    Resource2->>Resource1: 401 Agent-Auth:<br/>auth-token required
 
-    Resource1->>Agent1: 401 Agent-Auth: auth_request="https://r1.example/req/xyz"
-    Note over Resource1,Agent1: auth_request contains exchange property
+    Resource1->>Agent1: 401 Agent-Auth:<br/>auth_request="https://r1.example/req/xyz"
+    Note over Resource1,Agent1: auth_request contains<br/>exchange property
 
-    Agent1->>Auth1: Request auth token with exchange
-    Auth1->>Agent1: auth_token (with exchange claim)
+    Agent1->>Auth1: Request auth token<br/>with exchange
+    Auth1->>Agent1: auth_token<br/>(with exchange claim)
 
-    Agent1->>Resource1: HTTPSig request (sig=jwt with auth-token)
-    Note over Resource1: Extract auth-token from sig=jwt
+    Agent1->>Resource1: HTTPSig request<br/>(sig=jwt with auth-token)
+    Note over Resource1: Extract auth-token<br/>from sig=jwt
 
-    Resource1->>Auth2: request_type=exchange&exchange_token=...
-    Auth2->>Auth2: Validate exchange authorization
-    Auth2->>Resource1: auth_token (bound to Resource 1's key)
+    Resource1->>Auth2: request_type=exchange&<br/>exchange_token=...
+    Auth2->>Auth2: Validate exchange<br/>authorization
+    Auth2->>Resource1: auth_token<br/>(bound to Resource 1's key)
 
-    Resource1->>Resource2: HTTPSig request (sig=jwt with new auth-token)
+    Resource1->>Resource2: HTTPSig request<br/>(sig=jwt with new auth-token)
     Resource2->>Resource1: 200 OK
 
-    Resource1->>Agent1: 200 OK (aggregated response)
+    Resource1->>Agent1: 200 OK<br/>(aggregated response)
 ```
 
 ## 4. Agent-Auth Response Header
@@ -1878,29 +1878,29 @@ sequenceDiagram
     participant OAuth as OAuth/OIDC<br/>auth server
     participant API as OAuth-protected<br/>API
 
-    Agent->>Resource: HTTPSig request (sig=jwks)
-    Resource->>API: attempt to access (no token)
-    API->>Resource: 401 WWW-Authenticate: Bearer
+    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Resource->>API: attempt to access<br/>(no token)
+    API->>Resource: 401<br/>WWW-Authenticate: Bearer
 
-    Resource->>Agent: 401 Agent-Auth: user_interaction="https://resource.example/oauth-flow?session=xyz"
+    Resource->>Agent: 401 Agent-Auth:<br/>user_interaction="https://resource.example/oauth-flow?session=xyz"
 
-    Agent->>User: redirect to user_interaction URL (with return_url)
-    User->>Resource: GET /oauth-flow?session=xyz&return_url=...
+    Agent->>User: redirect to user_interaction URL<br/>(with return_url)
+    User->>Resource: GET /oauth-flow?session=xyz&<br/>return_url=...
 
-    Resource->>User: redirect to OAuth authorization endpoint
+    Resource->>User: redirect to OAuth<br/>authorization endpoint
     User->>OAuth: authenticate and consent
-    OAuth->>Resource: authorization code (via redirect)
+    OAuth->>Resource: authorization code<br/>(via redirect)
 
-    Resource->>OAuth: exchange code for access_token
-    OAuth->>Resource: access_token + refresh_token
-    Note over Resource: Store OAuth tokens keyed by session
+    Resource->>OAuth: exchange code for<br/>access_token
+    OAuth->>Resource: access_token +<br/>refresh_token
+    Note over Resource: Store OAuth tokens<br/>keyed by session
 
-    Resource->>User: redirect back to agent return_url
+    Resource->>User: redirect back to<br/>agent return_url
 
-    Agent->>Resource: HTTPSig request (retry with session context)
-    Resource->>API: request with OAuth access_token
+    Agent->>Resource: HTTPSig request<br/>(retry with session context)
+    Resource->>API: request with<br/>OAuth access_token
     API->>Resource: 200 OK (data)
-    Resource->>Agent: 200 OK (aggregated response)
+    Resource->>Agent: 200 OK<br/>(aggregated response)
 ```
 
 **Complete flow:**
