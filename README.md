@@ -291,7 +291,7 @@ sequenceDiagram
 
 ### 3.7 User Interaction Request
 
-A resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access) but cannot interact with the user directly. The resource returns a user interaction URL ([Section 8.6](#86-resource-initiated-authorization-with-user-interaction)), the agent facilitates the interaction, and then retries the request.
+A resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access). The resource cannot interact with the user directly, so it returns a user interaction URL to the agent, the agent redirects the user to the resource's interaction endpoint (with `return_url`), the resource facilitates authentication/consent via the auth server, stores the result, redirects the user back to the agent, and the agent retries the original request ([Section 8.6](#86-resource-initiated-user-interaction)).
 
 ```mermaid
 sequenceDiagram
@@ -301,10 +301,10 @@ sequenceDiagram
     participant Auth as auth server
 
     Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
-    Resource->>Agent: 401 Unauthorized<br/>Agent-Auth: user_interaction="..."; resource="..."; auth_server="..."
+    Resource->>Agent: 401 Agent-Auth: user_interaction="https://resource.example/auth?session=xyz"
 
-    Agent->>User: redirect to resource interaction URL (with return_url)
-    User->>Resource: GET interaction endpoint
+    Agent->>User: redirect to user_interaction URL (with return_url)
+    User->>Resource: GET /auth?session=xyz&return_url=...
 
     Resource->>User: redirect to auth server
     User->>Auth: authenticate and consent
@@ -312,13 +312,13 @@ sequenceDiagram
 
     Resource->>Auth: exchange code for token
     Auth->>Resource: auth_token
+    Note over Resource: Store auth_token keyed by session
+
     Resource->>User: redirect back to agent return_url
 
-    Agent->>Resource: HTTPSig request (retry)
+    Agent->>Resource: HTTPSig request (retry with session)
     Resource->>Agent: 200 OK
 ```
-
-**Note:** This flow enables AAuth resources to integrate with traditional OAuth/OIDC protected APIs. See [Section 8.6.1](#861-integration-with-oauthoidc-systems) for details on OAuth/OIDC integration.
 
 ### 3.8 Token Exchange
 
@@ -957,93 +957,6 @@ Agent-Auth: httpsig; user_interaction="https://resource-r.example/auth-flow?sess
 - Resources MUST validate that `return_url` uses HTTPS unless in development environments
 - Agents MUST NOT include sensitive data in the `return_url` query parameters
 - Resources MUST expire session state after reasonable timeout and failed attempts
-
-### 8.6.1. Integration with OAuth/OIDC Systems
-
-AAuth resources can use the user interaction flow to access OAuth or OIDC protected resources, enabling seamless integration between AAuth-aware and traditional OAuth systems.
-
-**Scenario:** An AAuth agent requests data from an AAuth resource, which needs to fetch data from a downstream OAuth-protected API.
-
-```mermaid
-sequenceDiagram
-    participant User as user
-    participant Agent as AAuth agent
-    participant Resource as AAuth resource<br/>(OAuth client)
-    participant OAuth as OAuth auth server
-    participant API as OAuth-protected API
-
-    Agent->>Resource: HTTPSig request (sig=jwks)
-    Resource->>API: attempt to access (no token)
-    API->>Resource: 401 WWW-Authenticate: Bearer
-
-    Resource->>Agent: 401 Agent-Auth: user_interaction="https://resource.example/oauth-flow?session=xyz"
-
-    Agent->>User: redirect to interaction URL (with return_url)
-    User->>Resource: GET /oauth-flow?session=xyz&return_url=...
-
-    Resource->>User: redirect to OAuth authorization endpoint
-    User->>OAuth: authenticate and consent
-    OAuth->>Resource: authorization code (via redirect)
-
-    Resource->>OAuth: exchange code for access_token
-    OAuth->>Resource: access_token + refresh_token
-    Note over Resource: Store tokens keyed by session
-
-    Resource->>User: redirect back to agent return_url
-
-    Agent->>Resource: HTTPSig request (retry with session)
-    Resource->>API: request with OAuth access_token
-    API->>Resource: 200 OK (data)
-    Resource->>Agent: 200 OK (aggregated response)
-```
-
-**Flow details:**
-
-1. **AAuth agent requests resource**: Agent makes HTTPSig-authenticated request to AAuth resource
-
-2. **Resource attempts downstream access**: AAuth resource tries to access OAuth-protected API without a token and receives `401 WWW-Authenticate: Bearer`
-
-3. **Resource initiates user interaction**: AAuth resource returns `user_interaction` URL to the agent:
-   ```http
-   HTTP/1.1 401 Unauthorized
-   Agent-Auth: httpsig; user_interaction="https://resource.example/oauth-flow?session=xyz789"
-   ```
-
-4. **Agent redirects user**: Agent redirects user to the interaction URL with `return_url`:
-   ```http
-   HTTP/1.1 303 See Other
-   Location: https://resource.example/oauth-flow?session=xyz789&return_url=https://agent.example/callback
-   ```
-
-5. **Resource acts as OAuth client**: AAuth resource (acting as OAuth client) redirects user to OAuth authorization server with its `client_id` and `redirect_uri`
-
-6. **User authorizes**: User authenticates and consents to the OAuth request
-
-7. **OAuth returns authorization code**: OAuth authorization server redirects back to AAuth resource with authorization code
-
-8. **Resource exchanges code**: AAuth resource exchanges authorization code for OAuth access token and refresh token
-
-9. **Resource stores tokens**: AAuth resource stores the OAuth tokens keyed by the session identifier
-
-10. **User returns to agent**: AAuth resource redirects user back to agent's `return_url`
-
-11. **Agent retries request**: Agent makes the original HTTPSig request again (with session context)
-
-12. **Resource uses OAuth token**: AAuth resource uses the stored OAuth access token to call the OAuth-protected API and returns aggregated response to agent
-
-**Benefits:**
-
-- **Seamless integration**: AAuth agents don't need to know downstream resources use OAuth
-- **User consent flow**: Users authorize access through familiar OAuth consent screens
-- **Token management**: AAuth resource manages OAuth tokens independently
-- **Refresh tokens**: AAuth resource can maintain long-lived access using OAuth refresh tokens
-
-**Implementation notes:**
-
-- The AAuth resource acts as an OAuth client and must be registered with the OAuth authorization server
-- The AAuth resource MAY use the session identifier to correlate the agent request with the OAuth flow
-- The AAuth resource SHOULD store OAuth refresh tokens to avoid repeated user interaction
-- The `user_interaction` URL MAY omit `resource` and `auth_server` parameters when the downstream system is OAuth rather than AAuth
 
 ## 8.7. Token Exchange and Chaining
 
@@ -1947,6 +1860,138 @@ An existing OAuth 2.1 or OpenID Connect server can add AAuth support by implemen
 - Evaluate agent identity in authorization decisions
 - Support autonomous vs. user consent logic
 - Implement agent-specific authorization rules
+
+### A.8. Integration with OAuth/OIDC Protected Resources
+
+AAuth resources can use the user interaction flow to access OAuth or OIDC protected resources, enabling seamless integration between AAuth-aware systems and traditional OAuth/OIDC ecosystems.
+
+**Scenario:** An AAuth agent requests data from an AAuth resource, which needs to fetch data from a downstream OAuth-protected API (e.g., a third-party service requiring OAuth access tokens).
+
+```mermaid
+sequenceDiagram
+    participant User as user
+    participant Agent as AAuth agent
+    participant Resource as AAuth resource<br/>(OAuth client)
+    participant OAuth as OAuth/OIDC<br/>auth server
+    participant API as OAuth-protected<br/>API
+
+    Agent->>Resource: HTTPSig request (sig=jwks)
+    Resource->>API: attempt to access (no token)
+    API->>Resource: 401 WWW-Authenticate: Bearer
+
+    Resource->>Agent: 401 Agent-Auth: user_interaction="https://resource.example/oauth-flow?session=xyz"
+
+    Agent->>User: redirect to user_interaction URL (with return_url)
+    User->>Resource: GET /oauth-flow?session=xyz&return_url=...
+
+    Resource->>User: redirect to OAuth authorization endpoint
+    User->>OAuth: authenticate and consent
+    OAuth->>Resource: authorization code (via redirect)
+
+    Resource->>OAuth: exchange code for access_token
+    OAuth->>Resource: access_token + refresh_token
+    Note over Resource: Store OAuth tokens keyed by session
+
+    Resource->>User: redirect back to agent return_url
+
+    Agent->>Resource: HTTPSig request (retry with session context)
+    Resource->>API: request with OAuth access_token
+    API->>Resource: 200 OK (data)
+    Resource->>Agent: 200 OK (aggregated response)
+```
+
+**Complete flow:**
+
+1. **AAuth agent requests resource**: Agent makes HTTPSig-authenticated request to AAuth resource (using `sig=jwks`, `sig=x509`, or `sig=jwt`)
+
+2. **Resource attempts downstream access**: AAuth resource tries to access OAuth-protected API without a token and receives `401 WWW-Authenticate: Bearer`
+
+3. **Resource initiates user interaction**: AAuth resource determines it needs user authorization for the OAuth API and returns a `user_interaction` URL:
+   ```http
+   HTTP/1.1 401 Unauthorized
+   Agent-Auth: httpsig; user_interaction="https://resource.example/oauth-flow?session=xyz789"
+   ```
+
+4. **Agent redirects user**: Agent redirects user to the `user_interaction` URL, appending the agent's `return_url`:
+   ```http
+   HTTP/1.1 303 See Other
+   Location: https://resource.example/oauth-flow?session=xyz789&return_url=https://agent.example/callback
+   ```
+
+5. **Resource acts as OAuth client**: AAuth resource (acting as OAuth client) redirects user to OAuth/OIDC authorization server with its registered `client_id`, `redirect_uri`, `scope`, and `state`
+
+6. **User authenticates and consents**: User authenticates to the OAuth/OIDC authorization server and grants consent for the requested scopes
+
+7. **OAuth returns authorization code**: OAuth/OIDC authorization server redirects back to AAuth resource with authorization code and state
+
+8. **Resource exchanges code for tokens**: AAuth resource exchanges authorization code for OAuth access token and refresh token using the OAuth token endpoint
+
+9. **Resource stores OAuth tokens**: AAuth resource stores the OAuth access token and refresh token, keyed by the session identifier from step 3
+
+10. **User returns to agent**: AAuth resource redirects user back to agent's `return_url` from step 4
+
+11. **Agent retries request**: Agent makes the original HTTPSig request again. The agent MAY include the session context (e.g., session cookie or header) to correlate with the stored OAuth tokens
+
+12. **Resource uses OAuth token**: AAuth resource retrieves the stored OAuth access token using the session context, calls the OAuth-protected API with the access token, and returns aggregated response to agent
+
+**Benefits:**
+
+- **Transparent integration**: AAuth agents don't need to know downstream resources use OAuth/OIDC
+- **Familiar consent flows**: Users authorize access through existing OAuth/OIDC consent screens
+- **Independent token management**: AAuth resource manages OAuth tokens independently from AAuth tokens
+- **Long-lived access**: AAuth resource can use OAuth refresh tokens to maintain access without repeated user interaction
+- **Protocol bridging**: Enables AAuth adoption without requiring all services to implement AAuth
+
+**Implementation considerations:**
+
+- **OAuth client registration**: The AAuth resource must be registered as an OAuth client with the OAuth/OIDC authorization server, obtaining a `client_id` and `client_secret` (for confidential clients)
+
+- **Session correlation**: The AAuth resource MUST securely correlate the agent's retry request with the stored OAuth tokens. Common approaches:
+  - Session cookies (if the agent is a browser)
+  - Session identifiers in request headers
+  - Session tokens bound to the agent's identity
+
+- **Token storage**: The AAuth resource SHOULD store OAuth tokens securely and associate them with:
+  - The session identifier
+  - The agent identity (from the original HTTPSig request)
+  - The user identity (from the OAuth `id_token` or `sub` claim)
+  - Expiration timestamps for cleanup
+
+- **Refresh token usage**: The AAuth resource SHOULD use OAuth refresh tokens to maintain long-lived access:
+  - Refresh the OAuth access token when expired
+  - Avoid repeated user interaction for subsequent requests
+  - Handle refresh token rotation per OAuth server policy
+
+- **Scope management**: The AAuth resource determines which OAuth scopes to request based on:
+  - The downstream API requirements
+  - The agent's authorization (from AAuth auth token, if present)
+  - Resource-specific policies
+
+- **Error handling**: If OAuth authorization fails, the AAuth resource SHOULD return an appropriate Agent-Auth challenge to the agent with error details
+
+- **Security**: The `user_interaction` URL SHOULD include a session-specific parameter that:
+  - Prevents session fixation attacks
+  - Expires after reasonable timeout
+  - Is single-use (consumed after successful flow completion)
+
+**OIDC integration notes:**
+
+When integrating with OpenID Connect (OIDC) providers, the AAuth resource:
+
+- Requests the `openid` scope (and optionally `profile`, `email`, etc.)
+- Receives an `id_token` in addition to the `access_token`
+- Can validate the `id_token` to obtain verified user identity claims
+- May use the `id_token` for additional authorization decisions
+- Should validate `id_token` signatures and claims per OIDC specification
+
+**Example use cases:**
+
+1. **Third-party integrations**: AAuth resource integrating with services like Google APIs, Microsoft Graph, or GitHub that require OAuth
+2. **Legacy API access**: AAuth resource accessing internal APIs that haven't yet migrated to AAuth but use OAuth 2.0
+3. **Multi-protocol environments**: Organizations transitioning to AAuth while maintaining OAuth-protected services
+4. **Federated access**: AAuth resources accessing resources in partner organizations using OAuth federation
+
+This integration demonstrates AAuth's interoperability with existing OAuth/OIDC ecosystems, enabling incremental adoption without requiring wholesale protocol replacement.
 
 ---
 
