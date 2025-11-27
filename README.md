@@ -144,7 +144,7 @@ AAuth's protocol features directly address each trend:
 
 - **request token**: An opaque string issued by the auth server representing a pending authorization request. The agent uses this token at the `agent_authorization_endpoint` to initiate user consent. Similar to `request_uri` in PAR (RFC 9126) but represented as an opaque token value rather than a URI.
 
-- **resource**: A protected HTTPS endpoint that enforces authorization and publishes metadata describing its trusted auth server and signing requirements. Multiple API endpoints may share a single resource identifier for authorization purposes.
+- **resource**: A protected HTTPS endpoint that enforces authorization. Multiple API endpoints may share a single resource identifier for authorization purposes.
 
 > **resource** was chosen rather than reusing **resource server** as they have different features.
 
@@ -382,6 +382,13 @@ Agent-Auth: httpsig; identity=?1
 
 **Agent response:** Use `sig=jwks` or `sig=x509` (agent server) or `sig=jwt` with agent token (agent delegate).
 
+**With algorithm restrictions:**
+```
+Agent-Auth: httpsig; identity=?1; algs="eddsa-ed25519 rsa-pss-sha256"
+```
+
+Resources with specific algorithm requirements MAY include the `algs` parameter. If omitted, all standard algorithms are accepted.
+
 ### 4.3. Authorization Required
 
 Requires authorization from an auth server (see Section 3.1 for authentication levels). Includes the resource identifier and access requirements.
@@ -445,6 +452,7 @@ This allows resources to block abusive pseudonymous traffic while still acceptin
 - `resource`: String parameter with the resource identifier for authorization
 - `scope`: String parameter with space-separated scopes
 - `request_uri`: String parameter with URL to fetch rich authorization requirements
+- `algs`: String parameter with space-separated list of supported HTTPSig algorithms (OPTIONAL; if omitted, all standard algorithms are accepted)
 
 ### 4.6. Compatibility with WWW-Authenticate
 
@@ -760,38 +768,6 @@ Auth servers **MUST** publish metadata at `/.well-known/auth-server`.
     "email",
     "data.read",
     "data.write"
-  ]
-}
-```
-
-### 7.3. Resource Metadata
-
-Resources **MAY** publish metadata describing their authorization requirements. The resource identifier used in `aud` claims and Agent-Auth headers is **REQUIRED**, but publishing metadata at a discoverable location is optional.
-
-**Recommended fields (if published):**
-
-- `resource` (string): The resource identifier (used as `aud` in auth tokens)
-- `auth_server` (string): The trusted auth server's HTTPS URL
-- `scopes_supported` (array): Available scopes
-- `scope_descriptions` (object): Human-readable descriptions of scopes
-- `agent_signing_algs_supported` (array): Accepted HTTPSig algorithms
-
-**Example:**
-```json
-{
-  "resource": "https://resource.example",
-  "auth_server": "https://auth.example",
-  "scopes_supported": [
-    "data.read",
-    "data.write"
-  ],
-  "scope_descriptions": {
-    "data.read": "Read your data records",
-    "data.write": "Create and modify your data records"
-  },
-  "agent_signing_algs_supported": [
-    "eddsa-ed25519",
-    "rsa-pss-sha256"
   ]
 }
 ```
