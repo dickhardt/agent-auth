@@ -384,7 +384,7 @@ Agent-Auth: httpsig; identity=?1
 
 **With algorithm restrictions:**
 ```
-Agent-Auth: httpsig; identity=?1; algs=("eddsa-ed25519" "rsa-pss-sha256")
+Agent-Auth: httpsig; identity=?1; algs=("ed25519" "rsa-pss-sha256")
 ```
 
 Resources with specific algorithm requirements MAY include the `algs` parameter as an inner list. If omitted, all standard algorithms are accepted.
