@@ -50,9 +50,10 @@ AAuth builds on proven patterns from OAuth 2.1 (authorization code flow, refresh
 7. [Metadata Documents](#7-metadata-documents)
 8. [Protocol Details](#8-protocol-details)
 9. [HTTP Message Signing Profile](#9-http-message-signing-profile)
-10. [Error Responses](#10-error-responses)
-11. [Security Model](#11-security-model)
-12. [IANA Considerations](#12-iana-considerations)
+10. [Auth Request Document](#10-auth-request-document)
+11. [Error Responses](#11-error-responses)
+12. [Security Model](#12-security-model)
+13. [IANA Considerations](#13-iana-considerations)
 
 **Appendixes:**
 - [Appendix A: Relationship to OAuth 2.1 and OIDC](#appendix-a-relationship-to-oauth-21-and-oidc)
@@ -1430,11 +1431,97 @@ While HTTPSig signatures include timestamps, applications **SHOULD** implement a
 - Reject requests with duplicate `created` values within the validity window
 - Use nonces for high-value operations
 
-## 10. Error Responses
+## 10. Auth Request Document
+
+**Status:** This section describes the Auth Request Document format, which is expected to be defined in a separate specification. The semantics and exchange object structure are defined here; the complete schema and additional features will be detailed in a dedicated document.
+
+### 10.1. Purpose
+
+The Auth Request Document provides a structured format for conveying rich authorization requirements. When a resource needs to request authorization from an agent, it can:
+
+1. **Inline simple requirements** using the `scope` parameter in Agent-Auth headers
+2. **Reference complex requirements** using the `auth_request` parameter pointing to an Auth Request Document URL
+
+The `auth_request` parameter appears in two contexts:
+- **Agent-Auth headers**: Resources use `auth_request` to point agents to detailed authorization requirements
+- **Token exchange claims**: Auth tokens include `auth_request` in the `exchange` object to specify downstream authorization requirements
+
+### 10.2. Document Semantics
+
+An Auth Request Document is a JSON document retrieved via HTTPS that describes:
+
+- **Resource identification**: Which resource is requesting authorization
+- **Scopes**: What access is being requested
+- **Authorization context**: Additional details about the request (purpose, data accessed, duration, conditions)
+- **User-facing descriptions**: Human-readable explanations for consent screens
+- **Exchange requirements**: For token exchange scenarios, specifies downstream resource access needs
+
+### 10.3. Exchange Object
+
+When an auth token includes an `exchange` claim, it authorizes the token holder to exchange the token for access to downstream resources. The exchange object structure is defined as follows:
+
+**Exchange object properties:**
+
+- `resource` (REQUIRED): String. The HTTPS URL identifier of the downstream resource
+- `auth_server` (REQUIRED): String. The HTTPS URL identifier of the authorization server for the downstream resource
+- `scope` (REQUIRED if no auth_request): String. Space-separated scopes for downstream access
+- `auth_request` (OPTIONAL): String. URL to an Auth Request Document containing full authorization requirements
+
+If `auth_request` is present, it is authoritative for all downstream authorization details including scope and potential nested exchange claims.
+
+**Example exchange object:**
+
+```json
+{
+  "resource": "https://resource-r2.example",
+  "auth_server": "https://auth2.example",
+  "scope": "data.read"
+}
+```
+
+**Example with auth_request:**
+
+```json
+{
+  "resource": "https://resource-r2.example",
+  "auth_server": "https://auth2.example",
+  "auth_request": "https://auth2.example/req/abc456"
+}
+```
+
+### 10.4. Nested Exchange Chains
+
+Exchange objects MAY be nested when multiple downstream resources are involved. When `auth_request` is present, the Auth Request Document it references MAY itself contain an `exchange` object, creating a chain of authorizations.
+
+**Consent requirements:**
+
+When user authorization is required for token exchange, the auth server MUST present the complete exchange chain to the user. The auth server recursively fetches `auth_request` URLs to build the full authorization chain for consent display, allowing users to understand:
+- The original requesting agent
+- Each intermediate resource in the chain
+- The final downstream resource being accessed
+- The scopes and purpose at each hop
+
+### 10.5. Security Considerations
+
+- Auth Request Documents MUST be served over HTTPS
+- Documents SHOULD be signed to enable offline verification (format TBD in separate specification)
+- Documents SHOULD include expiration times to prevent stale authorization requests
+- Auth servers MUST validate that exchange chains comply with policy (maximum chain depth, allowed resources, etc.)
+
+### 10.6. Future Work
+
+The complete Auth Request Document specification will define:
+- JSON schema for the document format
+- Signing and verification mechanisms
+- Caching and validation rules
+- Additional authorization context fields
+- Internationalization for user-facing descriptions
+
+## 11. Error Responses
 
 AAuth reuses the OAuth 2.0 error response format and error codes (RFC 6749 Section 5.2) where applicable.
 
-### 10.1. Error Response Format
+### 11.1. Error Response Format
 
 Error responses **MUST** be returned with an appropriate HTTP status code (typically 400 or 401) and a JSON body:
 
@@ -1453,7 +1540,7 @@ Content-Type: application/json
 }
 ```
 
-### 10.2. OAuth 2.0 Error Codes
+### 11.2. OAuth 2.0 Error Codes
 
 - `invalid_request` - Malformed or missing required parameters
 - `invalid_token` - Agent token or auth token is invalid or expired
@@ -1462,7 +1549,7 @@ Content-Type: application/json
 - `unsupported_grant_type` - Grant type not supported
 - `invalid_scope` - Requested scope is invalid, unknown, or malformed
 
-### 10.3. AAuth-Specific Error Codes
+### 11.3. AAuth-Specific Error Codes
 
 - `invalid_signature` - HTTPSig signature validation failed
 - `invalid_agent_token` - Agent token validation failed
@@ -1481,7 +1568,7 @@ Content-Type: application/json
 }
 ```
 
-## 11. Security Model
+## 12. Security Model
 
 - All participants use **HTTP Message Signing** for message integrity and replay protection
 - **Agent tokens** and **auth tokens** are both **proof-of-possession** tokens
@@ -1495,11 +1582,11 @@ Content-Type: application/json
 
 ---
 
-## 12. IANA Considerations
+## 13. IANA Considerations
 
 This specification registers the following identifiers in their respective IANA registries.
 
-### 12.1. Well-Known URI Registrations
+### 13.1. Well-Known URI Registrations
 
 **Registry:** Well-Known URIs (RFC 8615)
 
@@ -1513,7 +1600,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Specification document:** This specification, Section 7.2
 - **Related information:** Metadata document for AAuth authorization servers
 
-### 12.2. Media Type Registrations
+### 13.2. Media Type Registrations
 
 **Registry:** Media Types
 
@@ -1522,7 +1609,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Required parameters:** None
 - **Optional parameters:** None
 - **Encoding considerations:** Binary (JWT, base64url-encoded)
-- **Security considerations:** See Section 11 of this specification
+- **Security considerations:** See Section 12 of this specification
 - **Interoperability considerations:** None
 - **Published specification:** This specification, Section 5.2
 - **Applications that use this media type:** AAuth agent delegates
@@ -1537,7 +1624,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Required parameters:** None
 - **Optional parameters:** None
 - **Encoding considerations:** Binary (JWT, base64url-encoded)
-- **Security considerations:** See Section 11 of this specification
+- **Security considerations:** See Section 12 of this specification
 - **Interoperability considerations:** None
 - **Published specification:** This specification, Section 6.2
 - **Applications that use this media type:** AAuth auth servers and resource servers
@@ -1547,7 +1634,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Restrictions on usage:** None
 - **Change controller:** IETF
 
-### 12.3. HTTP Header Field Registrations
+### 13.3. HTTP Header Field Registrations
 
 **Registry:** HTTP Field Names (RFC 9110)
 
@@ -1556,7 +1643,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Specification document:** This specification, Section 4
 - **Comments:** Response header indicating AAuth authentication and authorization requirements
 
-### 12.4. JSON Web Token Type Values
+### 13.4. JSON Web Token Type Values
 
 **Registry:** JSON Web Token (JWT) Type Values
 
@@ -1570,7 +1657,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 6.2
 
-### 12.5. JSON Web Token Claims Registrations
+### 13.5. JSON Web Token Claims Registrations
 
 **Registry:** JSON Web Token Claims (RFC 7519)
 
@@ -1579,7 +1666,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 6.3
 
-### 12.6. AAuth Parameters Registry
+### 13.6. AAuth Parameters Registry
 
 **Registry:** AAuth Parameters (new registry)
 
@@ -1607,7 +1694,7 @@ This specification establishes a new IANA registry for AAuth protocol parameters
 - **Specification document:** This specification, Section 8.4
 - **Description:** AAuth authorization token (JWT)
 
-### 12.7. Error Codes
+### 13.7. Error Codes
 
 AAuth-specific error codes are defined in Section 10.3. These error codes extend the OAuth 2.0 error response framework for AAuth-specific validation failures including signature validation, agent token validation, and key binding verification.
 
