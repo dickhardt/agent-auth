@@ -384,7 +384,7 @@ Agent-Auth: httpsig; identity=?1
 
 **With algorithm restrictions:**
 ```
-Agent-Auth: httpsig; identity=?1; algs=("ed25519" "rsa-pss-sha256")
+Agent-Auth: httpsig; identity=?1; algs=("ed25519" "rsa-pss-sha512")
 ```
 
 Resources with specific algorithm requirements MAY include the `algs` parameter as an inner list. If omitted, all standard algorithms are accepted.
@@ -755,7 +755,7 @@ Auth servers **MUST** publish metadata at `/.well-known/auth-server`.
   "agent_auth_endpoint": "https://auth.example/agent/auth",
   "agent_signing_algs_supported": [
     "ed25519",
-    "rsa-pss-sha256"
+    "rsa-pss-sha512"
   ],
   "request_types_supported": [
     "auth",
