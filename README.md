@@ -10,11 +10,13 @@ Email: dick.hardt@hello.coop
 
 ## TL;DR
 
-AAuth eliminates secrets management and token exfiltration attacks through:
-- **HTTP Message Signatures** - every request cryptographically signed, tokens can't be stolen
-- **Ephemeral keys** - no secrets to manage, keys in memory only
-- **Unified auth** - single protocol for authentication and authorization
-- **Agent identity** - verify both the app and the user
+AAuth is an agent aware auth protocol for modern distributed systems:
+- **Progressive authentication** - from abuse prevention to full authorization
+- **Agent identity** - verify applications alongside users
+- **Unified protocol** - authentication and authorization in one flow
+- **Dynamic ecosystems** - no pre-registration required
+- **Proof-of-possession** - every request is signed, removing shared secrets
+- **Multi-hop access** - resources calling resources with token exchange or downstream user interaction
 
 ---
 
@@ -29,6 +31,7 @@ The document explores use cases requiring capabilities beyond OAuth 2.0 and OIDC
 - **From separate authentication and authorization protocols to unified auth**: Single flow provides both identity and delegated access
 - **From user-only authorization to agent-aware access control**: Resources can enforce policies based on verified agent identity
 - **From coarse scopes to rich authorization context**: Enabling meaningful user consent and least-privilege access
+- **From single-hop to multi-hop access**: Resources often need to access downstream resources to fulfill requests. Token exchange enables access through multiple hops while maintaining proof-of-possession and user context, with interaction requests bubbling up as needed
 
 AAuth builds on proven patterns from OAuth 2.1 (authorization code flow, refresh tokens, metadata discovery) and OIDC (identity claims, user authentication) while introducing capabilities for modern agent-based architectures.
 
@@ -41,22 +44,22 @@ AAuth builds on proven patterns from OAuth 2.1 (authorization code flow, refresh
 1. [Introduction](#1-introduction)
 2. [Terminology](#2-terminology)
 3. [Protocol Overview](#3-protocol-overview)
-4. [Protocol Flows](#4-protocol-flows)
+4. [Agent-Auth Response Header](#4-agent-auth-response-header)
 5. [Agent Tokens](#5-agent-tokens)
 6. [Auth Tokens](#6-auth-tokens)
 7. [Metadata Documents](#7-metadata-documents)
 8. [Protocol Details](#8-protocol-details)
-9. [Agent-Auth Response Header](#9-agent-auth-response-header)
-10. [HTTP Message Signing Profile](#10-http-message-signing-profile)
-11. [Error Responses](#11-error-responses)
-12. [Security Model](#12-security-model)
-13. [IANA Considerations](#13-iana-considerations)
+9. [HTTP Message Signing Profile](#9-http-message-signing-profile)
+10. [Error Responses](#10-error-responses)
+11. [Security Model](#11-security-model)
+12. [IANA Considerations](#12-iana-considerations)
 
 **Appendixes:**
 - [Appendix A: Relationship to OAuth 2.1 and OIDC](#appendix-a-relationship-to-oauth-21-and-oidc)
 - [Appendix B: Long Tail Agent Servers](#appendix-b-long-tail-agent-servers)
 - [Appendix C: Agent Token Acquisition Patterns](#appendix-c-agent-token-acquisition-patterns)
 - [Appendix D: Relationship to Web-Bot-Auth](#appendix-d-relationship-to-web-bot-auth)
+- [Appendix E: Redirect Headers for Enhanced Security](#appendix-e-redirect-headers-for-enhanced-security)
 
 ---
 
@@ -84,18 +87,17 @@ OAuth 2.0 was created to replace the anti-pattern of users providing their passw
 
   Traditional OAuth scopes like read or write provide only coarse-grained labels that fail to convey what data will be accessed, under what conditions, for what purpose, or for how long. This opacity prevents meaningful user consent and makes it impossible to enforce least privilege.
 
-- **Applications need unified authentication and authorization in agent-centric scenarios.**
+- **Resources have varying auth requirements.**
 
-  OAuth 2.0 provides authorization (delegated access). OpenID Connect provides authentication (user identity via SSO, alongside SAML). Both protocols excel in their designed use cases—OIDC for browser-based SSO to web applications, OAuth 2.0 for user-delegated API access.
+  Resources need different levels of protection for different operations. Public endpoints rely on IP addresses for rate limiting and abuse prevention. Application identity is verified through IP whitelisting, mTLS, or long-lived credentials. Authorization uses API keys, manually provisioned tokens, or OAuth flows—serving both user-delegated access and machine-to-machine patterns. These varying requirements have led to fragmented solutions: IP filtering for abuse, mTLS or credentials for application identity, OAuth or tokens for authorization.
 
-  However, agent-based applications often need both authentication and authorization in contexts where the separation creates friction:
+- **Resources often act as agents to access downstream resources.**
 
-  - Agents calling APIs need to prove both their own identity and user identity in a single request
-  - Resources need both who is calling (agent) and on whose behalf (user) for access decisions
-  - Managing separate OAuth and OIDC flows for agent scenarios adds complexity
-  - The token model (separate access tokens and ID tokens) doesn't fit agent-to-resource calls where both identities matter
+  Modern architectures frequently require resources to call other resources to fulfill requests. An API gateway aggregates data from backend services, a data platform queries multiple data sources, or a coordination service orchestrates between systems. When a resource needs downstream access, it must acquire authorization—sometimes autonomously based on its identity, sometimes requiring user interaction despite having no direct user interface. These delegation chains create challenges around maintaining user context, preserving authorization chains, and managing keys across organizational boundaries.
 
-  AAuth provides a unified approach for these agent-centric use cases, where a single auth token contains agent identity, user identity, and authorization claims.
+- **Applications require both authentication and authorization.**
+
+  OAuth 2.0 provides authorization (delegated access). OpenID Connect provides authentication (user identity via SSO, alongside SAML). Both protocols excel in their designed use cases: OAuth 2.0 for user-delegated API access; OIDC for browser-based SSO to web applications. However, applications often need both authentication and authorization in contexts where the separation creates friction. 
 
 AAuth addresses these evolved requirements by redefining the relationships between three web participants:
 
@@ -105,31 +107,32 @@ AAuth addresses these evolved requirements by redefining the relationships betwe
 
 AAuth's protocol features directly address each trend:
 
-- **Unified authentication and authorization** eliminates the OAuth/OIDC split. AAuth uses "auth" to represent both authentication and authorization in a single protocol. Auth tokens contain both identity claims and authorization scopes, giving resources everything they need for access control decisions. The auth server determines whether to perform authentication-only, authorization-only, or both based on policy and context. This eliminates confusion about when to use OAuth vs. OIDC and prevents common mistakes like misusing ID tokens for API access.
-
 - **HTTP Message Signing (HTTPSig)** replaces bearer tokens and shared secrets. Every request an agent makes is cryptographically signed with an ephemeral key it controls, eliminating token exfiltration as an attack vector and providing verifiable proof-of-possession and message integrity when calling both an auth server and a protected resource
 
 - **HTTPS-based agent identity and delegation** addresses distributed applications. Agents are identified by HTTPS URLs rather than pre-registered client IDs and redirect URIs. An agent identity can be used directly by an agent server (publishing metadata and keys), or delegated to agent delegates through short-lived agent tokens that bind ephemeral signing keys to the agent's identity, enabling rapid key rotation without managing long-lived shared secrets.
 
-- **Discoverable metadata** enables dynamic agent ecosystems. Each participant publishes a metadata document describing their capabilities and endpoints. Resources declare their trusted auth servers, auth servers advertise their features, and agents present their identity and policies. This allows any agent to interact with any resource or auth server without pre-established relationships.
+- **Discoverable metadata** enables dynamic agent ecosystems. Each participant publishes a metadata document describing their capabilities and endpoints. Resources declare their trusted auth servers, auth servers advertise their features, and agents present their identity and policies. This allows any agent to interact with any resource or auth server without pre-established relationships if desired.
 
 - **Verifiable application and user identity** supports multi-domain trust. Auth tokens can contain both the agent's cryptographically verified identity and user identity claims from the auth server, enabling fine-grained access control decisions based on who is requesting access and on whose behalf.
 
 - **Extensible authorization context** goes beyond simple scopes. Resources can provide detailed authorization requests conveying what data will be accessed, under what conditions, for what purpose, and for how long. This enables meaningful user consent, fine-grained policy enforcement, and least privilege access control.
 
-- **Progressive authentication levels** allow resources to request different levels of authentication based on their needs: pseudonymous access for abuse prevention, identified access for agent-based policies, or full authorization for user consent and enterprise controls.
+- **Progressive auth levels** allow resources to dynamically request the specific level of protection they need using the `Agent-Auth` header. A resource can challenge for signature-based proof-of-possession, verified agent identity, or authorization from the auth server—unifying IP-based abuse prevention, mTLS application identity, and OAuth authorization into a single protocol that scales with request sensitivity.
+
+- **Unified authentication and authorization** eliminates the OAuth/OIDC split. AAuth uses "auth" to represent both authentication and authorization in a single protocol. Auth tokens can contain both identity claims and authorization scopes, giving resources everything they need for access control decisions. This eliminates confusion about when to use OAuth vs. OIDC and prevents common mistakes like misusing ID tokens for API access.
+
 
 ## 2. Terminology
 
 ### 2.1 New Definitions
 
-- **agent**: An autonomous process or application identified by an HTTPS URL (`agent_id`). An agent may act directly as an **agent server** or as an **agent delegate** using delegated authority from an agent server.
+- **agent**: An autonomous process or application identified by an HTTPS URL (the `agent` claim). An agent may act directly as an **agent server** or as an **agent delegate** using delegated authority from an agent server.
 
 > **agent** was chosen rather than reusing **client** as they have different features and capabilities.
 
-- **agent server**: An agent acting with its authoritative identity, using its published JWKS to sign requests directly. The agent server publishes metadata and keys at `https://agent.example/.well-known/agent-server` and may issue **agent tokens** to delegate its identity to agent delegates. For simplified key management in shared hosting environments, see [Appendix B](#appendix-b-long-tail-agent-servers).
+- **agent server**: An agent acting with its authoritative identity, using its published JWKS to sign requests directly. The agent server publishes metadata and keys at `https://agent.example/.well-known/agent-server` and may issue **agent tokens** to delegate its identity to agent delegates. For simplified key management for the long tail of agent servers see [Appendix B](#appendix-b-long-tail-agent-servers).
 
-- **agent delegate**: An agent acting under delegated authority from an agent server. An agent delegate proves its identity by presenting an **agent token** (JWT) that binds its signing key to the agent server's identity. Agent delegates include server workloads (e.g., SPIFFE workloads), application installations (mobile, desktop, CLI), and device-specific deployments. The signing key **MAY** be ephemeral (generated at startup, kept in memory only) or persisted, but **SHOULD** be rotated frequently. Ephemeral keys simplify key management by eliminating secure storage requirements.
+- **agent delegate**: An agent acting under delegated authority from an agent server. An agent delegate proves its identity by presenting an **agent token** (JWT) that binds its signing key to the agent server's identity. Agent delegates include server workloads (e.g., SPIFFE workloads), application installations (mobile, desktop, CLI), and device-specific deployments. 
 
 - **agent token**: A proof-of-possession JWT issued by an agent server to an agent delegate, binding the delegate's signing key and granting it authority to act on behalf of the agent server. Presented to a resource or auth server to prove agent identity. The JWT header includes `"typ": "agent+jwt"` (media type: `application/agent+jwt`).
 
@@ -155,205 +158,286 @@ The following terms are defined in existing specifications and reused in AAuth:
 
 ## 3. Protocol Overview
 
-This section provides a high-level overview of the relationships between protocol participants.
+AAuth supports progressive authentication levels—pseudonymous, identified, and authorized—allowing resources to request the appropriate level of protection for each operation using the Agent-Auth response header ([Section 4](#4-agent-auth-response-header)). The protocol involves three participants: agents (applications and autonomous processes), resources (protected APIs), and auth servers (systems that issue authorization). Agents prove their identity using HTTP Message Signatures ([Section 9](#9-http-message-signing-profile)) with agent tokens ([Section 5](#5-agent-tokens)) or auth tokens ([Section 6](#6-auth-tokens)). This section illustrates how these participants interact through common use cases.
 
-### 3.1. Authentication Levels
+Resources use the Agent-Auth response header to dynamically challenge agents for appropriate authentication ([§4](#4-agent-auth-response-header)). However, agents that already know the required scope or request_uri can request authorization directly from the auth server without first calling the resource. The use cases below illustrate the dynamic challenge pattern; direct authorization requests follow the same flow starting from the auth server interaction.
 
-AAuth supports three progressive levels of authentication, allowing resources to choose the appropriate level based on their security and policy requirements:
+### 3.1 Authentication Upgrade
 
-**1. Pseudonymous Access (Signature Only)**
-
-An agent signs requests with an ephemeral key without revealing its identity. The resource can use the key for rate limiting and abuse prevention but cannot make identity-based access decisions.
-
-- Agent uses: `Signature-Key: sig=wk; kty="OKP"; crv="Ed25519"; x="..."`
-- Resource gets: Proof of key possession, no identity
-- Use case: Public APIs, abuse prevention, rate limiting per key
-
-**2. Identified Access (Agent Identity)**
-
-An agent proves its identity using either:
-- **Agent server**: Direct use of published JWKS (`sig=jwks`)
-- **Agent delegate**: Delegated identity via agent token (`sig=jwt` with agent-token)
-
-- Agent server uses: `Signature-Key: sig=jwks; id="https://agent.example"; kid="..."`
-- Agent delegate uses: `Signature-Key: sig=jwt; jwt="<agent-token>"`
-- Resource gets: Verified agent identity (`agent_id`)
-- Use case: Agent allowlists/denylists, agent-specific policies, agent-based rate limits
-
-**3. Authorized Access (Auth Token)**
-
-An agent obtains authorization from an auth server, which may involve user consent or enterprise policy evaluation. The auth token binds the agent's identity and key to the granted permissions.
-
-- Agent uses: `Signature-Key: sig=jwt; jwt="<auth-token>"`
-- Resource gets: Agent identity, authorization claims, optionally user identity
-- Use case: User data access, enterprise policy enforcement, fine-grained authorization
-
-### 3.2. Agent to Resource
-
-Agents interact with resources using **HTTP Message Signing (HTTPSig)** to prove possession of their signing key. The agent includes a [`Signature-Key` header](https://github.com/dickhardt/signature-key) indicating the authentication level:
-
-- **Pseudonymous**: `sig=wk` with inline public key parameters
-- **Agent server**: `sig=jwks` with agent identifier and key ID
-- **Agent delegate**: `sig=jwt` with agent token (typ: "agent+jwt")
-- **Authorized**: `sig=jwt` with auth token (typ: "auth+jwt")
-
-Resources validate the signature and may require a higher authentication level by responding with an `Agent-Auth` challenge header.
-
-### 3.3. Agent to Auth Server
-
-When a resource requires authorization, the agent requests an **auth token** from the trusted auth server. The agent presents its agent identity (via agent server JWKS or agent delegate token) along with the resource identifier and requested scopes to the `agent_token_endpoint`.
-
-The auth server validates the agent's identity and may:
-- **Direct grant**: Issue an auth token immediately for autonomous/machine-to-machine scenarios
-- **User consent**: Return a `request_token` that the agent uses to redirect the user to the `agent_auth_endpoint` for authentication and consent
-
-Auth tokens may be refreshed using refresh tokens. Refresh tokens are bound to:
-- **Agent server**: `agent_id` only (no JWT, no `sub`)
-- **Agent delegate**: `agent_id` + `sub` (agent delegate identifier from agent token)
-
-**Auth Server Endpoints:**
-- `agent_token_endpoint`: Handles auth requests, token exchange, and refresh (used with `request_type` parameter)
-- `agent_auth_endpoint`: Handles user authentication and consent flow (interactive, user-facing)
-
-### 3.4. Agent Delegate to Agent Server
-
-Agent delegates obtain agent tokens from their agent server to prove delegated identity. The specifics of this interaction are out of scope for this specification but typically involve:
-
-- Agent delegate generating or using an existing key pair
-- Requesting an agent token from the agent server
-- Agent server binding the delegate's public key in the token's `cnf.jwk` claim
-- Agent server issuing a short-lived token to enable frequent reevaluation
-
-The agent server may require the agent delegate to authenticate or prove authorization before issuing agent tokens. When the agent delegate rotates its key (whether ephemeral keys at restart or persisted keys per policy), it requests a new agent token with the same `sub` (agent delegate identifier), allowing refresh tokens to remain valid across key rotations.
-
-## 4. Protocol Flows
-
-This section provides sequence diagrams showing the key protocol patterns.
-
-### 4.1. Pseudonymous Access
-
-The simplest flow where an agent accesses a resource using only key-based authentication.
+A web crawler accesses public content without authentication. When rate limits are exceeded, the resource challenges for pseudonymous authentication ([Section 4](#4-agent-auth-response-header)) to grant higher limits using HTTP Message Signatures ([Section 9](#9-http-message-signing-profile)).
 
 ```mermaid
 sequenceDiagram
     participant Agent as agent
     participant Resource as resource
 
-    Agent->>Resource: HTTPSig request with Signature-Key: sig=wk
-    Resource->>Resource: verify signature
-    Resource->>Agent: success
+    Agent->>Resource: unsigned request
+    Resource->>Agent: 200 OK
+
+    Note over Agent,Resource: ... more requests ...
+
+    Agent->>Resource: unsigned request
+    Resource->>Agent: 429 with Agent-Auth challenge
+
+    Agent->>Resource: HTTPSig request (sig=hwk)
+    Resource->>Agent: 200 OK (higher rate limit)
 ```
 
-### 4.2. Identified Access - Agent Server
+### 3.2 Agent Identity
 
-An agent server proves its identity using published JWKS.
+A search engine crawler proves its identity using published JWKS ([Section 7.1](#71-agent-metadata)) to receive allowlisting and preferential rate limits.
 
 ```mermaid
 sequenceDiagram
-    participant AgentServer as agent server
+    participant Agent as agent server
     participant Resource as resource
 
-    AgentServer->>Resource: HTTPSig request with Signature-Key: sig=jwks
-    Resource->>AgentServer: fetch JWKS
-    AgentServer->>Resource: JWKS
+    Agent->>Resource: HTTPSig request (sig=jwks)
+    Resource->>Agent: fetch JWKS
+    Agent->>Resource: JWKS
     Resource->>Resource: verify signature and identity
-    Resource->>AgentServer: success
+    Resource->>Agent: 200 OK
 ```
 
-### 4.3. Identified Access - Agent Delegate
+### 3.3 Delegated Agent
 
-An agent delegate proves delegated identity using an agent token.
+A mobile app with millions of installations uses agent delegation ([Section 5](#5-agent-tokens)) so each installation has unique identity without shared secrets.
 
 ```mermaid
 sequenceDiagram
-    participant Agent as agent delegate
-    participant AgentServer as agent server
+    participant Delegate as agent delegate
+    participant Server as agent server
     participant Resource as resource
 
-    Agent->>AgentServer: request agent token
-    AgentServer->>Agent: agent token
+    Delegate->>Server: request agent token
+    Server->>Delegate: agent token
 
-    Agent->>Resource: HTTPSig request with Signature-Key: sig=jwt (agent-token)
-    Resource->>AgentServer: fetch JWKS
-    AgentServer->>Resource: JWKS
+    Delegate->>Resource: HTTPSig request (sig=jwt with agent-token)
+    Resource->>Server: fetch JWKS
+    Server->>Resource: JWKS
     Resource->>Resource: verify agent token and signature
-    Resource->>Agent: success
+    Resource->>Delegate: 200 OK
 ```
 
-### 4.4. Autonomous Agent Authorization (No User)
+### 3.4 Autonomous Access
 
-An autonomous agent requests authorization from an auth server without user interaction.
+A data sync service copies customer records between CRM and billing systems hourly, authorized based on the service's identity (may request authorization directly if scope or request_uri is pre-configured). The auth server ([Section 8.3](#83-agent-auth-request)) issues an auth token ([Section 6](#6-auth-tokens)) without user interaction.
 
 ```mermaid
 sequenceDiagram
     participant Agent as agent
     participant Resource as resource
-    participant AuthServer as auth server
+    participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request with Signature-Key: sig=jwt (agent-token)
-    Resource->>Resource: verify and check authorization
-    Resource->>Agent: 401 Agent-Auth: auth-token; resource="..."; scope="..."
+    Agent->>Resource: HTTPSig request (sig=jwks)
+    Resource->>Agent: 401 with Agent-Auth challenge
 
-    Agent->>AuthServer: HTTPSig request with agent-token + resource, scope
-    AuthServer->>AuthServer: verify and evaluate policy
-    AuthServer->>Agent: auth_token + refresh_token
+    Agent->>Auth: HTTPSig request with resource, scope
+    Auth->>Auth: evaluate policy
+    Auth->>Agent: auth_token + refresh_token
 
-    Agent->>Resource: HTTPSig request with Signature-Key: sig=jwt (auth-token)
-    Resource->>Resource: verify auth token and access
-    Resource->>Agent: success
+    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Resource->>Resource: verify auth token
+    Resource->>Agent: 200 OK
 ```
 
-### 4.5. User Authorization Required
+### 3.5 User Delegated Access
 
-Full flow including user authentication and consent.
+An AI assistant accesses a user's calendar data with their explicit consent through an interactive authorization flow ([Section 8.5](#85-user-consent-flow)). The auth token ([Section 6](#6-auth-tokens)) includes both user identity and authorization claims.
 
 ```mermaid
 sequenceDiagram
-    participant User as user / browser
+    participant User as user
     participant Agent as agent
     participant Resource as resource
-    participant AuthServer as auth server
+    participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request with agent identity
-    Resource->>Resource: verify and check authorization
-    Resource->>Agent: 401 Agent-Auth: auth-token; resource="..."; scope="..."
+    Agent->>Resource: HTTPSig request (sig=jwks)
+    Resource->>Agent: 401 with Agent-Auth challenge
 
-    Agent->>AuthServer: HTTPSig request with agent identity + resource, scope
-    AuthServer->>AuthServer: verify and evaluate policy
-    AuthServer->>Agent: request_token (for user consent)
+    Agent->>Auth: HTTPSig request with resource, scope
+    Auth->>Agent: request_token
 
-    Agent->>User: redirect with request_token
-    User->>AuthServer: authenticate + consent
-    AuthServer->>Agent: authorization_code (via redirect)
+    Agent->>User: redirect to auth server
+    User->>Auth: authenticate and consent
+    Auth->>Agent: authorization_code (via redirect)
 
-    Agent->>AuthServer: HTTPSig request with agent identity + authorization_code
-    AuthServer->>AuthServer: verify
-    AuthServer->>Agent: auth_token + refresh_token
+    Agent->>Auth: HTTPSig request with authorization_code
+    Auth->>Agent: auth_token + refresh_token
 
-    Agent->>Resource: HTTPSig request with Signature-Key: sig=jwt (auth-token)
-    Resource->>Resource: verify auth token and access
-    Resource->>Agent: success
+    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Resource->>Agent: 200 OK
 ```
 
-### 4.6. Auth Token Refresh
+### 3.6 Auth Refresh
 
-When the auth token expires, the agent can refresh it using the refresh token.
+An agent maintains long-lived access by refreshing expired auth tokens ([Section 8.7](#87-auth-token-refresh)) using refresh tokens bound to its identity.
 
 ```mermaid
 sequenceDiagram
     participant Agent as agent
-    participant AuthServer as auth server
+    participant Auth as auth server
     participant Resource as resource
 
-    Note right of Agent: Auth token has expired
+    Note over Agent: auth_token expired
 
-    Agent->>AuthServer: HTTPSig refresh request with agent identity + refresh_token
-    AuthServer->>AuthServer: verify agent identity and refresh token binding
-    AuthServer->>Agent: new auth_token
+    Agent->>Auth: HTTPSig request with refresh_token
+    Auth->>Auth: verify agent identity and token binding
+    Auth->>Agent: new auth_token
 
-    Agent->>Resource: HTTPSig request with Signature-Key: sig=jwt (auth-token)
-    Resource->>Resource: verify auth token and access
-    Resource->>Agent: success
+    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Resource->>Agent: 200 OK
+```
+
+### 3.7 User Interaction Request
+
+A resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access) but cannot interact with the user directly. The resource returns a user interaction URL ([Section 8.6](#86-resource-initiated-authorization-with-user-interaction)), the agent facilitates the interaction, and then retries the request.
+
+```mermaid
+sequenceDiagram
+    participant User as user
+    participant Agent as agent
+    participant Resource as resource
+    participant Auth as auth server
+
+    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Resource->>Agent: 401 Unauthorized<br/>Agent-Auth: user_interaction="..."; resource="..."; auth_server="..."
+
+    Agent->>User: redirect to resource interaction URL (with return_url)
+    User->>Resource: GET interaction endpoint
+
+    Resource->>User: redirect to auth server
+    User->>Auth: authenticate and consent
+    Auth->>Resource: authorization code
+
+    Resource->>Auth: exchange code for token
+    Auth->>Resource: auth_token
+    Resource->>User: redirect back to agent return_url
+
+    Agent->>Resource: HTTPSig request (retry)
+    Resource->>Agent: 200 OK
+```
+
+### 3.8 Token Exchange
+
+A resource needs to access a downstream resource to fulfill a request. The resource exchanges the auth token it received for a new token bound to its own key ([Section 8.7](#87-token-exchange-and-chaining)), preserving the authorization chain.
+
+```mermaid
+sequenceDiagram
+    participant Agent as agent
+    participant Resource as resource
+    participant Auth2 as auth server 2
+    participant Resource2 as resource 2
+
+    Agent->>Resource: HTTPSig request (sig=jwt with auth-token)
+    Note over Resource: auth-token contains exchange claim
+
+    Resource->>Auth2: HTTPSig exchange request with subject_token
+    Auth2->>Auth2: validate exchange authorization
+    Auth2->>Resource: auth_token (bound to Resource's key)
+
+    Resource->>Resource2: HTTPSig request (sig=jwt with new auth-token)
+    Resource2->>Resource: 200 OK
+
+    Resource->>Agent: 200 OK (aggregated response)
+```
+
+## 4. Agent-Auth Response Header
+
+Resources use the `Agent-Auth` response header (using HTTP structured fields per RFC 8941) to indicate authentication and authorization requirements.
+
+### 4.1. Signature Required
+
+Requires HTTP Message Signing with any authentication level (see Section 3.1).
+
+```
+Agent-Auth: httpsig
+```
+
+**Agent response:** Include `Signature-Key` header with any scheme (sig=hwk, sig=jwks, sig=x509, or sig=jwt).
+
+### 4.2. Identity Required
+
+Requires agent identity verification (see Section 3.1 for authentication levels).
+
+```
+Agent-Auth: httpsig; identity=?1
+```
+
+**Agent response:** Use `sig=jwks` or `sig=x509` (agent server) or `sig=jwt` with agent token (agent delegate).
+
+### 4.3. Authorization Required
+
+Requires authorization from an auth server (see Section 3.1 for authentication levels). Includes the resource identifier and access requirements.
+
+**With scope:**
+```
+Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="data.read data.write"
+```
+
+**With rich authorization request:**
+```
+Agent-Auth: httpsig; auth-token; resource="https://resource.example"; request_uri="https://resource.example/authz/req/3f5a"
+```
+
+**Agent response:** Obtain auth token from the specified resource's auth server, then retry request with `sig=jwt` and the auth token.
+
+### 4.4. Status Codes and Progressive Rate Limiting
+
+While `Agent-Auth` is typically used with **401 Unauthorized**, resources **MAY** use it with other status codes to enable progressive rate limiting and abuse mitigation based on authentication level.
+
+**401 Unauthorized** - Authentication required
+
+Used when the current authentication level is insufficient:
+
+```http
+HTTP/1.1 401 Unauthorized
+Agent-Auth: httpsig; identity=?1
+```
+
+**429 Too Many Requests** - Rate limit exceeded
+
+Used when the agent has exceeded rate limits for their current authentication level, but a higher authentication level would have higher limits:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Agent-Auth: httpsig; identity=?1
+Retry-After: 60
+```
+
+**Example progressive rate limiting:**
+- Pseudonymous (sig=hwk): 10 requests/minute
+- Identified (sig=jwks, sig=x509, or sig=jwt with agent-token): 100 requests/minute
+- Authorized (sig=jwt with auth-token): 1000 requests/minute
+
+**403 Forbidden** - Access denied for current authentication level
+
+Used when the agent is blocked or access is denied at the current authentication level, but a higher level might be accepted:
+
+```http
+HTTP/1.1 403 Forbidden
+Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="data.read"
+```
+
+This allows resources to block abusive pseudonymous traffic while still accepting identified or authorized requests from the same origin.
+
+### 4.5. Parameters
+
+- `httpsig`: Authentication scheme (REQUIRED for all responses)
+- `identity`: Boolean parameter (?1 = true) indicating agent identity is required
+- `auth-token`: Bare token indicating authorization is required
+- `resource`: String parameter with the resource identifier for authorization
+- `scope`: String parameter with space-separated scopes
+- `request_uri`: String parameter with URL to fetch rich authorization requirements
+
+### 4.6. Compatibility with WWW-Authenticate
+
+Resources **MAY** include both `Agent-Auth` and `WWW-Authenticate` headers to support multiple authentication protocols:
+
+```http
+HTTP/1.1 401 Unauthorized
+Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="data.read"
+WWW-Authenticate: Bearer realm="resource.example", scope="data.read"
 ```
 
 ## 5. Agent Tokens
@@ -367,11 +451,11 @@ Agent tokens serve two primary purposes:
 1. **Identity delegation**: Bind an agent delegate's signing key to the agent server's authoritative identity
 2. **Key rotation**: Enable key rotation without affecting refresh tokens or user sessions
 
-An agent server and agent delegate share the same `agent_id` from the perspective of resources and auth servers. The difference is in how they prove that identity:
+An agent server and agent delegate share the same agent identifier (the `agent` claim) from the perspective of resources and auth servers. The difference is in how they prove that identity:
 - Agent server: Uses published JWKS directly (no agent token)
 - Agent delegate: Presents an agent token signed by the agent server
 
-The agent delegate's signing key **MAY** be ephemeral (generated at startup, kept in memory only) or persisted, but **SHOULD** be rotated frequently. Ephemeral keys simplify deployment by eliminating the need for secure key storage. When the delegate rotates its key (whether due to restart or policy), it obtains a new agent token with the same `sub` (agent delegate identifier), allowing refresh tokens to remain valid.
+When the delegate rotates its key (whether due to restart or policy), it obtains a new agent token with the same `sub` (agent delegate identifier), allowing refresh tokens to remain valid.
 
 ### 5.2. Token Format
 
@@ -384,22 +468,19 @@ The JOSE header **MUST** include:
 
 ### 5.3. Required Claims
 
-- `iss` (REQUIRED): The agent server's HTTPS URL (also the `agent_id`)
+- `iss` (REQUIRED): The agent server's HTTPS URL (also the agent identifier)
 - `sub` (REQUIRED): Agent delegate identifier. Identifies the delegated workload or installation, not the specific instance. Examples:
   - Server workload: `spiffe://trust-domain/service/api`
   - Mobile app installation: `app-installation-uuid-xyz`
   - Desktop app installation: `desktop-app-install-abc`
   - This identifier persists across restarts and key rotations
-- `iat` (REQUIRED): Issued at timestamp (Unix time)
 - `exp` (REQUIRED): Expiration timestamp (Unix time)
 - `cnf` (REQUIRED): Confirmation object containing:
   - `jwk` (REQUIRED): JSON Web Key - the agent delegate's public signing key
 
 ### 5.4. Optional Claims
 
-- `jti` (OPTIONAL): Unique token identifier for tracking (e.g., for instance-level tracking if needed)
-- `scope` (OPTIONAL): Space-separated scopes pre-authorized for this agent delegate
-- `aud` (OPTIONAL): Intended audience(s) for the token
+- `aud` (OPTIONAL): Intended audience(s) - restricts which resources or auth servers can accept this agent token. May be a string (single audience) or an array of strings (multiple audiences)
 - Additional claims: Agent servers **MAY** include custom claims for delegation policies (future work)
 
 ### 5.5. Example Agent Token
@@ -408,7 +489,7 @@ The JOSE header **MUST** include:
 ```json
 {
   "typ": "agent+jwt",
-  "alg": "ES256",
+  "alg": "EdDSA",
   "kid": "agent-server-key-1"
 }
 ```
@@ -418,18 +499,14 @@ The JOSE header **MUST** include:
 {
   "iss": "https://agent.example",
   "sub": "spiffe://example.com/workload/api-service",
-  "iat": 1730217600,
   "exp": 1730218200,
-  "jti": "unique-token-id-123",
   "cnf": {
     "jwk": {
-      "kty": "EC",
-      "crv": "P-256",
-      "x": "WKn-ZIGevcwGIyyrzFoZNBdaq9_TsqzGl96oc0CWuis",
-      "y": "y77t-RvAHRKTsSGdIYUfweuOvwrvDD-Q3Hv5J0fSKbE"
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
     }
-  },
-  "scope": "data.read"
+  }
 }
 ```
 
@@ -462,13 +539,13 @@ When an agent presents `Signature-Key: sig=jwt; jwt="<agent-token>"`, the recipi
 1. Parse the JWT and extract the JOSE header
 2. Verify `typ` is `"agent+jwt"`
 3. Extract `kid` from the JOSE header
-4. Extract `iss` (agent_id) from the payload
+4. Extract `iss` (agent) from the payload
 5. Fetch the agent server's JWKS (from metadata at `iss`)
 6. Match the signing key by `kid`
 7. Verify the JWT signature using the matched public key
 8. Verify the `exp` claim (current time **MUST** be less than expiration)
-9. Verify the `iat` claim (token **MUST NOT** be issued in the future)
-10. Verify the `sub` claim is present (agent delegate identifier)
+9. Verify the `sub` claim is present (agent delegate identifier)
+10. If `aud` claim is present, verify the recipient's identifier is included in the audience
 11. Extract the public key from `cnf.jwk`
 12. Verify that the HTTPSig request signature was created with the key from `cnf.jwk`
 
@@ -479,7 +556,7 @@ Auth tokens are proof-of-possession JWTs issued by auth servers that authorize a
 ### 6.1. Purpose
 
 Auth tokens bind together:
-- **Agent identity**: Which agent is authorized (via `agent_id`)
+- **Agent identity**: Which agent is authorized (via `agent`)
 - **Agent key**: The agent's signing key (via `cnf.jwk`)
 - **Resource**: What the agent can access (via `aud`)
 - **Authorization**: What the agent can do (via `scope` or other claims)
@@ -497,19 +574,18 @@ The JOSE header **MUST** include:
 ### 6.3. Required Claims
 
 - `iss` (REQUIRED): The auth server's HTTPS URL
-- `sub` (REQUIRED): The user identifier (if user authorization) or agent delegate identifier (if autonomous)
-- `agent_id` (REQUIRED): The agent's HTTPS URL (from agent identity)
+- `agent` (REQUIRED): The agent's HTTPS URL (from agent identity)
 - `aud` (REQUIRED): The resource identifier this token authorizes access to
 - `exp` (REQUIRED): Expiration time (Unix timestamp)
-- `iat` (REQUIRED): Issued at time (Unix timestamp)
 - `cnf` (REQUIRED): Confirmation claim object containing:
   - `jwk` (REQUIRED): JSON Web Key - the agent's public signing key (copied from agent token or agent JWKS)
 
 ### 6.4. Optional Claims
 
-- `scope` (OPTIONAL): Space-separated authorized scopes
-- `jti` (OPTIONAL): Unique token identifier
-- User identity claims (when user authorization was granted):
+- `agent_delegate` (OPTIONAL): Agent delegate identifier - present when the agent uses delegation (copied from agent token's `sub`)
+- `scope` (OPTIONAL): Space-separated authorized scopes (excludes identity scopes like `openid`, `profile`, `email` which control token claims rather than resource access)
+- **User identity claims** (when `openid` scope was requested):
+  - `sub` (REQUIRED if openid scope granted): User identifier
   - `name` (OPTIONAL): User's full name
   - `email` (OPTIONAL): User's email address
   - `email_verified` (OPTIONAL): Email verification status (boolean)
@@ -521,7 +597,7 @@ The JOSE header **MUST** include:
 ```json
 {
   "typ": "auth+jwt",
-  "alg": "ES256",
+  "alg": "EdDSA",
   "kid": "auth-server-key-1"
 }
 ```
@@ -530,20 +606,19 @@ The JOSE header **MUST** include:
 ```json
 {
   "iss": "https://auth.example",
-  "sub": "user-12345",
-  "agent_id": "https://agent.example",
+  "agent": "https://agent.example",
+  "agent_delegate": "mobile-app-install-xyz",
   "aud": "https://resource.example",
   "exp": 1730221200,
-  "iat": 1730217600,
   "scope": "data.read data.write",
   "cnf": {
     "jwk": {
-      "kty": "EC",
-      "crv": "P-256",
-      "x": "WKn-ZIGevcwGIyyrzFoZNBdaq9_TsqzGl96oc0CWuis",
-      "y": "y77t-RvAHRKTsSGdIYUfweuOvwrvDD-Q3Hv5J0fSKbE"
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
     }
   },
+  "sub": "user-12345",
   "name": "Alice Smith",
   "email": "alice@example.com",
   "email_verified": true
@@ -556,18 +631,16 @@ The JOSE header **MUST** include:
 ```json
 {
   "iss": "https://auth.example",
-  "sub": "spiffe://example.com/workload/api-service",
-  "agent_id": "https://agent.example",
+  "agent": "https://agent.example",
+  "agent_delegate": "spiffe://example.com/workload/api-service",
   "aud": "https://resource.example",
   "exp": 1730221200,
-  "iat": 1730217600,
   "scope": "data.read",
   "cnf": {
     "jwk": {
-      "kty": "EC",
-      "crv": "P-256",
-      "x": "WKn-ZIGevcwGIyyrzFoZNBdaq9_TsqzGl96oc0CWuis",
-      "y": "y77t-RvAHRKTsSGdIYUfweuOvwrvDD-Q3Hv5J0fSKbE"
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
     }
   }
 }
@@ -585,14 +658,13 @@ When an agent presents `Signature-Key: sig=jwt; jwt="<auth-token>"`, the resourc
 6. Match the signing key by `kid`
 7. Verify the JWT signature using the matched public key
 8. Verify the `exp` claim (current time **MUST** be less than expiration)
-9. Verify the `iat` claim (token **MUST NOT** be issued in the future)
-10. Verify the `iss` matches the trusted auth server
-11. Verify the `aud` matches the resource identifier being accessed
-12. Verify the `agent_id` claim is present
-13. Extract the public key from `cnf.jwk`
-14. Verify that the HTTPSig request signature was created with the key from `cnf.jwk`
-15. Verify the `scope` claim (if present) authorizes the requested operation
-16. Optionally enforce agent-specific policies based on `agent_id`
+9. Verify the `iss` matches the trusted auth server
+10. Verify the `aud` matches the resource identifier being accessed
+11. Verify the `agent` claim is present
+12. Extract the public key from `cnf.jwk`
+13. Verify that the HTTPSig request signature was created with the key from `cnf.jwk`
+14. Verify the `scope` claim (if present) authorizes the requested operation
+15. Optionally enforce policies based on `agent`, `agent_delegate`, or `sub` (user)
 
 ## 7. Metadata Documents
 
@@ -604,7 +676,7 @@ Agent servers **MUST** publish metadata at `/.well-known/agent-server`.
 
 **Required fields:**
 
-- `agent_id` (string): The agent's HTTPS URL
+- `agent` (string): The agent's HTTPS URL
 - `jwks_uri` (string): URL to the agent's JSON Web Key Set
 
 **Required fields if agent requests user authorization:**
@@ -619,7 +691,7 @@ Agent servers **MUST** publish metadata at `/.well-known/agent-server`.
 **Example:**
 ```json
 {
-  "agent_id": "https://agent.example",
+  "agent": "https://agent.example",
   "jwks_uri": "https://agent.example/jwks.json",
   "redirect_uris": [
     "https://agent.example/callback",
@@ -658,8 +730,8 @@ Auth servers **MUST** publish metadata at `/.well-known/auth-server`.
   "agent_token_endpoint": "https://auth.example/agent/token",
   "agent_auth_endpoint": "https://auth.example/agent/auth",
   "agent_signing_algs_supported": [
-    "rsa-pss-sha256",
-    "ecdsa-p256-sha256"
+    "ed25519",
+    "rsa-pss-sha256"
   ],
   "request_types_supported": [
     "auth",
@@ -701,8 +773,8 @@ Resources **MAY** publish metadata describing their authorization requirements. 
     "data.write": "Create and modify your data records"
   },
   "agent_signing_algs_supported": [
-    "rsa-pss-sha256",
-    "ecdsa-p256-sha256"
+    "eddsa-ed25519",
+    "rsa-pss-sha256"
   ]
 }
 ```
@@ -721,7 +793,7 @@ GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@target-uri");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=wk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
 
 **Example identified request (agent delegate):**
@@ -860,7 +932,247 @@ https://agent.example/callback?code=AUTH_CODE_123&state=af0ifjsldkj
 
 Agents **MUST** verify that the `Redirect-Origin` header (if present) matches the expected auth server origin. See the [Redirect Headers specification](https://github.com/dickhardt/redirect-headers) for complete details on header usage and security considerations.
 
-### 8.6. Auth Token Request
+### 8.5.1. Resources Acting as Agents
+
+Resources often need to act as agents themselves to access downstream resources. For example, an API gateway may need to call backend services, or a data aggregation service may need to access multiple data sources to fulfill a request.
+
+When a resource needs to access a downstream resource, it has two options:
+
+1. **Autonomous access (Token Exchange)**: If the resource can acquire authorization autonomously based on its identity or delegated authorization, it uses token exchange (Section 8.7)
+
+2. **User interaction required**: If the downstream resource requires user consent or authentication that the resource cannot provide directly, the resource initiates a user interaction flow (Section 8.6)
+
+The choice depends on the authorization requirements of the downstream resource and the authorization already granted in the original request.
+
+### 8.6. Resource-Initiated Authorization with User Interaction
+
+When a resource needs user interaction to authorize access (e.g., consent or authentication), but the resource cannot interact directly with the user, the resource returns a `user_interaction` parameter directing the agent to facilitate the interaction.
+
+**Agent-Auth response:**
+```http
+HTTP/1.1 401 Unauthorized
+Agent-Auth: httpsig; user_interaction="https://resource-r.example/auth-flow?session=xyz789&request=abc"; resource="https://resource-r2.example"; auth_server="https://auth2.example"
+```
+
+**Parameters:**
+- `user_interaction` (string): URL at the resource where the agent should direct the user
+- `resource`: The downstream resource identifier
+- `auth_server`: The authorization server for the downstream resource
+
+**Flow:**
+
+1. **Agent receives challenge**: The agent extracts the `user_interaction` URL from the Agent-Auth header
+
+2. **Agent redirects user**: The agent redirects the user to the `user_interaction` URL, appending a `return_url` parameter:
+   ```http
+   HTTP/1.1 303 See Other
+   Location: https://resource-r.example/auth-flow?session=xyz789&request=abc&return_url=https://agent-a.example/callback
+   ```
+
+3. **Resource interacts with user**: The resource hosts the interaction endpoint and:
+   - Validates the request context (session parameter)
+   - Redirects the user to the auth server with the resource's identity
+   - Receives authorization from the auth server
+   - Stores the authorization result keyed by the session
+
+4. **User returns to agent**: The resource redirects the user back to the `return_url` provided by the agent
+
+5. **Agent retries request**: The agent makes the original request again with the same session context. The resource now has authorization and can process the request.
+
+**Security considerations:**
+- Resources MUST validate that `return_url` uses HTTPS unless in development environments
+- Agents MUST NOT include sensitive data in the `return_url` query parameters
+- Resources MUST expire session state after reasonable timeout and failed attempts
+
+### 8.7. Token Exchange and Chaining
+
+Token exchange enables authorization chains where one resource acts as an agent to access downstream resources. When a resource needs to call another resource to fulfill a request, it exchanges the auth token it received for a new auth token bound to its own key.
+
+#### 8.7.1. Exchange Claim
+
+Auth tokens MAY include an `exchange` claim indicating the token holder is authorized to exchange the token for downstream access.
+
+**Example auth token with exchange:**
+```json
+{
+  "iss": "https://auth.example",
+  "agent": "https://agent-a.example",
+  "aud": "https://resource-r.example",
+  "sub": "user-12345",
+  "scope": "data.read data.write",
+  "exchange": {
+    "resource": "https://resource-r2.example",
+    "auth_server": "https://auth2.example",
+    "scope": "data.read"
+  },
+  "cnf": {
+    "jwk": { /* Agent A's public key */ }
+  }
+}
+```
+
+**Exchange parameters:**
+- `resource` (REQUIRED): The downstream resource identifier
+- `auth_server` (REQUIRED): The authorization server for the downstream resource
+- `scope` (REQUIRED if no auth_request): Space-separated scopes for downstream access
+- `auth_request` (OPTIONAL): URL to fetch full authorization request details
+
+If `auth_request` is present, it is authoritative for downstream authorization details including scope and potential nested exchange claims.
+
+#### 8.7.2. Exchange Flow
+
+**Step 1: Resource requests token exchange**
+
+Resource R makes an HTTPSig-authenticated request to the downstream auth server:
+
+```http
+POST /agent/exchange
+Host: auth2.example
+Signature-Key: sig=jwks; id="https://resource-r.example"; kid="key-1"
+Content-Type: application/x-www-form-urlencoded
+
+subject_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF1dGgrand0Ii...
+```
+
+**Parameters:**
+- `subject_token` (REQUIRED): The auth token received from the upstream agent
+
+The resource's identity is authenticated via HTTP Message Signatures. The `subject_token` contains the `exchange` parameters authorizing this exchange.
+
+**Step 2: Auth server validates and issues new token**
+
+The downstream auth server:
+
+1. Validates the HTTPSig request signature (authenticates Resource R)
+2. Parses and validates the `subject_token`:
+   - Verifies JWT signature from the issuing auth server
+   - Validates expiration, audience, and claims
+   - Extracts the `exchange` claim
+3. Validates the exchange is authorized:
+   - `exchange.resource` matches a resource this auth server governs
+   - `exchange.auth_server` matches this auth server's identifier
+   - The presenter (Resource R from HTTPSig) matches `subject_token.aud`
+4. Determines if the issuing auth server is trusted (federation policy)
+5. Issues a new auth token bound to Resource R's key
+
+**Example issued token:**
+```json
+{
+  "iss": "https://auth2.example",
+  "agent": "https://resource-r.example",
+  "aud": "https://resource-r2.example",
+  "sub": "user-12345",
+  "scope": "data.read",
+  "act": {
+    "agent": "https://agent-a.example"
+  },
+  "cnf": {
+    "jwk": { /* Resource R's public key */ }
+  }
+}
+```
+
+**Key properties:**
+- `agent`: Resource R (the exchange requester)
+- `aud`: The downstream resource from `exchange.resource`
+- `sub`: Preserved from original token (maintains user context)
+- `act`: Contains the previous agent in the chain
+- `cnf.jwk`: Resource R's key (extracted from HTTPSig or agent token)
+
+#### 8.7.3. Nested Exchange Chains
+
+Auth tokens issued during exchange MAY themselves contain an `exchange` claim, enabling multi-level chains. Each token in the chain is bound to the current agent's key and preserves the authorization chain via nested `act` claims.
+
+**Example three-level chain:**
+
+Token 1 (Agent A → Resource R):
+```json
+{
+  "agent": "https://agent-a.example",
+  "aud": "https://resource-r.example",
+  "exchange": {
+    "resource": "https://resource-r2.example",
+    "auth_server": "https://auth2.example",
+    "scope": "data.read"
+  }
+}
+```
+
+Token 2 (Resource R → Resource R2):
+```json
+{
+  "agent": "https://resource-r.example",
+  "aud": "https://resource-r2.example",
+  "act": {
+    "agent": "https://agent-a.example"
+  },
+  "exchange": {
+    "resource": "https://resource-r3.example",
+    "auth_server": "https://auth3.example",
+    "scope": "data.read"
+  }
+}
+```
+
+Token 3 (Resource R2 → Resource R3):
+```json
+{
+  "agent": "https://resource-r2.example",
+  "aud": "https://resource-r3.example",
+  "act": {
+    "agent": "https://resource-r.example",
+    "act": {
+      "agent": "https://agent-a.example"
+    }
+  }
+}
+```
+
+**Privacy property:** Each party only sees one hop ahead. Resource R knows it will access R2, but does not know that R2 will access R3 unless R2's token is disclosed.
+
+#### 8.7.4. Cross-Auth-Server Exchange
+
+When the downstream resource uses a different authorization server than the original request, the exchange crosses auth server boundaries. The downstream auth server MUST decide whether to trust tokens from the upstream auth server through pre-configured trust, federation protocols, or dynamic validation.
+
+The downstream auth server MUST NOT require user interaction during exchange, as user consent was obtained by the original auth server. The `sub` claim MUST be preserved across auth server boundaries to maintain user identity context through the chain.
+
+#### 8.7.5. Authorization Request with Exchange
+
+When initiating authorization that includes exchange, the authorization request object includes the `exchange` property:
+
+```json
+{
+  "resource": "https://resource-r.example",
+  "scope": "data.read data.write",
+  "exchange": {
+    "resource": "https://resource-r2.example",
+    "auth_server": "https://auth2.example",
+    "auth_request": "https://auth2.example/req/abc456"
+  }
+}
+```
+
+When user authorization is required, the auth server MUST present the complete exchange chain to the user. The auth server recursively fetches `auth_request` URLs to build the full chain for consent display.
+
+**Example consent display:**
+```
+Agent A requests access to:
+├─ Resource R (data.read data.write)
+│  └─ which will access Resource R2 (data.read)
+│     └─ which will access Resource R3 (data.read)
+```
+
+User consent applies to the entire chain. Subsequent exchanges occur without additional user interaction.
+
+#### 8.7.6. Multiple Downstream Resources
+
+If a resource needs to access multiple downstream resources, it MUST perform separate exchanges for each. Auth tokens contain at most one `exchange` claim.
+
+#### 8.7.7. Refresh Tokens with Exchange
+
+When an auth server issues a token via exchange, it MAY also issue a refresh token bound to the resource's identity. This enables the resource to maintain long-lived access to the downstream resource independently of the original agent's session.
+
+### 8.8. Auth Token Request
 
 The agent exchanges the authorization code for an auth token by making a signed request to the `agent_token_endpoint` with `request_type=code`.
 
@@ -894,7 +1206,7 @@ Content-Type: application/json
 }
 ```
 
-### 8.7. Auth Token Refresh
+### 8.9. Auth Token Refresh
 
 When the auth token expires, the agent requests a new token using the refresh token by making a signed request to the `agent_token_endpoint` with `request_type=refresh`.
 
@@ -929,7 +1241,7 @@ Content-Type: application/json
 
 > **Note:** A new `refresh_token` is not included because the existing refresh token remains valid. In AAuth, every refresh request is cryptographically signed and the refresh token is bound to the agent's instance identifier, eliminating the security rationale for rotation.
 
-### 8.8. Authorized Resource Access
+### 8.10. Authorized Resource Access
 
 The agent makes a signed request to the resource with the auth token.
 
@@ -943,7 +1255,7 @@ Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
 The resource validates the auth token and signature, then returns the requested data if authorized.
 
-### 8.9. Future Request Types
+### 8.11. Future Request Types
 
 The following `request_type` values are reserved for future work and are not defined in this version of the specification:
 
@@ -963,134 +1275,31 @@ The following `request_type` values are reserved for future work and are not def
 
 Auth servers **MAY** advertise supported request types in metadata using the `request_types_supported` field.
 
-## 9. Agent-Auth Response Header
-
-Resources use the `Agent-Auth` response header (using HTTP structured fields per RFC 8941) to indicate authentication and authorization requirements.
-
-### 9.1. Signature Required
-
-Indicates that HTTP Message Signing is required. Any signature type is acceptable (wk, jwks, or jwt).
-
-```
-Agent-Auth: httpsig
-```
-
-**Agent response:** Include `Signature-Key` header with any scheme (sig=wk, sig=jwks, or sig=jwt).
-
-### 9.2. Identity Required
-
-Indicates that agent identity is required. Agent must use either published JWKS or an agent token.
-
-```
-Agent-Auth: httpsig; identity=?1
-```
-
-**Agent response:** Include `Signature-Key` header with:
-- `sig=jwks; id="..."; kid="..."` (agent server), or
-- `sig=jwt; jwt="<agent-token>"` (agent instance)
-
-### 9.3. Authorization Required
-
-Indicates that authorization from an auth server is required. Includes the resource identifier and access requirements.
-
-**With scope:**
-```
-Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="data.read data.write"
-```
-
-**With rich authorization request:**
-```
-Agent-Auth: httpsig; auth-token; resource="https://resource.example"; request_uri="https://resource.example/authz/req/3f5a"
-```
-
-**Agent response:**
-1. Request authorization from the auth server using the provided resource and scope/request_uri
-2. Obtain auth token
-3. Retry request with `Signature-Key: sig=jwt; jwt="<auth-token>"`
-
-### 9.4. Status Codes and Progressive Rate Limiting
-
-While `Agent-Auth` is typically used with **401 Unauthorized**, resources **MAY** use it with other status codes to enable progressive rate limiting and abuse mitigation based on authentication level.
-
-**401 Unauthorized** - Authentication required
-
-Used when the current authentication level is insufficient:
-
-```http
-HTTP/1.1 401 Unauthorized
-Agent-Auth: httpsig; identity=?1
-```
-
-**429 Too Many Requests** - Rate limit exceeded
-
-Used when the agent has exceeded rate limits for their current authentication level, but a higher authentication level would have higher limits:
-
-```http
-HTTP/1.1 429 Too Many Requests
-Agent-Auth: httpsig; identity=?1
-Retry-After: 60
-```
-
-**Example progressive rate limiting:**
-- Pseudonymous (sig=wk): 10 requests/minute
-- Identified (sig=jwks or sig=jwt with agent-token): 100 requests/minute
-- Authorized (sig=jwt with auth-token): 1000 requests/minute
-
-**403 Forbidden** - Access denied for current authentication level
-
-Used when the agent is blocked or access is denied at the current authentication level, but a higher level might be accepted:
-
-```http
-HTTP/1.1 403 Forbidden
-Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="data.read"
-```
-
-This allows resources to block abusive pseudonymous traffic while still accepting identified or authorized requests from the same origin.
-
-### 9.5. Parameters
-
-- `httpsig`: Authentication scheme (REQUIRED for all responses)
-- `identity`: Boolean parameter (?1 = true) indicating agent identity is required
-- `auth-token`: Bare token indicating authorization is required
-- `resource`: String parameter with the resource identifier for authorization
-- `scope`: String parameter with space-separated scopes
-- `request_uri`: String parameter with URL to fetch rich authorization requirements
-
-### 9.6. Compatibility with WWW-Authenticate
-
-Resources **MAY** include both `Agent-Auth` and `WWW-Authenticate` headers to support multiple authentication protocols:
-
-```http
-HTTP/1.1 401 Unauthorized
-Agent-Auth: httpsig; auth-token; resource="https://resource.example"; scope="data.read"
-WWW-Authenticate: Bearer realm="resource.example", scope="data.read"
-```
-
-## 10. HTTP Message Signing Profile
+## 9. HTTP Message Signing Profile
 
 AAuth uses HTTP Message Signing (HTTPSig) as defined in RFC 9421. This section provides a profile for AAuth implementations.
 
-### 10.1. Signature-Key Header
+### 9.1. Signature-Key Header
 
 The `Signature-Key` header provides the keying material required to verify the HTTP signature. It uses the format defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
 
 **Supported schemes:**
 
-- `sig=wk` - Inline Web Key (pseudonymous)
-- `sig=jwks` - Key discovery via agent identifier
-- `sig=jwt` - JWT containing confirmation key (agent-token or auth-token)
+- `sig=hwk` - Header Web Key (pseudonymous, no identity)
+- `sig=jwks` - Identified signer (explicit identity with id + optional metadata)
+- `sig=x509` - X.509 certificate chain (explicit identity via PKI)
+- `sig=jwt` - JWT containing confirmation key (explicit identity, agent-token or auth-token)
 
 The signature label in `Signature-Key` **MUST** match the label used in `Signature-Input` and `Signature`.
 
-### 10.2. Signature Algorithm Requirements
+### 9.2. Signature Algorithm Requirements
 
-Implementations **MUST** support at least one of:
-- `rsa-pss-sha256` (RSA PSS using SHA-256)
-- `ecdsa-p256-sha256` (ECDSA using P-256 and SHA-256)
+Implementations **MUST** support:
+- `ed25519` (EdDSA using Curve25519)
 
-Implementations **SHOULD** support both algorithms for maximum interoperability.
+Implementations **MAY** support additional algorithms from the HTTP Signature Algorithms Registry established by RFC 9421.
 
-### 10.3. Covered Components
+### 9.3. Covered Components
 
 Signatures **MUST** cover the following HTTP message components:
 
@@ -1105,22 +1314,22 @@ Signatures **MUST** cover the following HTTP message components:
 **For requests with Signature-Key header:**
 - `signature-key`: The Signature-Key header value
 
-### 10.4. Signature Parameters
+### 9.4. Signature Parameters
 
 The `Signature-Input` header **MUST** include:
 - `created`: Signature creation timestamp
 
 The `created` timestamp **MUST NOT** be more than 60 seconds in the past or future to prevent replay attacks.
 
-### 10.5. Example Signatures
+### 9.5. Example Signatures
 
-**Pseudonymous request (sig=wk):**
+**Pseudonymous request (sig=hwk):**
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@target-uri");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=wk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
 
 **Identified request (sig=jwks):**
@@ -1163,49 +1372,61 @@ Signature-Key: sig=jwt; jwt="eyJhbGc..."
 resource=https://resource.example&scope=data.read
 ```
 
-### 10.6. Key Discovery and Verification
+### 9.6. Key Discovery and Verification
 
-**For sig=wk:**
+This section describes how to obtain the public key for verifying HTTP Message Signatures based on the `Signature-Key` header scheme.
+
+**For sig=hwk (Pseudonymous):**
 1. Extract key parameters directly from the Signature-Key header
 2. Reconstruct the public key
-3. Verify the signature
+3. Verify the HTTPSig signature
 
-**For sig=jwks:**
-1. Extract `id` (agent identifier) and `kid` (key ID) from Signature-Key header
-2. Fetch agent metadata from `{id}/.well-known/agent-server`
-3. Fetch JWKS from the `jwks_uri` in metadata
+**For sig=jwks (Identified Signer):**
+1. Extract `id`, optional `well-known`, and `kid` from Signature-Key header
+2. If `well-known` is present:
+   - Fetch metadata from `{id}/.well-known/{well-known}`
+   - Extract `jwks_uri` from metadata
+   - Fetch JWKS from `jwks_uri`
+3. If `well-known` is absent:
+   - Fetch `{id}` directly as JWKS
 4. Match the key by `kid`
-5. Verify the signature using the matched public key
+5. Verify the HTTPSig signature using the matched public key
 
-**For sig=jwt:**
+**For sig=x509 (X.509 Certificate Chain):**
+1. Extract `x5u` (certificate URL) and `x5t` (certificate thumbprint) from Signature-Key header
+2. Check cache for certificate with matching `x5t` thumbprint
+3. If cached certificate found and still valid, skip to step 6
+4. Fetch the PEM file from the `x5u` URL
+5. Parse and validate the X.509 certificate chain:
+   - Verify chain of trust to a trusted root CA
+   - Check certificate validity (not expired, not revoked via CRL/OCSP)
+   - Validate certificate policies and constraints
+   - Verify `x5t` matches BASE64URL(SHA256(DER_bytes_of_leaf_certificate))
+6. Extract the public key from the end-entity certificate
+7. Verify the HTTPSig signature using the extracted public key
+8. Cache the certificate indexed by `x5t` for future requests
+
+**For sig=jwt (Agent Token or Auth Token):**
 1. Extract the JWT from the Signature-Key header
-2. Parse the JWT and extract `typ` from JOSE header
-3. If `typ` is `"agent+jwt"`:
-   - Extract `iss` from payload (agent identifier)
-   - Fetch agent server's JWKS
-   - Verify JWT signature
-   - Verify expiration and claims
-   - Extract public key from `cnf.jwk`
-4. If `typ` is `"auth+jwt"`:
-   - Extract `iss` from payload (auth server)
-   - Fetch auth server's JWKS
-   - Verify JWT signature
-   - Verify expiration and claims
-   - Extract public key from `cnf.jwk`
-5. Verify the HTTPSig signature using the key from `cnf.jwk`
+2. Parse the JWT and determine token type from `typ` in JOSE header
+3. Validate the JWT:
+   - If `typ` is `"agent+jwt"`: Follow validation steps in Section 5.7
+   - If `typ` is `"auth+jwt"`: Follow validation steps in Section 6.7
+4. Extract the public key from the JWT's `cnf.jwk` claim
+5. Verify the HTTPSig signature using the extracted public key
 
-### 10.7. Replay Prevention
+### 9.7. Replay Prevention
 
 While HTTPSig signatures include timestamps, applications **SHOULD** implement additional replay prevention:
 - Track recently seen `created` timestamps per agent
 - Reject requests with duplicate `created` values within the validity window
 - Use nonces for high-value operations
 
-## 11. Error Responses
+## 10. Error Responses
 
 AAuth reuses the OAuth 2.0 error response format and error codes (RFC 6749 Section 5.2) where applicable.
 
-### 11.1. Error Response Format
+### 10.1. Error Response Format
 
 Error responses **MUST** be returned with an appropriate HTTP status code (typically 400 or 401) and a JSON body:
 
@@ -1224,7 +1445,7 @@ Content-Type: application/json
 }
 ```
 
-### 11.2. OAuth 2.0 Error Codes
+### 10.2. OAuth 2.0 Error Codes
 
 - `invalid_request` - Malformed or missing required parameters
 - `invalid_token` - Agent token or auth token is invalid or expired
@@ -1233,7 +1454,7 @@ Content-Type: application/json
 - `unsupported_grant_type` - Grant type not supported
 - `invalid_scope` - Requested scope is invalid, unknown, or malformed
 
-### 11.3. AAuth-Specific Error Codes
+### 10.3. AAuth-Specific Error Codes
 
 - `invalid_signature` - HTTPSig signature validation failed
 - `invalid_agent_token` - Agent token validation failed
@@ -1252,7 +1473,7 @@ Content-Type: application/json
 }
 ```
 
-## 12. Security Model
+## 11. Security Model
 
 - All participants use **HTTP Message Signing** for message integrity and replay protection
 - **Agent tokens** and **auth tokens** are both **proof-of-possession** tokens
@@ -1260,17 +1481,17 @@ Content-Type: application/json
 - Agent server and auth server key rotation is achieved by updating the JWKS at each origin's `jwks_uri`
 - Agent delegates rotate their keys frequently (ephemeral keys at restart or persisted keys per policy) by obtaining new agent tokens
 - Refresh tokens are bound to:
-  - **Agent server**: `agent_id` only
-  - **Agent delegate**: `agent_id` + `sub` (agent delegate identifier)
+  - **Agent server**: agent identifier (`agent` claim) only
+  - **Agent delegate**: agent identifier (`agent` claim) + `sub` (agent delegate identifier)
 - Refresh tokens do not require rotation due to proof-of-possession binding and per-request signatures
 
 ---
 
-## 13. IANA Considerations
+## 12. IANA Considerations
 
 This specification registers the following identifiers in their respective IANA registries.
 
-### 13.1. Well-Known URI Registrations
+### 12.1. Well-Known URI Registrations
 
 **Registry:** Well-Known URIs (RFC 8615)
 
@@ -1284,7 +1505,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Specification document:** This specification, Section 7.2
 - **Related information:** Metadata document for AAuth authorization servers
 
-### 13.2. Media Type Registrations
+### 12.2. Media Type Registrations
 
 **Registry:** Media Types
 
@@ -1293,7 +1514,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Required parameters:** None
 - **Optional parameters:** None
 - **Encoding considerations:** Binary (JWT, base64url-encoded)
-- **Security considerations:** See Section 12 of this specification
+- **Security considerations:** See Section 11 of this specification
 - **Interoperability considerations:** None
 - **Published specification:** This specification, Section 5.2
 - **Applications that use this media type:** AAuth agent delegates
@@ -1308,7 +1529,7 @@ This specification registers the following identifiers in their respective IANA 
 - **Required parameters:** None
 - **Optional parameters:** None
 - **Encoding considerations:** Binary (JWT, base64url-encoded)
-- **Security considerations:** See Section 12 of this specification
+- **Security considerations:** See Section 11 of this specification
 - **Interoperability considerations:** None
 - **Published specification:** This specification, Section 6.2
 - **Applications that use this media type:** AAuth auth servers and resource servers
@@ -1318,16 +1539,16 @@ This specification registers the following identifiers in their respective IANA 
 - **Restrictions on usage:** None
 - **Change controller:** IETF
 
-### 13.3. HTTP Header Field Registrations
+### 12.3. HTTP Header Field Registrations
 
 **Registry:** HTTP Field Names (RFC 9110)
 
 **Field name:** `Agent-Auth`
 - **Status:** permanent
-- **Specification document:** This specification, Section 9
+- **Specification document:** This specification, Section 4
 - **Comments:** Response header indicating AAuth authentication and authorization requirements
 
-### 13.4. JSON Web Token Type Values
+### 12.4. JSON Web Token Type Values
 
 **Registry:** JSON Web Token (JWT) Type Values
 
@@ -1341,16 +1562,16 @@ This specification registers the following identifiers in their respective IANA 
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 6.2
 
-### 13.5. JSON Web Token Claims Registrations
+### 12.5. JSON Web Token Claims Registrations
 
 **Registry:** JSON Web Token Claims (RFC 7519)
 
-**Claim name:** `agent_id`
+**Claim name:** `agent`
 - **Claim description:** Agent identifier (HTTPS URL)
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 6.3
 
-### 13.6. AAuth Parameters Registry
+### 12.6. AAuth Parameters Registry
 
 **Registry:** AAuth Parameters (new registry)
 
@@ -1378,9 +1599,9 @@ This specification establishes a new IANA registry for AAuth protocol parameters
 - **Specification document:** This specification, Section 8.4
 - **Description:** AAuth authorization token (JWT)
 
-### 13.7. Error Codes
+### 12.7. Error Codes
 
-AAuth-specific error codes are defined in Section 11.3. These error codes extend the OAuth 2.0 error response framework for AAuth-specific validation failures including signature validation, agent token validation, and key binding verification.
+AAuth-specific error codes are defined in Section 10.3. These error codes extend the OAuth 2.0 error response framework for AAuth-specific validation failures including signature validation, agent token validation, and key binding verification.
 
 The registration of these error codes in an appropriate IANA registry is **to be determined** based on whether AAuth establishes its own error registry or extends an existing OAuth error registry.
 
@@ -1530,7 +1751,7 @@ Some AAuth capabilities don't map cleanly to OAuth's client-centric model:
 
 **Agent delegation:**
 - OAuth: client_id is static per client
-- AAuth: agent_id (server) + sub (per delegate instance) with key rotation
+- AAuth: agent (server) + sub (per delegate instance) with key rotation
 - OAuth extension attempt: Doesn't fit client credentials model
 
 **Unified auth:**
@@ -1541,7 +1762,7 @@ Some AAuth capabilities don't map cleanly to OAuth's client-centric model:
 #### OAuth Community Also Sees Value in HTTPS-Based Identity
 
 The OAuth community recognizes similar needs. The draft specification [Client ID Metadata Document](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/) proposes:
-- HTTPS URLs as client identifiers (like AAuth's agent_id)
+- HTTPS URLs as client identifiers (like AAuth's agent)
 - Fetching client metadata from that URL
 - Avoiding pre-registration overhead
 
@@ -1596,7 +1817,7 @@ AAuth builds upon OAuth 2.1 and OpenID Connect, reusing many core mechanisms whi
 | **Aspect** | **OAuth 2.1** | **AAuth 1.0** |
 |------------|---------------|---------------|
 | **Access Control** | User identity and scopes | Agent identity, user identity, scopes, and agent-specific policies |
-| **Token Format** | Opaque or JWT (RFC 9068) | Signed JWT with `cnf.jwk`, `agent_id`, and `typ` |
+| **Token Format** | Opaque or JWT (RFC 9068) | Signed JWT with `cnf.jwk`, `agent`, and `typ` |
 | **Token Security** | Bearer tokens (with optional DPoP) | Proof-of-possession only via HTTPSig |
 | **Client/Agent Identity** | Pre-registered `client_id` | HTTPS URL with self-published metadata |
 | **Client/Agent Registration** | Required | Optional; self-identification via HTTPS |
@@ -1610,7 +1831,7 @@ AAuth builds upon OAuth 2.1 and OpenID Connect, reusing many core mechanisms whi
 
 ### A.6. Access Control Based on Agent Identity
 
-AAuth enables resources to make access control decisions based on the verified identity of the calling agent (`agent_id`), in addition to traditional user identity and scope-based authorization.
+AAuth enables resources to make access control decisions based on the verified identity of the calling agent (the `agent` claim), in addition to traditional user identity and scope-based authorization.
 
 **Current Capabilities:**
 
@@ -1621,7 +1842,7 @@ AAuth enables resources to make access control decisions based on the verified i
 
 **Example authorization decision:**
 ```
-IF auth_token.agent_id == "https://trusted-agent.example"
+IF auth_token.agent == "https://trusted-agent.example"
    AND auth_token.scope contains "data.write"
    AND auth_token.sub == valid_user_id
 THEN allow access to sensitive resource
@@ -1647,7 +1868,7 @@ An existing OAuth 2.1 or OpenID Connect server can add AAuth support by implemen
 **HTTP Message Signing support:**
 - RFC 9421 implementation
 - Signature verification using keys from `Signature-Key` header
-- Support for `sig=wk`, `sig=jwks`, and `sig=jwt` schemes
+- Support for `sig=hwk`, `sig=jwks`, `sig=x509`, and `sig=jwt` schemes
 
 **Agent token validation:**
 - Fetch and validate agent metadata
@@ -1655,10 +1876,10 @@ An existing OAuth 2.1 or OpenID Connect server can add AAuth support by implemen
 - Validate agent identity binding
 
 **Token issuance changes:**
-- Include `agent_id` in auth tokens
+- Include `agent` claim in auth tokens
 - Include `cnf.jwk` for proof-of-possession
 - Add `typ` header to distinguish token types
-- Bind refresh tokens to `agent_id` + `sub` (agent delegate identifier)
+- Bind refresh tokens to agent identifier (`agent` claim) + `sub` (agent delegate identifier)
 
 **Policy engine updates:**
 - Evaluate agent identity in authorization decisions
@@ -1680,7 +1901,7 @@ The specific mechanism for agent token acquisition is **out of scope** for this 
 1. **Key generation**: Agent delegate generates or uses an existing key pair
 2. **Authentication**: Agent delegate proves its identity or authorization to the agent server
 3. **Token issuance**: Agent server issues an agent token containing:
-   - `iss`: Agent server's HTTPS URL (the `agent_id`)
+   - `iss`: Agent server's HTTPS URL (the agent identifier)
    - `sub`: Agent delegate identifier (persists across restarts and key rotations)
    - `cnf.jwk`: Agent delegate's public key
    - `exp`: Short expiration (minutes to hours for frequent rotation)
@@ -1780,7 +2001,7 @@ Android provides Play Integrity API (successor to SafetyNet), allowing apps to p
 
 - **Installation-level identity**: Each app installation has a unique `sub` that persists across restarts
 - **Platform attestation**: Leverage OS-provided proof of app authenticity
-- **Refresh token continuity**: When the app rotates keys, refresh tokens remain valid (bound to `agent_id` + `sub`)
+- **Refresh token continuity**: When the app rotates keys, refresh tokens remain valid (bound to agent identifier + `sub`)
 - **Security**: Private keys protected by platform keystores (iOS Secure Enclave, Android Keystore)
 
 ### C.4. Desktop and CLI Applications
@@ -1865,7 +2086,7 @@ Browser-based applications act as agent delegates, with each browser session obt
 **Technical capabilities:**
 
 Modern browsers support the cryptographic operations required for HTTPSig through the Web Crypto API:
-- RSA-PSS with SHA-256 and ECDSA with P-256 and SHA-256
+- Ed25519 and RSA-PSS with SHA-256
 - Ephemeral key pair generation
 - Non-extractable keys (Web Crypto flag prevents key export)
 - Custom HTTP headers (`Content-Digest`, `Signature-Key`, `Signature`, `Signature-Input`)
@@ -1880,7 +2101,7 @@ const signer = (function() {
     const allowedOrigins = ['https://resource.example', 'https://auth.example'];
 
     crypto.subtle.generateKey(
-        { name: "ECDSA", namedCurve: "P-256" },
+        { name: "Ed25519" },
         false, // non-extractable
         ["sign"]
     ).then(keyPair => {
@@ -1927,7 +2148,7 @@ Access-Control-Max-Age: 86400
 
 ### B.1. Overview
 
-Long-tail web applications—WordPress, Drupal, Joomla, and similar platforms—often run on shared or self-hosted environments without access to hardware security modules or secrets management systems. These applications act as **agent servers** with their own `agent_id` and published JWKS, but face key management challenges:
+Long-tail web applications—WordPress, Drupal, Joomla, and similar platforms—often run on shared or self-hosted environments without access to hardware security modules or secrets management systems. These applications act as **agent servers** with their own agent identifier and published JWKS, but face key management challenges:
 
 - Database backups are frequent and widely distributed
 - Developers export database dumps for local testing
@@ -2025,7 +2246,7 @@ $signer = (function() {
 
 ### B.6. Comparison to Agent Delegates
 
-Agent servers with ephemeral keys (this pattern) have their own `agent_id` and publish their own JWKS using `sig=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `sig=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
+Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `sig=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `sig=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
 
 ---
 
@@ -2059,7 +2280,7 @@ Agent-Auth: httpsig
 The website simply requires "sign your requests" without requiring "tell us who you are." Agents respond with pseudonymous signatures:
 
 ```http
-Signature-Key: sig=wk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
 
 **Benefits:**
@@ -2106,10 +2327,10 @@ This flexibility addresses the charter's goal of letting websites choose their p
 
 **How AAuth addresses this:**
 
-AAuth provides bot identity through `agent_id` (HTTPS URL) with published JWKS:
+AAuth provides bot identity through agent identifier (HTTPS URL) with published JWKS:
 
 ```http
-Signature-Key: sig=jwks; id="https://crawler.example"; kid="key-1"
+Signature-Key: sig=jwks; id="https://crawler.example"; well-known="agent-server"; kid="key-1"
 ```
 
 **Website verification:**
@@ -2171,36 +2392,14 @@ Websites verify the agent token signature using the agent server's published JWK
 
 **How AAuth addresses this:**
 
-AAuth's progressive authentication (Section 9.4) enables tiered abuse mitigation:
+AAuth's progressive authentication levels (see Section 4.4 for technical details) enable tiered abuse mitigation. Websites can apply different rate limits based on authentication level—from unsigned requests (strictest limits), to pseudonymous signed requests (moderate limits with cryptographic proof), to identified bots (bot-specific policies and allowlisting), to authorized access (fine-grained control with highest limits).
 
-**Tier 1: Unsigned requests**
-- Strictest rate limits
-- Assume potential abuse
-- May block entirely
-
-**Tier 2: Pseudonymous signed requests (sig=wk)**
-- Moderate rate limits per signing key
-- Cryptographic proof of distinct sources
-- Replay prevention via timestamps
-- Can track reputation per key
-
-**Tier 3: Identified bots (sig=jwks or sig=jwt)**
-- Bot-specific rate limits
-- Allowlist trusted crawlers (Googlebot, Bingbot)
-- Block known-bad bots
-- Higher limits for verified legitimate traffic
-
-**Tier 4: Authorized access (auth-token)**
-- Agent requests auth token from auth server (may be autonomous or with user consent)
-- Fine-grained access control and policy enforcement
-- Highest rate limits and privileges
-
-**Example abuse mitigation flow:**
+**Example charter-compliant flow:**
 
 ```http
 # New agent: Pseudonymous signature, low rate limit (10 req/min)
 GET /api/data
-Signature-Key: sig=wk; kty="OKP"; crv="Ed25519"; x="..."
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="..."
 → 200 OK (within limit)
 
 # Repeated good behavior builds trust
@@ -2243,7 +2442,7 @@ While fulfilling the web-bot-auth charter goals, AAuth extends to broader agent 
 
 1. **Flexible website policies** - Websites can require signatures without identity (abuse management), identity (bot allowlisting), or authorization (autonomous agents or user data access)
 
-2. **Bot identity with delegation** - Crawlers prove identity using `agent_id` and published JWKS, with agent tokens enabling massive scale through distributed instances with ephemeral keys
+2. **Bot identity with delegation** - Crawlers prove identity using agent identifier and published JWKS, with agent tokens enabling massive scale through distributed instances with ephemeral keys
 
 3. **Abuse mitigation** - Progressive rate limiting based on authentication level (unsigned → pseudonymous → identified → authorized)
 
@@ -2253,7 +2452,239 @@ While fulfilling the web-bot-auth charter goals, AAuth extends to broader agent 
 - Providing a unified protocol for both bot identity and user authorization
 - Enabling interactive agents (browser, mobile, desktop) alongside autonomous bots
 
-The Signature-Key header's three schemes (sig=wk, sig=jwks, sig=jwt) provide the flexibility to address both the web-bot-auth charter's requirements and the broader agent authorization scenarios that AAuth explores.
+The Signature-Key header's four schemes (sig=hwk, sig=jwks, sig=x509, sig=jwt) provide the flexibility to address both the web-bot-auth charter's requirements and the broader agent authorization scenarios that AAuth explores.
+
+---
+
+## Appendix E: Redirect Headers for Enhanced Security
+
+This appendix describes how the Redirect-Query and Redirect-Origin headers could be used to enhance the security of redirect flows in AAuth, particularly for resource-initiated authorization with user interaction (Section 8.6).
+
+**Status:** Redirect Headers is another proposal in this suite. See: [Redirect Headers](https://github.com/DickHardt/redirect-headers)
+
+**Applicability:** These headers would provide additional security for scenarios where resources act as agents and require user interaction to acquire downstream authorization. When a resource cannot interact directly with users, it returns a `user_interaction` URL to the agent, which then redirects the user through the resource's interaction endpoint. Redirect headers would provide browser-mediated assurance that redirects have not been hijacked.
+
+---
+
+### E.1. Overview
+
+Resources often need to act as agents to access downstream resources. When the downstream resource requires user interaction (consent or authentication), but the resource has no direct user interface, the resource must coordinate with the agent to facilitate the interaction. This creates a redirect chain:
+
+1. Agent redirects user to resource's interaction endpoint (with `return_url`)
+2. Resource redirects user to authorization server
+3. Authorization server redirects user back to resource
+4. Resource redirects user back to agent's `return_url`
+
+Redirect attacks occur when an attacker manipulates redirect URLs to send users to unintended destinations. The Redirect-Query, Redirect-Origin, and Redirect-Path headers would provide three security enhancements:
+
+1. **Query parameter integrity**: The Redirect-Query header would allow the destination to verify that query parameters were not modified during the redirect
+2. **Origin validation**: The Redirect-Origin header would allow the destination to validate that the redirect came from an expected origin
+3. **Path validation**: The Redirect-Path header would allow validation that redirect URLs use the expected path prefix
+
+---
+
+### E.2. How Redirect Headers Would Be Used
+
+When an agent redirects a user to a resource's interaction endpoint, the agent would include the Redirect-Query and optionally Redirect-Path headers.
+
+**Agent redirect:**
+```http
+HTTP/1.1 303 See Other
+Location: https://resource-r.example/auth-flow?session=xyz789&request=abc&return_url=https://agent-a.example/callback
+Redirect-Query: session=xyz789&request=abc&return_url=https%3A%2F%2Fagent-a.example%2Fcallback
+Redirect-Path: /callback
+```
+
+**Properties:**
+- Redirect-Query contains the complete query string with all parameters (URL-encoded)
+- Redirect-Path specifies the expected path prefix for the return_url
+- User agents supporting these headers would include a Redirect-Origin header in the subsequent request
+- User agents would validate that the current path begins with any Redirect-Path provided
+
+**Resource would receive:**
+```http
+GET /auth-flow?session=xyz789&request=abc&return_url=https://agent-a.example/callback HTTP/1.1
+Host: resource-r.example
+Redirect-Origin: https://agent-a.example
+Redirect-Path: /callback
+Redirect-Query: session=xyz789&request=abc&return_url=https%3A%2F%2Fagent-a.example%2Fcallback
+```
+
+**Validation:**
+1. The resource extracts the `return_url` parameter from Redirect-Query (or falls back to query string)
+2. If Redirect-Origin is present, validate that `return_url` starts with the Redirect-Origin value
+3. If Redirect-Path is present, validate that `return_url` path starts with the Redirect-Path value
+4. Combined: `return_url` MUST start with `Redirect-Origin` + `Redirect-Path`
+5. If validation fails, reject the request with an error
+
+**Security benefit:** The Redirect-Origin and Redirect-Path headers would be set by the user agent and cannot be spoofed by scripts or modified in transit. Even if an attacker modified the Location header or query parameters, these browser-controlled headers would reflect the true origin and path of the redirect, preventing redirect hijacking.
+
+---
+
+### E.3. Resource Redirects with Redirect-Query
+
+When a resource (acting as an agent) redirects a user back to the original agent's `return_url`, the resource would also include the Redirect-Query header.
+
+**Resource redirect:**
+```http
+HTTP/1.1 303 See Other
+Location: https://agent-a.example/callback?session=xyz789&status=complete
+Redirect-Query: session=xyz789&status=complete
+```
+
+**Agent would receive:**
+```http
+GET /callback?session=xyz789&status=complete HTTP/1.1
+Host: agent-a.example
+Redirect-Origin: https://resource-r.example
+```
+
+The agent could validate that the redirect came from the expected resource by checking that Redirect-Origin matches the resource's origin.
+
+---
+
+### E.4. Authorization Server Redirects
+
+When resources (acting as agents) redirect users to authorization servers and back, Redirect-Query headers would provide additional security at each hop in the chain.
+
+**Resource to Auth Server:**
+```http
+HTTP/1.1 303 See Other
+Location: https://auth2.example/authorize?request=def456&redirect_uri=https://resource-r.example/callback
+Redirect-Query: request=def456&redirect_uri=https%3A%2F%2Fresource-r.example%2Fcallback
+```
+
+**Auth Server to Resource:**
+```http
+HTTP/1.1 303 See Other
+Location: https://resource-r.example/callback?code=abc123
+Redirect-Query: code=abc123
+```
+
+At each step, the receiving party could validate the Redirect-Origin matches the expected sender.
+
+---
+
+### E.5. Implementation Considerations
+
+**Feature detection:** Implementations would not be able to reliably detect whether a user agent supports Redirect-Query headers before sending a redirect. Therefore, implementations would need to gracefully handle both supporting and non-supporting user agents.
+
+**Graceful degradation:** When Redirect-Origin is not present in a request, implementations would fall back to standard validation:
+- Validate `return_url` uses HTTPS
+- Validate `return_url` matches expected patterns or allowlists
+- Enforce session timeouts and nonce validation
+
+**When to use:** If adopted, implementations should include Redirect-Query headers in all redirect responses where query parameters contain security-sensitive information such as:
+- `return_url` parameters
+- Session identifiers
+- Authorization codes
+- State parameters
+
+**Security improvement:** While not a replacement for existing security measures, Redirect-Query headers would provide defense-in-depth by making certain classes of redirect attacks significantly more difficult, particularly in scenarios where resources act as agents requiring user interaction.
+
+---
+
+### E.6. Example: Complete Flow with Redirect Headers
+
+This example shows how Redirect headers would secure a flow where a resource acts as an agent and requires user interaction to acquire downstream authorization.
+
+**Step 1: Agent redirects user to resource**
+```http
+HTTP/1.1 303 See Other
+Location: https://resource-r.example/auth-flow?session=xyz789&return_url=https://agent-a.example/callback
+Redirect-Query: session=xyz789&return_url=https%3A%2F%2Fagent-a.example%2Fcallback
+Redirect-Path: /callback
+```
+
+**Step 2: User agent requests resource with origin and path validation**
+```http
+GET /auth-flow?session=xyz789&return_url=https://agent-a.example/callback HTTP/1.1
+Host: resource-r.example
+Redirect-Origin: https://agent-a.example
+Redirect-Path: /callback
+Redirect-Query: session=xyz789&return_url=https%3A%2F%2Fagent-a.example%2Fcallback
+```
+
+Resource validates:
+- `return_url` starts with `https://agent-a.example` (from Redirect-Origin)
+- `return_url` path starts with `/callback` (from Redirect-Path)
+
+**Step 3: Resource (acting as agent) redirects user to auth server**
+```http
+HTTP/1.1 303 See Other
+Location: https://auth2.example/authorize?request=def456&redirect_uri=https://resource-r.example/callback
+Redirect-Query: request=def456&redirect_uri=https%3A%2F%2Fresource-r.example%2Fcallback
+Redirect-Path: /callback
+```
+
+**Step 4: Auth server receives with validation**
+```http
+GET /authorize?request=def456&redirect_uri=https://resource-r.example/callback HTTP/1.1
+Host: auth2.example
+Redirect-Origin: https://resource-r.example
+Redirect-Path: /callback
+Redirect-Query: request=def456&redirect_uri=https%3A%2F%2Fresource-r.example%2Fcallback
+```
+
+Auth server validates:
+- `redirect_uri` starts with Redirect-Origin + Redirect-Path
+
+**Step 5: Auth server redirects back to resource**
+```http
+HTTP/1.1 303 See Other
+Location: https://resource-r.example/callback?code=abc123
+Redirect-Query: code=abc123
+```
+
+**Step 6: Resource receives authorization**
+```http
+GET /callback?code=abc123 HTTP/1.1
+Host: resource-r.example
+Redirect-Origin: https://auth2.example
+Redirect-Query: code=abc123
+```
+
+Resource validates: Redirect-Origin matches expected auth server
+
+**Step 7: Resource redirects user back to agent**
+```http
+HTTP/1.1 303 See Other
+Location: https://agent-a.example/callback?session=xyz789
+Redirect-Query: session=xyz789
+```
+
+**Step 8: Agent receives user back with validation**
+```http
+GET /callback?session=xyz789 HTTP/1.1
+Host: agent-a.example
+Redirect-Origin: https://resource-r.example
+Redirect-Query: session=xyz789
+```
+
+Agent validates: Redirect-Origin matches expected resource origin
+
+At each hop in this chain, the Redirect-Origin header would provide browser-mediated origin validation, significantly improving security for scenarios where resources act as agents requiring user interaction to acquire downstream authorization.
+
+---
+
+### E.7. Relationship to AAuth Use Cases
+
+Redirect headers would be particularly valuable for:
+
+1. **Resource-Initiated Authorization (Section 8.6)**: When resources need user interaction to acquire downstream authorization but cannot interact with users directly
+
+2. **Nested authorization chains**: When resources acting as agents coordinate multiple levels of user interaction through various authorization servers
+
+3. **Cross-domain authorization**: When resources need to acquire authorization from authorization servers in different domains, reducing the risk of redirect hijacking across domain boundaries
+
+When adopted, these headers would complement AAuth's proof-of-possession model by providing additional redirect security at the user agent layer.
+
+---
+
+### E.8. References
+
+- Redirect Headers proposal: https://github.com/DickHardt/redirect-headers
+- Open redirect attacks: OWASP Top 10 A01:2021 - Broken Access Control
 
 ---
 
