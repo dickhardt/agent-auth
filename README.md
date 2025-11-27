@@ -306,6 +306,7 @@ sequenceDiagram
     Agent->>User: redirect to user_interaction URL (with return_url)
     User->>Resource: GET /auth?session=xyz&return_url=...
 
+    Note over Resource,Auth: Resource may perform AAuth, login,<br/>SSO, OIDC, or OAuth flow
     Resource->>User: redirect to auth server
     User->>Auth: authenticate and consent
     Auth->>Resource: authorization code
@@ -318,6 +319,8 @@ sequenceDiagram
 
     Agent->>Resource: HTTPSig request (retry with session)
     Resource->>Agent: 200 OK
+
+    Note over Agent,Auth: This flow enables AAuth resources<br/>to consume OAuth/OIDC protected APIs<br/>(see Appendix A.8)
 ```
 
 ### 3.8 Token Exchange
