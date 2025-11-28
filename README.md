@@ -25,7 +25,7 @@ AAuth is an agent aware auth protocol for modern distributed systems:
 **Agent Auth (AAuth)** is an exploratory specification examining what new capabilities and features may be useful to address use cases that are not well-served by existing protocols like OAuth 2.0, OpenID Connect (OIDC), and SAML. While these protocols excel in their designed use cases, the internet has evolved in ways that create gaps AAuth aims to fill.
 
 The document explores use cases requiring capabilities beyond OAuth 2.0 and OIDC's design:
-- **From bearer tokens to proof-of-possession**: Every request is cryptographically signed, eliminating token exfiltration as an attack vector
+- **From bearer tokens to proof-of-possession**: Every request is cryptographically signed, eliminating bearer token exfiltration as an attack vector
 - **From pre-registered client IDs to HTTPS-based agent identities**: Enabling dynamic ecosystems without registration bottlenecks
 - **From long-lived shared secrets to ephemeral keys**: Supporting distributed application instances with rapid revocation
 - **From separate authentication and authorization protocols to unified auth**: Single flow provides both identity and delegated access
@@ -92,13 +92,13 @@ OAuth 2.0 was created to replace the anti-pattern of users providing their passw
 
   Resources need different levels of protection for different operations. Public endpoints rely on IP addresses for rate limiting and abuse prevention. Application identity is verified through IP whitelisting, mTLS, or long-lived credentials. Authorization uses API keys, manually provisioned tokens, or OAuth flows—serving both user-delegated access and machine-to-machine patterns. These varying requirements have led to fragmented solutions: IP filtering for abuse, mTLS or credentials for application identity, OAuth or tokens for authorization.
 
-- **Resources often act as agents to access downstream resources.**
-
-  Modern architectures frequently require resources to call other resources to fulfill requests. An API gateway aggregates data from backend services, a data platform queries multiple data sources, or a coordination service orchestrates between systems. When a resource needs downstream access, it must acquire authorization—sometimes autonomously based on its identity, sometimes requiring user interaction despite having no direct user interface. These delegation chains create challenges around maintaining user context, preserving authorization chains, and managing keys across organizational boundaries.
-
 - **Applications require both authentication and authorization.**
 
   OAuth 2.0 provides authorization (delegated access). OpenID Connect provides authentication (user identity via SSO, alongside SAML). Both protocols excel in their designed use cases: OAuth 2.0 for user-delegated API access; OIDC for browser-based SSO to web applications. However, applications often need both authentication and authorization in contexts where the separation creates friction. 
+
+  **Resources often need access to downstream resources.**
+
+  Modern architectures frequently require resources to call other resources to fulfill requests. When a resource needs downstream access, it must acquire authorization—sometimes autonomously based on its identity, sometimes requiring user interaction despite having no direct user interface. 
 
 AAuth addresses these evolved requirements by redefining the relationships between three web participants:
 
@@ -121,6 +121,7 @@ AAuth's protocol features directly address each trend:
 - **Progressive auth levels** allow resources to dynamically request the specific level of protection they need using the `Agent-Auth` header. A resource can challenge for signature-based proof-of-possession, verified agent identity, or authorization from the auth server—unifying IP-based abuse prevention, mTLS application identity, and OAuth authorization into a single protocol that scales with request sensitivity.
 
 - **Unified authentication and authorization** eliminates the OAuth/OIDC split. AAuth uses "auth" to represent both authentication and authorization in a single protocol. Auth tokens can contain both identity claims and authorization scopes, giving resources everything they need for access control decisions. This eliminates confusion about when to use OAuth vs. OIDC and prevents common mistakes like misusing ID tokens for API access.
+- **Multi-hop resource access** enables resources to access downstream resources to fulfill requests. The `user_interaction` mechanism allows authorization requirements to bubble up through multiple resource layers, enabling users to grant access across trust boundaries. Token exchange (details TBD) will provide autonomous multi-hop access without user interaction for machine-to-machine scenarios.
 
 
 ## 2. Terminology
@@ -142,6 +143,8 @@ AAuth's protocol features directly address each trend:
 - **auth token**: A proof-of-possession JWT issued by the auth server to an agent, enabling access to a resource. May contain identity claims, scopes, or both. The JWT header includes `"typ": "auth+jwt"` (media type: `application/auth+jwt`).
 
 > **auth** was chosen over **access**, **authorization** or **authentication** to indicate a new token that can represent both authn and authz.
+
+- **exchange token**: A proof-of-possession JWT issued by the auth server specifically for token exchange scenarios, authorizing the holder (typically a resource acting as an agent) to obtain downstream auth tokens. Details are a work in progress. The JWT header would include `"typ": "exchange+jwt"` (media type: `application/exchange+jwt`).
 
 - **request token**: An opaque string issued by the auth server representing a pending authorization request. The agent uses this token at the `agent_auth_endpoint` to initiate user consent. Similar to `request_uri` in PAR (RFC 9126) but represented as an opaque token value rather than a URI.
 
@@ -274,7 +277,7 @@ sequenceDiagram
 
 ### 3.6 Auth Refresh
 
-An agent maintains long-lived access by refreshing expired auth tokens ([Section 8.9](#89-auth-token-refresh)) using refresh tokens bound to its identity.
+An agent maintains long-lived access by refreshing expired auth tokens ([Section 8.7](#87-auth-token-refresh)) using refresh tokens bound to its identity.
 
 ```mermaid
 sequenceDiagram
@@ -294,7 +297,7 @@ sequenceDiagram
 
 ### 3.7 User Interaction Request
 
-A resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access). The resource cannot interact with the user directly, so it returns a user interaction URL to the agent, the agent redirects the user to the resource's interaction endpoint (with `return_url`), the resource facilitates authentication/consent via the auth server, stores the result, redirects the user back to the agent, and the agent retries the original request ([Section 8.6](#86-resource-initiated-user-interaction)).
+A resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access). The resource cannot interact with the user directly, so it returns a user interaction URL to the agent, the agent redirects the user to the resource's interaction endpoint (with `return_url`), the resource facilitates authentication/consent via the auth server, stores the result, redirects the user back to the agent, and the agent retries the original request ([Section 8.9](#89-resource-initiated-user-interaction)).
 
 ```mermaid
 sequenceDiagram
@@ -328,9 +331,9 @@ sequenceDiagram
 
 ### 3.8 Token Exchange
 
-**Status:** Token exchange for autonomous multi-hop access is a recognized requirement being addressed by multiple OAuth working groups. The flow below illustrates the intended pattern; specific Agent-Auth parameters, request types, and token formats are TBD and will be defined in a separate specification ([Section 8.7](#87-token-exchange-and-chaining)).
+**Status:** Token exchange for autonomous multi-hop access is a recognized requirement being addressed by multiple OAuth working groups. The flow below illustrates the intended pattern; specific Agent-Auth parameters, request types, and token formats are TBD and will be defined in a separate specification ([Section 8.10](#810-token-exchange-and-chaining)).
 
-A resource needs to access a downstream resource to fulfill a request. Resource 1 returns an exchange request, Agent 1 obtains an exchange token from Auth Server 1, passes it to Resource 1, which then exchanges it with Auth Server 2 for an auth token to access Resource 2.
+A resource needs to access a downstream resource to fulfill a request. Resource 1 returns an exchange request, Agent 1 obtains an **exchange token** from Auth Server 1, passes it to Resource 1, which then exchanges it with Auth Server 2 for an **auth token** (containing an `act` claim showing the delegation chain) to access Resource 2.
 
 ```mermaid
 sequenceDiagram
@@ -353,9 +356,9 @@ sequenceDiagram
 
     Agent1->>Resource1: HTTPSig request<br/>with exchange_token<br/>(TBD: parameter name)
 
-    Resource1->>Auth2: Exchange token<br/>for auth_token<br/>(TBD: request format)
+    Resource1->>Auth2: Exchange exchange_token<br/>for auth_token<br/>(TBD: request format)
     Auth2->>Auth2: Validate exchange<br/>authorization
-    Auth2->>Resource1: auth_token<br/>(bound to Resource 1's key)
+    Auth2->>Resource1: auth_token with act claim<br/>(bound to Resource 1's key,<br/>shows delegation chain)
 
     Resource1->>Resource2: HTTPSig request<br/>(sig=jwt with auth-token)
     Resource2->>Resource1: 200 OK
@@ -363,7 +366,7 @@ sequenceDiagram
     Resource1->>Agent1: 200 OK<br/>(aggregated response)
 ```
 
-**Note:** For scenarios involving user interaction across multiple resources, the `user_interaction` mechanism ([Section 8.6](#86-resource-initiated-user-interaction)) provides a clean solution that bubbles up through multiple layers.
+**Note:** For scenarios involving user interaction across multiple resources, the `user_interaction` mechanism ([Section 8.9](#89-resource-initiated-user-interaction)) provides a clean solution that bubbles up through multiple layers.
 
 ## 4. Agent-Auth Response Header
 
@@ -927,7 +930,7 @@ If the auth server responds with a `request_token` (indicating user consent is r
    Location: https://agent.example/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=abc123
    ```
 
-5. **Agent exchanges code for tokens**: The agent makes an HTTPSig request to the `agent_token_endpoint` ([Section 8.8](#88-auth-token-request)) with the authorization code:
+5. **Agent exchanges code for tokens**: The agent makes an HTTPSig request to the `agent_token_endpoint` ([Section 8.6](#86-auth-token-request)) with the authorization code:
    ```http
    POST /agent/token HTTP/1.1
    Host: auth.example
@@ -956,7 +959,90 @@ If the auth server responds with a `request_token` (indicating user consent is r
 - The `redirect_uri` MUST match the value provided in the initial auth request
 - Authorization codes MUST be single-use and short-lived (recommended: 60 seconds)
 
-### 8.6. Resource-Initiated User Interaction
+### 8.6. Auth Token Request
+
+The agent exchanges the authorization code for an auth token by making a signed request to the `agent_token_endpoint` with `request_type=code`.
+
+**Request parameters:**
+
+- `request_type` (REQUIRED): Must be `code`
+- `code` (REQUIRED): The authorization code
+
+**Example request:**
+```http
+POST /agent/token HTTP/1.1
+Host: auth.example
+Content-Type: application/x-www-form-urlencoded
+Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=jwt; jwt="eyJhbGc..."
+
+request_type=code&code=AUTH_CODE_123
+```
+
+**Response:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "auth_token": "eyJhbGc...",
+  "expires_in": 3600,
+  "refresh_token": "eyJhbGc..."
+}
+```
+
+### 8.7. Auth Token Refresh
+
+When the auth token expires, the agent requests a new token using the refresh token by making a signed request to the `agent_token_endpoint` with `request_type=refresh`.
+
+**Request parameters:**
+
+- `request_type` (REQUIRED): Must be `refresh`
+- `refresh_token` (REQUIRED): The refresh token
+
+**Example request:**
+```http
+POST /agent/token HTTP/1.1
+Host: auth.example
+Content-Type: application/x-www-form-urlencoded
+Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=jwt; jwt="eyJhbGc..."
+
+request_type=refresh&refresh_token=eyJhbGc...
+```
+
+**Response:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "auth_token": "eyJhbGc...",
+  "expires_in": 3600
+}
+```
+
+> **Note:** A new `refresh_token` is not included because the existing refresh token remains valid. In AAuth, every refresh request is cryptographically signed and the refresh token is bound to the agent's instance identifier, eliminating the security rationale for rotation.
+
+### 8.8. Resource Access
+
+The agent makes a signed request to the resource with the auth token.
+
+```http
+GET /api/data HTTP/1.1
+Host: resource.example
+Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=jwt; jwt="eyJhbGc..."
+```
+
+The resource validates the auth token and signature, then returns the requested data if authorized.
+
+### 8.9. Resource-Initiated User Interaction
 
 When a resource requires user interaction (login, SSO, OAuth flow, or consent for downstream access), the resource returns a `user_interaction` parameter directing the agent to facilitate the interaction.
 
@@ -996,31 +1082,24 @@ Agent-Auth: httpsig; user_interaction="https://resource-r.example/auth-flow?sess
 - Agents MUST NOT include sensitive data in the `return_url` query parameters
 - Resources MUST expire session state after reasonable timeout and failed attempts
 
-### 8.7. Token Exchange and Chaining
+### 8.10. Token Exchange
 
-**Status:** Token exchange for autonomous multi-hop resource access is a recognized need in distributed systems. Multiple OAuth working groups are actively developing solutions for this problem. This section is a placeholder for future work.
+**Status:** Token exchange enables a resource to acquire auth tokens to call downnstream resources with no user interaction. This section is a placeholder for future work.
 
 
 **Requirements:**
 
-Token exchange must address several complex requirements:
+Token exchange introduces **exchange tokens** as a distinct token type (separate from auth tokens) and must address several requirements:
 
-1. **Agent awareness**: Agents must know when an auth token they receive will be used for exchange (not direct access), requiring different Agent-Auth challenge parameters
+1. **Agent awareness**: Agents must know when they're receiving a request for an exchange token (not an auth token for direct access), requiring different Agent-Auth header parameters.
 
-2. **Request differentiation**: Exchange requires its own `request_type` distinct from standard authorization requests
+2. **Auth Server Request differentiation**: Auth servers need to know it is a request for an exchange token and the request parameters.
 
 3. **Token passing mechanism**: Protocol must define how agents pass exchange tokens to resources
 
-4. **Multi-hop authorization**: Resources acting as agents must be able to exchange tokens with downstream auth servers while maintaining:
-   - User context through the chain
-   - Proof-of-possession at each hop
-   - Clear authorization boundaries
+4. **Acting on behalf of claims**: The resulting auth token needs to represent the chain of auth for downstream resources using the `act` claim.
 
-5. **Federation trust**: Downstream auth servers must validate exchanges from resources they may not have pre-established relationships with
-
-**Comparison with user_interaction:**
-
-For scenarios involving user consent across multiple resources, the `user_interaction` mechanism ([Section 8.6](#86-resource-initiated-user-interaction)) provides a simpler solution that naturally bubbles up through resource chains. Token exchange is specifically needed for autonomous multi-hop scenarios where user interaction is not required or feasible.
+For scenarios involving user consent across multiple resources, the `user_interaction` mechanism ([Section 8.9](#89-resource-initiated-user-interaction)) provides a solution that naturally bubbles up through resource chains. Token exchange is specifically needed for autonomous multi-hop scenarios where user interaction is not required or feasible.
 
 **Future work:**
 
@@ -1031,89 +1110,6 @@ A complete token exchange specification will define:
 - Token passing mechanisms between agents and resources
 - Trust establishment between auth servers
 - Chain depth limits and policy enforcement
-
-### 8.8. Auth Token Request
-
-The agent exchanges the authorization code for an auth token by making a signed request to the `agent_token_endpoint` with `request_type=code`.
-
-**Request parameters:**
-
-- `request_type` (REQUIRED): Must be `code`
-- `code` (REQUIRED): The authorization code
-
-**Example request:**
-```http
-POST /agent/token HTTP/1.1
-Host: auth.example
-Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
-Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
-
-request_type=code&code=AUTH_CODE_123
-```
-
-**Response:**
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "auth_token": "eyJhbGc...",
-  "expires_in": 3600,
-  "refresh_token": "eyJhbGc..."
-}
-```
-
-### 8.9. Auth Token Refresh
-
-When the auth token expires, the agent requests a new token using the refresh token by making a signed request to the `agent_token_endpoint` with `request_type=refresh`.
-
-**Request parameters:**
-
-- `request_type` (REQUIRED): Must be `refresh`
-- `refresh_token` (REQUIRED): The refresh token
-
-**Example request:**
-```http
-POST /agent/token HTTP/1.1
-Host: auth.example
-Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
-Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
-
-request_type=refresh&refresh_token=eyJhbGc...
-```
-
-**Response:**
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "auth_token": "eyJhbGc...",
-  "expires_in": 3600
-}
-```
-
-> **Note:** A new `refresh_token` is not included because the existing refresh token remains valid. In AAuth, every refresh request is cryptographically signed and the refresh token is bound to the agent's instance identifier, eliminating the security rationale for rotation.
-
-### 8.10. Authorized Resource Access
-
-The agent makes a signed request to the resource with the auth token.
-
-```http
-GET /api/data HTTP/1.1
-Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
-Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
-```
-
-The resource validates the auth token and signature, then returns the requested data if authorized.
 
 ### 8.11. Future Request Types
 
@@ -1130,8 +1126,12 @@ The following `request_type` values are reserved for future work and are not def
 - `request_type=backchannel_poll` - Poll with auth_req_id for auth_token
 
 **Token Exchange:**
-- `request_type=token_exchange` - Exchange one credential type for another
-  - Parameters and semantics to be defined
+- `request_type=exchange_request` - Request an exchange token for downstream resource access
+  - Returns an exchange token that authorizes obtaining downstream auth tokens
+  - Parameters and semantics TBD
+- `request_type=exchange` - Exchange an exchange token for an auth token at a downstream auth server
+  - Presented by a resource acting as agent to obtain auth token for downstream resource
+  - Parameters and semantics TBD
 
 Auth servers **MAY** advertise supported request types in metadata using the `request_types_supported` field.
 
@@ -1307,11 +1307,11 @@ An Auth Request Document is a JSON document retrieved via HTTPS that describes:
 - **User-facing descriptions**: Human-readable explanations for consent screens
 - **Exchange requirements**: For token exchange scenarios, specifies downstream resource access needs
 
-### 10.3. Exchange Object
+### 10.3. Exchange Tokens
 
-**Status:** This section describes the exchange object structure for future token exchange specifications. Token exchange details are TBD ([Section 8.7](#87-token-exchange-and-chaining)).
+**Status:** This section describes exchange tokens for future token exchange specifications. Token exchange details are TBD ([Section 8.10](#810-token-exchange-and-chaining)).
 
-When implemented, an auth token with an `exchange` claim would authorize the token holder to exchange the token for access to downstream resources. A possible exchange object structure:
+When implemented, an **exchange token** (distinct from auth tokens) would authorize the holder to obtain downstream auth tokens. Exchange tokens would contain exchange authorization details. A possible structure:
 
 **Exchange object properties:**
 
@@ -1341,6 +1341,14 @@ If `auth_request` is present, it is authoritative for all downstream authorizati
   "auth_request": "https://auth2.example/req/abc456"
 }
 ```
+
+**Resulting auth tokens:**
+
+When a resource exchanges an exchange token for an auth token, the downstream auth server would issue an auth token containing:
+- `agent`: The resource acting as agent (e.g., Resource 1)
+- `aud`: The downstream resource (e.g., Resource 2)
+- `sub`: The user identifier (maintained through the chain)
+- `act`: The previous agent in the delegation chain, showing who originally authorized the request
 
 ### 10.4. Nested Exchange Chains
 
@@ -2538,7 +2546,7 @@ The Signature-Key header's four schemes (sig=hwk, sig=jwks, sig=x509, sig=jwt) p
 
 ## Appendix E: Redirect Headers for Enhanced Security
 
-This appendix describes how the Redirect-Query and Redirect-Origin headers could be used to enhance the security of redirect flows in AAuth, particularly for resource-initiated authorization with user interaction (Section 8.6).
+This appendix describes how the Redirect-Query and Redirect-Origin headers could be used to enhance the security of redirect flows in AAuth, particularly for resource-initiated authorization with user interaction (Section 8.9).
 
 **Status:** Redirect Headers is another proposal in this suite. See: [Redirect Headers](https://github.com/DickHardt/redirect-headers)
 
@@ -2751,7 +2759,7 @@ At each hop in this chain, the Redirect-Origin header would provide browser-medi
 
 Redirect headers would be particularly valuable for:
 
-1. **Resource-Initiated Authorization (Section 8.6)**: When resources need user interaction to acquire downstream authorization but cannot interact with users directly
+1. **Resource-Initiated Authorization (Section 8.9)**: When resources need user interaction to acquire downstream authorization but cannot interact with users directly
 
 2. **Nested authorization chains**: When resources acting as agents coordinate multiple levels of user interaction through various authorization servers
 
