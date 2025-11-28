@@ -121,7 +121,7 @@ AAuth's protocol features directly address each trend:
 - **Progressive auth levels** allow resources to dynamically request the specific level of protection they need using the `Agent-Auth` header. A resource can challenge for signature-based proof-of-possession, verified agent identity, or authorization from the auth server—unifying IP-based abuse prevention, mTLS application identity, and OAuth authorization into a single protocol that scales with request sensitivity.
 
 - **Unified authentication and authorization** eliminates the OAuth/OIDC split. AAuth uses "auth" to represent both authentication and authorization in a single protocol. Auth tokens can contain both identity claims and authorization scopes, giving resources everything they need for access control decisions. This eliminates confusion about when to use OAuth vs. OIDC and prevents common mistakes like misusing ID tokens for API access.
-- **Multi-hop resource access** enables resources to access downstream resources to fulfill requests. The `user_interaction` mechanism allows authorization requirements to bubble up through multiple resource layers, enabling users to grant access across trust boundaries. Token exchange (details TBD) will provide autonomous multi-hop access without user interaction for machine-to-machine scenarios.
+- **Multi-hop resource access** enables resources to access downstream resources to fulfill requests. The `user_interaction` mechanism allows authorization requirements to bubble up through multiple resource layers, enabling users to grant access across trust boundaries. Token exchange (`request_type=exchange`) enables autonomous multi-hop access by allowing resources to act as agents, presenting upstream auth tokens to downstream auth servers to establish authorization chains without user interaction.
 
 
 ## 2. Terminology
@@ -143,8 +143,6 @@ AAuth's protocol features directly address each trend:
 - **auth token**: A proof-of-possession JWT issued by the auth server to an agent, enabling access to a resource. May contain identity claims, scopes, or both. The JWT header includes `"typ": "auth+jwt"` (media type: `application/auth+jwt`).
 
 > **auth** was chosen over **access**, **authorization** or **authentication** to indicate a new token that can represent both authn and authz.
-
-- **exchange token**: A proof-of-possession JWT issued by the auth server specifically for token exchange scenarios, authorizing the holder (typically a resource acting as an agent) to obtain downstream auth tokens. Details are a work in progress. The JWT header would include `"typ": "exchange+jwt"` (media type: `application/exchange+jwt`).
 
 - **request token**: An opaque string issued by the auth server representing a pending authorization request. The agent uses this token at the `agent_auth_endpoint` to initiate user consent. Similar to `request_uri` in PAR (RFC 9126) but represented as an opaque token value rather than a URI.
 
@@ -331,42 +329,40 @@ sequenceDiagram
 
 ### 3.8 Token Exchange
 
-**Status:** Token exchange for autonomous multi-hop access is a recognized requirement being addressed by multiple OAuth working groups. The flow below illustrates the intended pattern; specific Agent-Auth parameters, request types, and token formats are TBD and will be defined in a separate specification ([Section 8.10](#810-token-exchange-and-chaining)).
-
-A resource needs to access a downstream resource to fulfill a request. Resource 1 returns an exchange request, Agent 1 obtains an **exchange token** from Auth Server 1, passes it to Resource 1, which then exchanges it with Auth Server 2 for an **auth token** (containing an `act` claim showing the delegation chain) to access Resource 2.
+When a resource needs to access a downstream resource to fulfill a request, it can act as an agent to obtain the necessary authorization. Resource 1 receives Agent 1's auth token, encounters an Agent-Auth challenge from Resource 2, then directly exchanges with Auth Server 2 (presenting the upstream auth token) to obtain an auth token for accessing Resource 2.
 
 ```mermaid
 sequenceDiagram
     participant Agent1 as agent 1
-    participant Auth1 as auth server 1
     participant Resource1 as resource 1 / agent 2
     participant Auth2 as auth server 2
     participant Resource2 as resource 2
 
-    Agent1->>Resource1: HTTPSig request<br/>(sig=jwt with auth-token)
+    Agent1->>Resource1: HTTPSig request<br/>(sig=jwt with auth token)
+
     Resource1->>Resource2: attempt access<br/>(no auth)
-    Resource2->>Resource1: 401 Agent-Auth
+    Resource2->>Resource1: 401 Agent-Auth<br/>(resource, auth_server, scope)
+    Note over Resource1,Resource2: Resource 2 challenges<br/>for authentication
 
-    Resource1->>Agent1: 401 Agent-Auth<br/>exchange_request<br/>(TBD: specific parameters)
-    Note over Resource1,Agent1: Resource needs<br/>downstream access
+    Resource1->>Auth2: HTTPSig request<br/>request_type=exchange<br/>upstream_token=<auth token from Agent 1><br/>+ Agent-Auth parameters
+    Note over Resource1,Auth2: Resource 1 acts as agent,<br/>presents upstream auth token
 
-    Agent1->>Auth1: Request exchange_token<br/>(TBD: request format)
-    Auth1->>Agent1: exchange_token
-    Note over Auth1,Agent1: Token authorizes<br/>Resource 1 to get<br/>downstream access
-
-    Agent1->>Resource1: HTTPSig request<br/>with exchange_token<br/>(TBD: parameter name)
-
-    Resource1->>Auth2: Exchange exchange_token<br/>for auth_token<br/>(TBD: request format)
-    Auth2->>Auth2: Validate exchange<br/>authorization
+    Auth2->>Auth2: Validate upstream_token<br/>Trust Auth Server 1<br/>Authorize exchange
     Auth2->>Resource1: auth_token with act claim<br/>(bound to Resource 1's key,<br/>shows delegation chain)
 
-    Resource1->>Resource2: HTTPSig request<br/>(sig=jwt with auth-token)
+    Resource1->>Resource2: HTTPSig request<br/>(sig=jwt with auth token)
     Resource2->>Resource1: 200 OK
 
     Resource1->>Agent1: 200 OK<br/>(aggregated response)
 ```
 
-**Note:** For scenarios involving user interaction across multiple resources, the `user_interaction` mechanism ([Section 8.9](#89-resource-initiated-user-interaction)) provides a clean solution that bubbles up through multiple layers.
+**Key aspects:**
+- Resource 1 presents Agent 1's auth token as the `upstream_token` parameter
+- Auth Server 2 validates the upstream token and trusts Auth Server 1's signature
+- The resulting auth token includes an `act` claim showing the delegation chain
+- Agent 1 is not involved in the exchange process (autonomous multi-hop)
+
+**Note:** For scenarios involving user interaction across multiple resources, the `user_interaction` mechanism ([Section 8.9](#89-resource-initiated-user-interaction)) provides a complementary solution that bubbles authorization requirements up through multiple layers. See [Section 8.10](#810-token-exchange) for detailed protocol specification.
 
 ## 4. Agent-Auth Response Header
 
@@ -456,13 +452,17 @@ This allows resources to block abusive pseudonymous traffic while still acceptin
 
 ### 4.5. Parameters
 
+**Agent-Auth header parameters:**
 - `httpsig`: Authentication scheme (REQUIRED for all responses)
 - `identity`: Boolean parameter (?1 = true) indicating agent identity is required
 - `auth-token`: Bare token indicating authorization is required
 - `resource`: String parameter with the resource identifier for authorization
 - `scope`: String parameter with space-separated scopes
-- `auth_request`: String parameter with URL to fetch rich authorization requirements (used both in Agent-Auth headers and in token exchange scenarios)
+- `auth_request`: String parameter with URL to fetch rich authorization requirements
 - `algs`: Inner list of supported HTTPSig algorithms (OPTIONAL; if omitted, all standard algorithms are accepted)
+
+**Token exchange request parameters:**
+- `upstream_token`: The auth token from the upstream auth server, presented in `request_type=exchange` requests to establish the authorization chain ([Section 8.10](#810-token-exchange))
 
 ### 4.6. Compatibility with WWW-Authenticate
 
@@ -1084,32 +1084,91 @@ Agent-Auth: httpsig; user_interaction="https://resource-r.example/auth-flow?sess
 
 ### 8.10. Token Exchange
 
-**Status:** Token exchange enables a resource to acquire auth tokens to call downnstream resources with no user interaction. This section is a placeholder for future work.
+Token exchange enables autonomous multi-hop resource access. When a resource needs to call a downstream resource to fulfill a request, it acts as an agent to obtain the necessary authorization. The resource presents the upstream auth token to the downstream auth server, which validates the authorization chain and issues a new auth token.
 
+**When this applies:**
 
-**Requirements:**
+A resource acts as an agent when it:
+1. Receives a request from an agent with an auth token
+2. Needs to access a downstream resource to fulfill the request
+3. Receives an Agent-Auth challenge from the downstream resource
+4. Makes a token exchange request to obtain authorization for the downstream resource
 
-Token exchange introduces **exchange tokens** as a distinct token type (separate from auth tokens) and must address several requirements:
+**Request parameters:**
 
-1. **Agent awareness**: Agents must know when they're receiving a request for an exchange token (not an auth token for direct access), requiring different Agent-Auth header parameters.
+- `request_type` (REQUIRED): Must be `exchange`
+- `upstream_token` (REQUIRED): The auth token from the upstream auth server
+- `resource` (REQUIRED): The HTTPS URL identifier of the downstream resource (from the Agent-Auth challenge)
+- `auth_server` (REQUIRED): The HTTPS URL identifier of the downstream authorization server (from the Agent-Auth challenge)
+- `scope` (REQUIRED if no auth_request): Space-separated list of scopes for downstream access (from the Agent-Auth challenge)
+- `auth_request` (OPTIONAL): URL to an Auth Request Document containing detailed authorization requirements (from the Agent-Auth challenge)
 
-2. **Auth Server Request differentiation**: Auth servers need to know it is a request for an exchange token and the request parameters.
+**Example request:**
 
-3. **Token passing mechanism**: Protocol must define how agents pass exchange tokens to resources
+```http
+POST /agent/token HTTP/1.1
+Host: auth2.example
+Content-Type: application/x-www-form-urlencoded
+Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=hwk; jwk="..."
 
-4. **Acting on behalf of claims**: The resulting auth token needs to represent the chain of auth for downstream resources using the `act` claim.
+request_type=exchange&upstream_token=eyJhbGc...&resource=https://resource2.example&auth_server=https://auth2.example&scope=data.read
+```
 
-For scenarios involving user consent across multiple resources, the `user_interaction` mechanism ([Section 8.9](#89-resource-initiated-user-interaction)) provides a solution that naturally bubbles up through resource chains. Token exchange is specifically needed for autonomous multi-hop scenarios where user interaction is not required or feasible.
+**Response:**
 
-**Future work:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
 
-A complete token exchange specification will define:
-- Agent-Auth header parameters for exchange requests
-- Exchange-specific request types and response formats
-- Exchange token format and claims structure
-- Token passing mechanisms between agents and resources
-- Trust establishment between auth servers
-- Chain depth limits and policy enforcement
+{
+  "auth_token": "eyJhbGc...",
+  "expires_in": 3600
+}
+```
+
+The auth token is bound to the resource's signing key (presented in the Signature-Key header) and includes an `act` claim showing the delegation chain.
+
+**Auth server validation:**
+
+The downstream auth server (Auth Server 2) MUST:
+
+1. **Validate the request signature**: Verify the HTTPSig signature using the key in the Signature-Key header
+2. **Validate the upstream token**:
+   - Verify the JWT signature using the upstream auth server's (Auth Server 1) published JWKS
+   - Verify the token has not expired
+   - Verify the `aud` claim matches the requesting resource
+3. **Establish trust**: Verify that Auth Server 1 is a trusted auth server (federation trust relationship)
+4. **Authorize the exchange**: Verify that the requested `scope` or `auth_request` parameters are appropriate given the upstream authorization
+5. **Bind to requester's key**: Issue an auth token with the `cnf` claim matching the key presented in the Signature-Key header
+6. **Include delegation chain**: Include an `act` (actor) claim showing the upstream agent
+
+**Auth token claims:**
+
+The resulting auth token MUST include:
+
+- `iss`: Auth Server 2's identifier
+- `sub`: The user identifier from the upstream token (maintained through the chain)
+- `aud`: The downstream resource (Resource 2)
+- `agent`: The resource acting as agent (Resource 1)
+- `cnf`: Confirmation claim binding the token to Resource 1's signing key
+- `act`: Actor claim showing the delegation chain (the upstream agent from the upstream token)
+- `exp`, `iat`, `nbf`: Standard time claims
+- Additional claims as appropriate (scopes, identity claims, etc.)
+
+**Security considerations:**
+
+- **Federation trust required**: Auth Server 2 must have an established trust relationship with Auth Server 1 to validate upstream tokens
+- **Scope narrowing**: The downstream scope should typically be narrower than or equal to the upstream authorization
+- **Chain depth limits**: Auth servers MAY enforce limits on delegation chain depth to prevent abuse
+- **User context preservation**: The `sub` claim MUST be maintained through the chain to preserve user identity
+- **Refresh tokens**: Exchange requests do not return refresh tokens; the resource must re-exchange when tokens expire
+
+**Comparison with user_interaction:**
+
+For scenarios involving user consent across multiple resources, the `user_interaction` mechanism ([Section 8.9](#89-resource-initiated-user-interaction)) provides a complementary solution that bubbles authorization requirements up to the user. Token exchange is specifically for autonomous multi-hop scenarios where user interaction is not required or feasible.
 
 ### 8.11. Future Request Types
 
@@ -1124,14 +1183,6 @@ The following `request_type` values are reserved for future work and are not def
 - `request_type=backchannel_auth` - Initiate backchannel authentication
   - May return `auth_token` (direct grant) or `auth_req_id` (authentication in progress)
 - `request_type=backchannel_poll` - Poll with auth_req_id for auth_token
-
-**Token Exchange:**
-- `request_type=exchange_request` - Request an exchange token for downstream resource access
-  - Returns an exchange token that authorizes obtaining downstream auth tokens
-  - Parameters and semantics TBD
-- `request_type=exchange` - Exchange an exchange token for an auth token at a downstream auth server
-  - Presented by a resource acting as agent to obtain auth token for downstream resource
-  - Parameters and semantics TBD
 
 Auth servers **MAY** advertise supported request types in metadata using the `request_types_supported` field.
 
@@ -1307,69 +1358,13 @@ An Auth Request Document is a JSON document retrieved via HTTPS that describes:
 - **User-facing descriptions**: Human-readable explanations for consent screens
 - **Exchange requirements**: For token exchange scenarios, specifies downstream resource access needs
 
-### 10.3. Exchange Tokens
-
-**Status:** This section describes exchange tokens for future token exchange specifications. Token exchange details are TBD ([Section 8.10](#810-token-exchange-and-chaining)).
-
-When implemented, an **exchange token** (distinct from auth tokens) would authorize the holder to obtain downstream auth tokens. Exchange tokens would contain exchange authorization details. A possible structure:
-
-**Exchange object properties:**
-
-- `resource` (REQUIRED): String. The HTTPS URL identifier of the downstream resource
-- `auth_server` (REQUIRED): String. The HTTPS URL identifier of the authorization server for the downstream resource
-- `scope` (REQUIRED if no auth_request): String. Space-separated scopes for downstream access
-- `auth_request` (OPTIONAL): String. URL to an Auth Request Document containing full authorization requirements
-
-If `auth_request` is present, it is authoritative for all downstream authorization details including scope and potential nested exchange claims.
-
-**Example exchange object:**
-
-```json
-{
-  "resource": "https://resource-r2.example",
-  "auth_server": "https://auth2.example",
-  "scope": "data.read"
-}
-```
-
-**Example with auth_request:**
-
-```json
-{
-  "resource": "https://resource-r2.example",
-  "auth_server": "https://auth2.example",
-  "auth_request": "https://auth2.example/req/abc456"
-}
-```
-
-**Resulting auth tokens:**
-
-When a resource exchanges an exchange token for an auth token, the downstream auth server would issue an auth token containing:
-- `agent`: The resource acting as agent (e.g., Resource 1)
-- `aud`: The downstream resource (e.g., Resource 2)
-- `sub`: The user identifier (maintained through the chain)
-- `act`: The previous agent in the delegation chain, showing who originally authorized the request
-
-### 10.4. Nested Exchange Chains
-
-Exchange objects MAY be nested when multiple downstream resources are involved. When `auth_request` is present, the Auth Request Document it references MAY itself contain an `exchange` object, creating a chain of authorizations.
-
-**Consent requirements:**
-
-When user authorization is required for token exchange, the auth server MUST present the complete exchange chain to the user. The auth server recursively fetches `auth_request` URLs to build the full authorization chain for consent display, allowing users to understand:
-- The original requesting agent
-- Each intermediate resource in the chain
-- The final downstream resource being accessed
-- The scopes and purpose at each hop
-
-### 10.5. Security Considerations
+### 10.3. Security Considerations
 
 - Auth Request Documents MUST be served over HTTPS
 - Documents SHOULD be signed to enable offline verification (format TBD in separate specification)
 - Documents SHOULD include expiration times to prevent stale authorization requests
-- Auth servers MUST validate that exchange chains comply with policy (maximum chain depth, allowed resources, etc.)
 
-### 10.6. Future Work
+### 10.4. Future Work
 
 The complete Auth Request Document specification will define:
 - JSON schema for the document format
