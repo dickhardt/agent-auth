@@ -1649,7 +1649,7 @@ This shows the OAuth ecosystem is evolving toward concepts AAuth explores. The d
 1. **Message integrity**: HTTPSig provides tampering detection that DPoP and mTLS don't
 2. **No client secrets or bearer tokens**: Eliminates shared secrets and token exfiltration risks through cryptographic proof-of-possession
 3. **No optionality**: Clear requirements, guaranteed interoperability
-4. **No legacy cruft**: Designed for modern security, no backward compatibility constraints
+4. **Security by design**: Required proof-of-possession, no optional security features that can be misconfigured
 5. **Progressive agent authentication**: Three levels (pseudonymous, identified, authorized)
 6. **Agent-centric model**: HTTPS identity, delegation with persistent sub across key rotation
 7. **Unified auth**: Single token, single protocol for authentication and authorization
