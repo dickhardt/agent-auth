@@ -1557,6 +1557,8 @@ The registration of these error codes in an appropriate IANA registry is **to be
 
 ## Appendix A: Relationship to OAuth 2.1 and OIDC
 
+> _agent generated_
+
 ### A.1. AAuth Design Philosophy
 
 AAuth intentionally blends **OAuth 2.1** (authorization/delegated access) and **OpenID Connect** (authentication/identity) into a unified protocol for both authentication and authorization. This is why AAuth uses the term **"auth"** throughout:
@@ -1647,11 +1649,10 @@ This shows the OAuth ecosystem is evolving toward concepts AAuth explores. The d
 1. **Message integrity**: HTTPSig provides tampering detection that DPoP and mTLS don't
 2. **No optionality**: Clear requirements, guaranteed interoperability
 3. **No legacy cruft**: Designed for modern security, no backward compatibility constraints
-4. **Progressive authentication**: Three levels (pseudonymous, identified, authorized)
+4. **Progressive agent authentication**: Three levels (pseudonymous, identified, authorized)
 5. **Agent-centric model**: HTTPS identity, delegation with persistent sub across key rotation
 6. **Unified auth**: Single token, single protocol for authentication and authorization
-7. **Simpler security**: No PKCE needed (HTTPSig binds authorization codes to keys)
-8. **Conformance**: Binary compliance with clear test suites per profile
+7. **Conformance**: Binary compliance with clear test suites per profile
 
 #### Relationship to OAuth
 
@@ -1749,7 +1750,7 @@ An existing OAuth 2.1 or OpenID Connect server can add AAuth support by implemen
 
 ### A.8. Integration with OAuth/OIDC Protected Resources
 
-AAuth resources can use the user interaction flow to access OAuth or OIDC protected resources, enabling seamless integration between AAuth-aware systems and traditional OAuth/OIDC ecosystems.
+AAuth resources can use the user interaction flow ([Section 8.9](#89-resource-initiated-user-interaction)) to access OAuth or OIDC protected resources, enabling seamless integration between AAuth-aware systems and traditional OAuth/OIDC ecosystems.
 
 **Scenario:** An AAuth agent requests data from an AAuth resource, which needs to fetch data from a downstream OAuth-protected API (e.g., a third-party service requiring OAuth access tokens).
 
@@ -1798,6 +1799,8 @@ sequenceDiagram
 ---
 
 ## Appendix B: Long Tail Agent Servers
+
+> _agent generated_
 
 ### B.1. Overview
 
@@ -1904,6 +1907,8 @@ Agent servers with ephemeral keys (this pattern) have their own agent identifier
 ---
 
 ## Appendix C: Agent Token Acquisition Patterns
+
+> _agent generated_
 
 ### C.1. Overview
 
@@ -2068,6 +2073,8 @@ Access-Control-Max-Age: 86400
 
 ## Appendix D: Relationship to Web-Bot-Auth
 
+> _agent generated_
+
 ### D.1. Overview
 
 The IETF Web Bot Authentication (webbotauth) Working Group charter aims to standardize methods for websites to manage automated traffic (bots, crawlers, AI agents) and for these agents to prove their authenticity. The charter emphasizes:
@@ -2139,6 +2146,8 @@ The Signature-Key header's four schemes (sig=hwk, sig=jwks, sig=x509, sig=jwt) p
 ---
 
 ## Appendix E: Redirect Headers for Enhanced Security
+
+> _agent generated_
 
 This appendix describes how the Redirect-Query and Redirect-Origin headers could be used to enhance the security of redirect flows in AAuth, particularly for resource-initiated authorization with user interaction (Section 8.9).
 
