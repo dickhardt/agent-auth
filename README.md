@@ -1143,9 +1143,29 @@ The resulting auth token MUST include:
 - `aud`: The downstream resource (Resource 2)
 - `agent`: The resource acting as agent (Resource 1)
 - `cnf`: Confirmation claim binding the token to Resource 1's signing key
-- `act`: Actor claim showing the delegation chain (the upstream agent from the upstream token)
+- `act`: Actor claim showing the delegation chain
 - `exp`, `iat`, `nbf`: Standard time claims
 - Additional claims as appropriate (scopes, identity claims, etc.)
+
+**Actor (`act`) claim:**
+
+The `act` claim represents the party that delegated authority to the current agent. It is a JSON object containing:
+
+- `agent` (REQUIRED): The HTTPS URL of the upstream agent (from the upstream token's `agent` claim)
+- `agent_delegate` (OPTIONAL): The upstream agent delegate identifier (from the upstream token's `agent_delegate` claim, if present)
+- `sub` (OPTIONAL): The user identifier (from the upstream token's `sub` claim, if present and different from the current token's `sub`)
+- `act` (OPTIONAL): Nested actor claim for multi-hop delegation chains beyond two levels
+
+This enables downstream resources to verify the complete delegation chain and make authorization decisions based on the full context of who initiated the request and which intermediaries were involved.
+
+**Example `act` claim:**
+```json
+{
+  "agent": "https://resource1.example",
+  "agent_delegate": "api-service-instance-abc",
+  "sub": "user-12345"
+}
+```
 
 **Security considerations:**
 
