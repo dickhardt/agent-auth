@@ -609,8 +609,8 @@ The encrypted payload is the signed JWT (JWS). Only the resource possessing the 
 ### 6.3. Required Claims
 
 - `iss` (REQUIRED): The auth server's HTTPS URL
-- `agent` (REQUIRED): The agent's HTTPS URL (from agent identity)
-- `aud` (REQUIRED): The resource identifier this token authorizes access to. Note that `aud` MAY be the same as the `agent` identifier when the agent uses the auth server for SSO (Single Sign-On) to authenticate users to the agent itself.
+- `aud` (REQUIRED): The resource identifier this token authorizes access to
+- `agent` (REQUIRED if `aud` is not the agent identifier): The agent's HTTPS URL (from agent identity). When the agent uses the auth server for SSO (Single Sign-On) to authenticate users to itself, `aud` is the agent identifier and this claim is omitted.
 - `exp` (REQUIRED): Expiration time (Unix timestamp)
 - `cnf` (REQUIRED): Confirmation claim object containing:
   - `jwk` (REQUIRED): JSON Web Key - the agent's public signing key (copied from agent token or agent JWKS)
@@ -865,7 +865,7 @@ The agent makes a signed request to the auth server's `agent_token_endpoint` wit
 **Request parameters:**
 
 - `request_type` (REQUIRED): Must be `auth`
-- `resource` (REQUIRED): The resource identifier
+- `resource` (REQUIRED): The resource identifier. Note that the agent MAY pass its own identifier as the `resource` when using the auth server for SSO (Single Sign-On) to authenticate users to the agent itself.
 - `redirect_uri` (REQUIRED): The callback URI for authorization code
 - `scope` (OPTIONAL): Requested scopes
 - `state` (RECOMMENDED): Opaque value for CSRF protection
