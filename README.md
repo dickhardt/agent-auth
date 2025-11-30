@@ -585,12 +585,26 @@ Auth tokens bind together:
 
 ### 6.2. Token Format
 
-Auth tokens **MUST** be signed JWTs using the JWS Compact Serialization format.
+Auth tokens **MUST** be signed JWTs using the JWS Compact Serialization format. Auth tokens **MAY** optionally be encrypted using JWE (JSON Web Encryption) to preserve privacy of token contents from the agent.
+
+**Signed (unencrypted) auth tokens:**
 
 The JOSE header **MUST** include:
 - `typ` (REQUIRED): **MUST** be `"auth+jwt"` (media type: `application/auth+jwt`)
 - `alg` (REQUIRED): Signature algorithm from the auth server's JWKS
 - `kid` (REQUIRED): Key ID identifying the signing key in the auth server's JWKS
+
+**Encrypted auth tokens:**
+
+When a resource provides an encryption public key in an Auth Request Document ([Section 10](#10-auth-request-document)), the auth server **MAY** issue an encrypted auth token to preserve the privacy of token contents from the agent. The token is first signed as a JWS, then encrypted as a JWE using the resource's encryption public key.
+
+The JWE header **MUST** include:
+- `typ` (REQUIRED): **MUST** be `"auth+jwt"` (media type: `application/auth+jwt`)
+- `alg` (REQUIRED): Key encryption algorithm (e.g., `ECDH-ES+A256KW`, `RSA-OAEP-256`)
+- `enc` (REQUIRED): Content encryption algorithm (e.g., `A256GCM`)
+- `kid` (OPTIONAL): Key ID for the resource's encryption key (if provided in Auth Request Document)
+
+The encrypted payload is the signed JWT (JWS). Only the resource possessing the corresponding private key can decrypt and validate the auth token. The agent treats the encrypted token as opaque and presents it to the resource via the `Signature-Key` header.
 
 ### 6.3. Required Claims
 
@@ -671,6 +685,17 @@ The JOSE header **MUST** include:
 ### 6.7. Validation by Resources
 
 When an agent presents `Signature-Key: sig=jwt; jwt="<auth-token>"`, the resource **MUST** validate:
+
+**For encrypted auth tokens (JWE format):**
+
+1. Parse the token and extract the JOSE header
+2. Verify `typ` is `"auth+jwt"`
+3. Identify that the token is encrypted (header contains `alg` for key encryption and `enc` for content encryption)
+4. Decrypt the JWE using the resource's private encryption key
+5. Extract the decrypted JWT (JWS) from the JWE payload
+6. Continue with validation steps for signed tokens below
+
+**For signed auth tokens (JWS format) or after decrypting JWE:**
 
 1. Parse the JWT and extract the JOSE header
 2. Verify `typ` is `"auth+jwt"`
@@ -1352,6 +1377,7 @@ An Auth Request Document is a JSON document retrieved via HTTPS that describes:
 - **Authorization context**: Additional details about the request (purpose, data accessed, duration, conditions)
 - **User-facing descriptions**: Human-readable explanations for consent screens
 - **Exchange requirements**: For token exchange scenarios, specifies downstream resource access needs
+- **Encryption public key**: (OPTIONAL) A JWK (JSON Web Key) containing the resource's public encryption key. When present, the auth server MAY encrypt the auth token using this key to preserve privacy of token contents from the agent. Only the resource can decrypt the token using its corresponding private key.
 
 ### 10.3. Security Considerations
 
