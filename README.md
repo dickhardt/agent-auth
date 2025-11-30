@@ -605,6 +605,7 @@ The JOSE header **MUST** include:
 
 - `agent_delegate` (OPTIONAL): Agent delegate identifier - present when the agent uses delegation (copied from agent token's `sub`)
 - `scope` (OPTIONAL): Space-separated authorized scopes (excludes identity scopes like `openid`, `profile`, `email` which control token claims rather than resource access)
+- `act` (OPTIONAL): Actor claim showing the delegation chain in token exchange scenarios. Contains information about the upstream agent that delegated access. See [Section 8.10](#810-token-exchange) for details on token exchange and the `act` claim structure.
 - **User identity claims** (when `openid` scope was requested):
   - `sub` (REQUIRED if openid scope granted): User identifier
   - `name` (OPTIONAL): User's full name
