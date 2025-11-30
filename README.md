@@ -855,7 +855,11 @@ Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "s
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
-request_type=auth&resource=https://resource.example&redirect_uri=https://agent.example/callback&scope=data.read+data.write&state=af0ifjsldkj
+request_type=auth& \
+resource=https://resource.example& \
+redirect_uri=https://agent.example/callback& \
+scope=data.read+data.write& \
+state=af0ifjsldkj
 ```
 
 ### 8.4. Auth Response
@@ -896,8 +900,7 @@ If the auth server responds with a `request_token` (indicating user consent is r
 1. **Agent receives request_token**: After making an auth request ([Section 8.3](#83-agent-auth-request)), the auth server responds with:
    ```json
    {
-     "request_token": "eyJhbGciOiJub25lIn0.eyJleHAiOjE3MzAyMTgyMDB9.",
-     "expires_in": 600
+     "request_token": "eyJhbGciOiJub25lIn0.eyJleHAiOjE3MzAyMTgyMDB9."
    }
    ```
 
@@ -907,7 +910,7 @@ If the auth server responds with a `request_token` (indicating user consent is r
    ```
 
 3. **User authenticates and consents**: At the auth server:
-   - User authenticates (if not already authenticated via SSO)
+   - User authenticates (if not already authenticated)
    - Auth server displays the authorization request details (resource, scopes, agent identity)
    - User reviews and grants or denies consent
    - Auth server generates an authorization code
@@ -927,7 +930,9 @@ If the auth server responds with a `request_token` (indicating user consent is r
    Signature: sig=:...signature bytes...:
    Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
-   request_type=code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https://agent.example/callback
+   request_type=code& \
+   code=SplxlOBeZQQYbYS6WxSbIA& \
+   redirect_uri=https://agent.example/callback
    ```
 
 6. **Auth server issues tokens**: The auth server validates the code and agent signature, then responds with tokens:
@@ -1103,7 +1108,10 @@ Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "s
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
-request_type=exchange&resource=https://resource2.example&auth_server=https://auth2.example&scope=data.read
+request_type=exchange& \
+resource=https://resource2.example& \
+auth_server=https://auth2.example& \
+scope=data.read
 ```
 
 **Response:**
