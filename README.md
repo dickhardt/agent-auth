@@ -1647,12 +1647,13 @@ This shows the OAuth ecosystem is evolving toward concepts AAuth explores. The d
 **Not an exhaustive list, but key differentiators:**
 
 1. **Message integrity**: HTTPSig provides tampering detection that DPoP and mTLS don't
-2. **No optionality**: Clear requirements, guaranteed interoperability
-3. **No legacy cruft**: Designed for modern security, no backward compatibility constraints
-4. **Progressive agent authentication**: Three levels (pseudonymous, identified, authorized)
-5. **Agent-centric model**: HTTPS identity, delegation with persistent sub across key rotation
-6. **Unified auth**: Single token, single protocol for authentication and authorization
-7. **Conformance**: Binary compliance with clear test suites per profile
+2. **No client secrets or bearer tokens**: Eliminates shared secrets and token exfiltration risks through cryptographic proof-of-possession
+3. **No optionality**: Clear requirements, guaranteed interoperability
+4. **No legacy cruft**: Designed for modern security, no backward compatibility constraints
+5. **Progressive agent authentication**: Three levels (pseudonymous, identified, authorized)
+6. **Agent-centric model**: HTTPS identity, delegation with persistent sub across key rotation
+7. **Unified auth**: Single token, single protocol for authentication and authorization
+8. **Conformance**: Binary compliance with clear test suites per profile
 
 #### Relationship to OAuth
 
