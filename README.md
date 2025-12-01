@@ -404,7 +404,22 @@ Agent-Auth: httpsig; auth-token; resource="https://resource.example"; auth_serve
 
 **Agent response:** Obtain auth token from the specified auth server, then retry request with `sig=jwt` and the auth token.
 
-### 4.4. Status Codes and Progressive Rate Limiting
+### 4.4. User Interaction Required
+
+When a resource requires user interaction (login, consent, or OAuth flow), it returns a `user_interaction` URL where the agent should direct the user.
+
+```
+Agent-Auth: httpsig; user_interaction="https://resource.example/auth?session=xyz"
+```
+
+**With downstream resource parameters:**
+```
+Agent-Auth: httpsig; user_interaction="https://resource.example/auth?session=xyz"; resource="https://downstream.example"; auth_server="https://auth.example"
+```
+
+**Agent response:** Direct the user to the `user_interaction` URL with a `return_url` parameter, wait for the user to complete the interaction, then retry the original request. See [Section 8.9](#89-resource-initiated-user-interaction) for details.
+
+### 4.5. Status Codes and Progressive Rate Limiting
 
 While `Agent-Auth` is typically used with **401 Unauthorized**, resources **MAY** use it with other status codes to enable progressive rate limiting and abuse mitigation based on authentication level.
 
@@ -443,19 +458,20 @@ Agent-Auth: httpsig; auth-token; resource="https://resource.example"; auth_serve
 
 This allows resources to block abusive pseudonymous traffic while still accepting identified or authorized requests from the same origin.
 
-### 4.5. Parameters
+### 4.6. Parameters
 
 **Agent-Auth header parameters:**
 - `httpsig`: Authentication scheme (REQUIRED for all responses)
 - `identity`: Boolean parameter (?1 = true) indicating agent identity is required
 - `auth-token`: Bare token indicating authorization is required
-- `resource`: String parameter with the resource identifier for authorization
-- `auth_server`: String parameter with the HTTPS URL of the authorization server
-- `scope`: String parameter with space-separated scopes
+- `resource`: String parameter with the resource identifier for authorization ([Section 8.3](#83-agent-auth-request))
+- `auth_server`: String parameter with the HTTPS URL of the authorization server ([Section 8.3](#83-agent-auth-request))
+- `scope`: String parameter with space-separated scopes ([Section 8.3](#83-agent-auth-request))
 - `auth_request_url`: String parameter with URL to an Auth Request Document ([Section 10](#10-auth-request-document)) containing detailed authorization requirements
-- `algs`: Inner list of supported HTTPSig algorithms (OPTIONAL)
+- `user_interaction`: String parameter with URL where the agent should direct the user for interaction ([Section 8.9](#89-resource-initiated-user-interaction))
+- `algs`: Inner list of supported HTTPSig algorithms ([Section 9](#9-http-message-signing-profile))
 
-### 4.6. Compatibility with WWW-Authenticate
+### 4.7. Compatibility with WWW-Authenticate
 
 Resources **MAY** include both `Agent-Auth` and `WWW-Authenticate` headers to support multiple authentication protocols:
 
