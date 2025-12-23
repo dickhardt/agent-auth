@@ -135,7 +135,7 @@ AAuth's protocol features directly address each trend:
 
 - **agent**: An autonomous process or application identified by an HTTPS URL (the `agent` claim). An agent may act directly as an **agent server** or as an **agent delegate** using delegated authority from an agent server.
 
-- **agent server**: An agent acting with its authoritative identity, using its published JWKS to sign requests directly. The agent server publishes metadata and keys at `https://agent.example/.well-known/aauth-agent-server` and may issue **agent tokens** to delegate its identity to agent delegates. For simplified key management for the long tail of agent servers see [Appendix B](#appendix-b-long-tail-agent-servers).
+- **agent server**: An agent acting with its authoritative identity, using its published JWKS to sign requests directly. The agent server publishes metadata and keys at `https://agent.example/.well-known/aauth-agent` and may issue **agent tokens** to delegate its identity to agent delegates. For simplified key management for the long tail of agent servers see [Appendix B](#appendix-b-long-tail-agent-servers).
 
 - **agent delegate**: An agent acting under delegated authority from an agent server. An agent delegate proves its identity by presenting an **agent token** (JWT) that binds its signing key to the agent server's identity. Agent delegates include server workloads (e.g., SPIFFE workloads), application installations (mobile, desktop, CLI), and device-specific deployments. 
 
@@ -154,6 +154,8 @@ AAuth's protocol features directly address each trend:
 - **resource**: A collection of one or more protected HTTPS endpoints identified by an HTTPS URL. A resource issues **resource tokens** to bind an agent and its access request to its identity. In some cases, the resource may be the agent itself (e.g., for SSO or user authentication).
 
 - **resource token**: A proof-of-possession JWT issued by a resource to an agent, binding the agent's identity and access request to the resource's identity. Presented to the auth server as proof of the access request's legitimacy. The JWT header includes `"typ": "resource+jwt"` (media type: `application/resource+jwt`).
+
+- **resource metadata**: A JSON document published by a resource at `/.well-known/aauth-resource` containing the resource's configuration including its identifier, auth server, resource token endpoint, and supported capabilities.
 
 
 ### 2.2 Existing Definitions
@@ -677,7 +679,7 @@ When an agent presents a resource token, the auth server **MUST** validate:
 2. Verify `typ` is `"resource+jwt"`
 3. Extract `kid` from the JOSE header
 4. Extract `iss` (resource identifier) from the payload
-5. Fetch the resource's metadata from `{iss}/.well-known/aauth-resource-server`
+5. Fetch the resource's metadata from `{iss}/.well-known/aauth-resource`
 6. Extract `jwks_uri` from the metadata
 7. Fetch the resource's JWKS from `jwks_uri`
 8. Match the signing key by `kid`
@@ -837,7 +839,7 @@ Metadata documents enable dynamic discovery of endpoints, capabilities, and keys
 
 ### 8.1. Agent Metadata
 
-Agent servers **MUST** publish metadata at `/.well-known/aauth-agent-server`.
+Agent servers **MUST** publish metadata at `/.well-known/aauth-agent`.
 
 **Required fields:**
 
@@ -872,7 +874,7 @@ Agent servers **MUST** publish metadata at `/.well-known/aauth-agent-server`.
 
 ### 8.2. Auth Server Metadata
 
-Auth servers **MUST** publish metadata at `/.well-known/aauth-auth-server`.
+Auth servers **MUST** publish metadata at `/.well-known/aauth-issuer`.
 
 **Required fields:**
 
@@ -915,7 +917,7 @@ Auth servers **MUST** publish metadata at `/.well-known/aauth-auth-server`.
 
 ### 8.3. Resource Metadata
 
-Resources **MUST** publish metadata at `/.well-known/aauth-resource-server`.
+Resources **MUST** publish metadata at `/.well-known/aauth-resource`.
 
 **Required fields:**
 
@@ -1006,7 +1008,7 @@ When an agent knows the required scope or auth_request_url upfront (without firs
 
 **Request:**
 
-The agent makes a signed POST request to the resource's `resource_token_endpoint` (discovered from resource metadata at `/.well-known/aauth-resource-server`).
+The agent makes a signed POST request to the resource's `resource_token_endpoint` (discovered from resource metadata at `/.well-known/aauth-resource`).
 
 **Request parameters:**
 
