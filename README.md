@@ -1678,17 +1678,17 @@ This specification registers the following identifiers in their respective IANA 
 
 **Registry:** Well-Known URIs (RFC 8615)
 
-**URI suffix:** `aauth-agent-server`
+**URI suffix:** `aauth-agent`
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 8.1
 - **Related information:** Metadata document for AAuth agent servers
 
-**URI suffix:** `aauth-auth-server`
+**URI suffix:** `aauth-issuer`
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 8.2
 - **Related information:** Metadata document for AAuth authorization servers
 
-**URI suffix:** `aauth-resource-server`
+**URI suffix:** `aauth-resource`
 - **Change controller:** IETF
 - **Specification document:** This specification, Section 8.3
 - **Related information:** Metadata document for AAuth resources
