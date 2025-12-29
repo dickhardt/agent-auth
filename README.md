@@ -403,7 +403,7 @@ Requires HTTP Message Signing with any signature scheme (pseudonymous, identifie
 Agent-Auth: httpsig
 ```
 
-**Agent response:** Include `Signature-Key` header with any scheme (sig=hwk, sig=jwks, sig=x509, or sig=jwt).
+**Agent response:** Include `Signature-Key` header with any scheme (scheme=hwk, scheme=jwks, scheme=x509, or scheme=jwt).
 
 ### 4.2. Identity Required
 
@@ -413,7 +413,7 @@ Requires agent identity verification using verifiable agent identifiers.
 Agent-Auth: httpsig; identity=?1
 ```
 
-**Agent response:** Use `sig=jwks` or `sig=x509` (agent server) or `sig=jwt` with agent token (agent delegate).
+**Agent response:** Use `scheme=jwks` or `scheme=x509` (agent server) or `scheme=jwt` with agent token (agent delegate).
 
 **With algorithm restrictions:**
 ```
@@ -430,7 +430,7 @@ Requires authorization from an auth server. The resource issues a resource token
 Agent-Auth: httpsig; auth-token; resource_token="eyJhbGciOiJFZERTQSIsInR5cCI6InJlc291cmNlK2p3dCIsImtpZCI6InJlc291cmNlLWtleS0xIn0.eyJpc3MiOiJodHRwczovL3Jlc291cmNlLmV4YW1wbGUiLCJhdWQiOiJodHRwczovL2F1dGguZXhhbXBsZSIsImFnZW50IjoiaHR0cHM6Ly9hZ2VudC5leGFtcGxlIiwiYWdlbnRfamt0IjoiTnpiTHNYaDh1RENjZC02TU53WEY0V183bm9XWEZaQWZIa3hac1JHQzlYcyIsImV4cCI6MTczMDIyMTIwMCwic2NvcGUiOiJkYXRhLnJlYWQgZGF0YS53cml0ZSJ9.signature"; auth_server="https://auth.example"
 ```
 
-**Agent response:** Present the resource token to the specified auth server to obtain an auth token ([Section 6](#6-resource-tokens)), then retry request with `sig=jwt` and the auth token.
+**Agent response:** Present the resource token to the specified auth server to obtain an auth token ([Section 6](#6-resource-tokens)), then retry request with `scheme=jwt` and the auth token.
 
 ### 4.4. User Interaction Required
 
@@ -471,9 +471,9 @@ Retry-After: 60
 ```
 
 **Example progressive rate limiting:**
-- Pseudonymous (sig=hwk): 10 requests/minute
-- Identified (sig=jwks, sig=x509, or sig=jwt with agent-token): 100 requests/minute
-- Authorized (sig=jwt with auth-token): 1000 requests/minute
+- Pseudonymous (scheme=hwk): 10 requests/minute
+- Identified (scheme=jwks, scheme=x509, or scheme=jwt with agent-token): 100 requests/minute
+- Authorized (scheme=jwt with auth-token): 1000 requests/minute
 
 **403 Forbidden** - Access denied for current authentication level
 
@@ -597,7 +597,7 @@ In both cases, the new agent token uses the same `sub` (agent delegate identifie
 
 ### 5.7. Validation by Resources and Auth Servers
 
-When an agent presents `Signature-Key: sig=jwt; jwt="<agent-token>"`, the recipient **MUST** validate:
+When an agent presents `Signature-Key: sig=(scheme=jwt jwt="<agent-token>")`, the recipient **MUST** validate:
 
 1. Parse the JWT and extract the JOSE header
 2. Verify `typ` is `"agent+jwt"`
@@ -804,7 +804,7 @@ The encrypted payload is the signed JWT (JWS). Only the resource possessing the 
 
 ### 7.7. Validation by Resources
 
-When an agent presents `Signature-Key: sig=jwt; jwt="<auth-token>"`, the resource **MUST** validate:
+When an agent presents `Signature-Key: sig=(scheme=jwt jwt="<auth-token>")`, the resource **MUST** validate:
 
 **For encrypted auth tokens (JWE format):**
 
@@ -959,7 +959,7 @@ GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 ```
 
 **Example identified request (agent delegate):**
@@ -968,7 +968,7 @@ GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 ```
 
 **Example authorized request:**
@@ -977,7 +977,7 @@ GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 ```
 
 ### 9.2. Agent-Auth Challenge
@@ -1023,7 +1023,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwks; id="https://agent.example"; kid="key-1"
+Signature-Key: sig=(scheme=jwks id="https://agent.example" kid="key-1")
 
 scope=data.read+data.write
 ```
@@ -1077,7 +1077,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 
 request_type=auth& \
 resource_token=eyJhbGciOiJFZERTQSIsInR5cCI6InJlc291cmNlK2p3dCIsImtpZCI6InJlc291cmNlLWtleS0xIn0.eyJpc3MiOiJodHRwczovL3Jlc291cmNlLmV4YW1wbGUiLCJhdWQiOiJodHRwczovL2F1dGguZXhhbXBsZSIsImFnZW50IjoiaHR0cHM6Ly9hZ2VudC5leGFtcGxlIiwiYWdlbnRfamt0IjoiTnpiTHNYaDh1RENjZC02TU53WEY0V183bm9XWEZaQWZIa3hac1JHQzlYcyIsImV4cCI6MTczMDIyMTIwMCwic2NvcGUiOiJkYXRhLnJlYWQgZGF0YS53cml0ZSJ9.signature& \
@@ -1092,7 +1092,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwks; id="https://agent.example"; kid="key-1"
+Signature-Key: sig=(scheme=jwks id="https://agent.example" kid="key-1")
 
 request_type=auth& \
 scope=profile+email& \
@@ -1183,7 +1183,7 @@ If the auth server responds with a `request_token` (indicating user consent is r
    Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
    Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
    Signature: sig=:...signature bytes...:
-   Signature-Key: sig=jwt; jwt="eyJhbGc..."
+   Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 
    request_type=code& \
    code=SplxlOBeZQQYbYS6WxSbIA& \
@@ -1224,7 +1224,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 
 request_type=code&code=AUTH_CODE_123
 ```
@@ -1258,7 +1258,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 
 request_type=refresh&refresh_token=eyJhbGc...
 ```
@@ -1285,7 +1285,7 @@ GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 ```
 
 The resource validates the auth token and signature, then returns the requested data if authorized.
@@ -1347,7 +1347,7 @@ A resource acts as an agent when it:
 - `request_type` (REQUIRED): Must be `exchange`
 - `resource_token` (REQUIRED): The resource token from the downstream resource's Agent-Auth challenge
 
-The upstream auth token MUST be presented via the `Signature-Key` header using `sig=jwt; jwt="<upstream-auth-token>"`.
+The upstream auth token MUST be presented via the `Signature-Key` header using `sig=(scheme=jwt jwt="<upstream-auth-token>")`.
 
 **Example request:**
 
@@ -1358,7 +1358,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt; jwt="eyJhbGc..."
+Signature-Key: sig=(scheme=jwt jwt="eyJhbGc...")
 
 request_type=exchange& \
 resource_token=eyJhbGciOiJFZERTQSIsInR5cCI6InJlc291cmNlK2p3dCIsImtpZCI6InJlc291cmNlLWtleS0xIn0.eyJpc3MiOiJodHRwczovL3Jlc291cmNlMi5leGFtcGxlIiwiYXVkIjoiaHR0cHM6Ly9hdXRoMi5leGFtcGxlIiwiYWdlbnQiOiJodHRwczovL3Jlc291cmNlMS5leGFtcGxlIiwiYWdlbnRfamt0IjoiTnpiTHNYaDh1RENjZC02TU53WEY0V183bm9XWEZaQWZIa3hac1JHQzlYcyIsImV4cCI6MTczMDIyMTIwMCwic2NvcGUiOiJkYXRhLnJlYWQifQ.signature
@@ -1470,16 +1470,35 @@ All AAuth requests **MUST** include the `Signature-Key` header, and `signature-k
 
 ### 10.1. Signature-Key Header
 
-The `Signature-Key` header provides the keying material required to verify the HTTP signature. It uses the format defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
+The `Signature-Key` header provides the keying material required to verify the HTTP signature. It is a Structured Field Dictionary (RFC 8941) as defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
+
+**Format:**
+
+```
+Signature-Key: <label>=(scheme=<token> <parameters>...)
+```
+
+**AAuth Profile Requirements:**
+
+- The `Signature-Key` dictionary **MUST** contain exactly one member
+- The member key (label) **MUST** match the label used in `Signature-Input` and `Signature`
+- AAuth supports one signature per request; multiple signatures are out of scope
+- Additional hop-by-hop signatures (e.g., proxy signatures) are not supported in this profile
 
 **Supported schemes:**
 
-- `sig=hwk` - Header Web Key (pseudonymous, no identity)
-- `sig=jwks` - Identified signer (explicit identity with id + optional metadata)
-- `sig=x509` - X.509 certificate chain (explicit identity via PKI)
-- `sig=jwt` - JWT containing confirmation key (explicit identity, agent-token or auth-token)
+- `scheme=hwk` - Header Web Key (pseudonymous, no identity)
+- `scheme=jwks` - Identified signer (explicit identity with JWKS discovery)
+- `scheme=x509` - X.509 certificate chain (explicit identity via PKI)
+- `scheme=jwt` - JWT containing confirmation key (agent-token or auth-token)
 
-The signature label in `Signature-Key` **MUST** match the label used in `Signature-Input` and `Signature`.
+**Example:**
+
+```
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
+Signature: sig=:MEQCIAZg1fF0...:
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
+```
 
 ### 10.2. Signature Algorithm Requirements
 
@@ -1565,7 +1584,7 @@ This scoping ensures nonces are unique per (authority, key, nonce) tuple within 
 
 ### 10.6. Example Signatures
 
-The following examples demonstrate the required signature coverage for different request patterns. All examples use `sig=hwk` for brevity; the same component coverage applies to `sig=jwks`, `sig=x509`, and `sig=jwt`.
+The following examples demonstrate the required signature coverage for different request patterns. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks`, `scheme=x509`, and `scheme=jwt`.
 
 **Example 1: GET request without query or body**
 ```http
@@ -1573,7 +1592,7 @@ GET /api/data HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 ```
 
 **Example 2: GET request with query, no body**
@@ -1582,7 +1601,7 @@ GET /api/data?user=alice&limit=10 HTTP/1.1
 Host: resource.example
 Signature-Input: sig=("@method" "@authority" "@path" "@query" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 ```
 
 **Example 3: POST request with body, no query**
@@ -1593,7 +1612,7 @@ Content-Type: application/json
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 
 {"action":"update","value":42}
 ```
@@ -1606,7 +1625,7 @@ Content-Type: application/json
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "@query" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 
 {"action":"update","value":42}
 ```
@@ -1620,22 +1639,40 @@ Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Nonce: Y3VyaW91c2x5Y3VyaW91cw
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "nonce" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 
 {"action":"update","value":42}
 ```
 
 ### 10.7. Key Discovery and Verification
 
-This section describes how to obtain the public key for verifying HTTP Message Signatures based on the `Signature-Key` header scheme.
+This section describes how to obtain the public key for verifying HTTP Message Signatures based on the `Signature-Key` header.
 
-**For sig=hwk (Pseudonymous):**
-1. Extract key parameters directly from the Signature-Key header
-2. Reconstruct the public key
-3. Verify the HTTPSig signature
+**General Procedure:**
 
-**For sig=jwks (Identified Signer):**
-1. Extract `id`, optional `well-known`, and `kid` from Signature-Key header
+1. Parse `Signature-Key` as a Structured Field Dictionary
+2. Extract the signature label from `Signature-Input` header
+3. Select the matching dictionary member from `Signature-Key` using the label
+4. Extract the `scheme` parameter to determine the key distribution method
+5. Follow the scheme-specific verification procedure below
+
+**For scheme=hwk (Header Web Key - Pseudonymous):**
+1. Extract key parameters directly from the dictionary member (kty, crv, x, etc.)
+2. Reconstruct the public key from the parameters
+3. Verify the HTTPSig signature using the reconstructed key
+
+**For scheme=jwks (JWKS Discovery - Identified Signer):**
+
+The jwks scheme supports two modes for key discovery:
+
+**Mode 1: Direct JWKS URL (when `jwks` parameter is present):**
+1. Extract `jwks` URL and `kid` from the dictionary member
+2. Fetch JWKS from the `jwks` URL
+3. Match the key by `kid`
+4. Verify the HTTPSig signature using the matched public key
+
+**Mode 2: Identifier + Metadata (when `id` parameter is present):**
+1. Extract `id`, optional `well-known`, and `kid` from the dictionary member
 2. If `well-known` is present:
    - Fetch metadata from `{id}/.well-known/{well-known}`
    - Extract `jwks_uri` from metadata
@@ -1645,8 +1682,8 @@ This section describes how to obtain the public key for verifying HTTP Message S
 4. Match the key by `kid`
 5. Verify the HTTPSig signature using the matched public key
 
-**For sig=x509 (X.509 Certificate Chain):**
-1. Extract `x5u` (certificate URL) and `x5t` (certificate thumbprint) from Signature-Key header
+**For scheme=x509 (X.509 Certificate Chain):**
+1. Extract `x5u` (certificate URL) and `x5t` (certificate thumbprint) from the dictionary member
 2. Check cache for certificate with matching `x5t` thumbprint
 3. If cached certificate found and still valid, skip to step 6
 4. Fetch the PEM file from the `x5u` URL
@@ -1659,9 +1696,9 @@ This section describes how to obtain the public key for verifying HTTP Message S
 7. Verify the HTTPSig signature using the extracted public key
 8. Cache the certificate indexed by `x5t` for future requests
 
-**For sig=jwt (Agent Token or Auth Token):**
+**For scheme=jwt (Agent Token or Auth Token):**
 
-When `Signature-Key` uses `sig=jwt`, the JWT **MUST** be validated first according to the relevant AAuth JWT profile before the `cnf.jwk` claim can be trusted for HTTPSig verification.
+When `Signature-Key` uses `scheme=jwt`, the JWT **MUST** be validated first according to the relevant AAuth JWT profile before the `cnf.jwk` claim can be trusted for HTTPSig verification.
 
 1. Extract the JWT from the Signature-Key header
 2. Parse the JWT and determine token type from `typ` in JOSE header
