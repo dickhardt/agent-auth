@@ -1480,10 +1480,18 @@ Signature-Key: <label>=(scheme=<token> <parameters>...)
 
 **AAuth Profile Requirements:**
 
-- The `Signature-Key` dictionary **MUST** contain exactly one member
-- The member key (label) **MUST** match the label used in `Signature-Input` and `Signature`
-- AAuth supports one signature per request; multiple signatures are out of scope
-- Additional hop-by-hop signatures (e.g., proxy signatures) are not supported in this profile
+The `Signature-Key` header in AAuth is constrained to exactly one signature per request. Receivers **MUST** follow this algorithm to validate label consistency and enforce single-signature behavior:
+
+1. Parse `Signature-Key` as a Structured Fields Dictionary (RFC 8941)
+2. Verify the dictionary contains exactly one member; if zero or multiple members, **reject the request**
+3. Let the dictionary member name be **Lk** (the key label)
+4. Parse `Signature-Input` header and verify it contains exactly one label **Ls**; if zero or multiple labels, **reject the request**
+5. Parse `Signature` header and verify it contains exactly one label **Lσ**; if zero or multiple labels, **reject the request**
+6. Verify **Lk** = **Ls** = **Lσ**; if any mismatch occurs, **reject the request**
+
+**Scope and Proxy Behavior:**
+
+These requirements apply to the end-to-end signature between the originating client and the AAuth receiver (Authorization Server or Resource Server). AAuth does not define or support additional hop-by-hop signatures added by intermediate proxies or other infrastructure. If intermediaries modify requests, they invalidate the end-to-end signature, and the receiver **MUST** reject the request
 
 **Supported schemes:**
 
@@ -1516,6 +1524,8 @@ HTTP Message Signatures in AAuth **MUST** cover the following components:
 - `@authority`: The request authority (see [Section 10.3.1](#1031-canonical-authority))
 - `@path`: The request path
 - `signature-key`: The Signature-Key header value
+
+> **Rationale for signature-key coverage:** Including `signature-key` as a covered component ensures the key discovery inputs are integrity-protected and bound to the signature. This prevents intermediaries from swapping or mutating key references (e.g., changing a `scheme=jwks` URL to a malicious endpoint, or substituting an attacker's public key in a `scheme=hwk` header). By covering `signature-key`, the signature cryptographically binds the verification key to the signed message
 
 **Conditional requirements:**
 - `@query`: **MUST** be included if and only if the request target contains a query string (indicated by the presence of `?`)
@@ -1663,24 +1673,36 @@ This section describes how to obtain the public key for verifying HTTP Message S
 
 **For scheme=jwks (JWKS Discovery - Identified Signer):**
 
-The jwks scheme supports two modes for key discovery:
+The jwks scheme supports two mutually exclusive modes for key discovery. Receivers **MUST** determine the mode by checking which parameters are present:
 
-**Mode 1: Direct JWKS URL (when `jwks` parameter is present):**
-1. Extract `jwks` URL and `kid` from the dictionary member
-2. Fetch JWKS from the `jwks` URL
-3. Match the key by `kid`
-4. Verify the HTTPSig signature using the matched public key
+**Mode 1: Direct JWKS URL**
+- **REQUIRED parameters:** `jwks` (HTTPS URL to JWKS document), `kid` (key identifier)
+- **MUST NOT be present:** `id`, `well-known`
+- **Discovery procedure:**
+  1. Extract `jwks` URL and `kid` from the dictionary member
+  2. Verify `id` and `well-known` parameters are absent; if present, **reject the request**
+  3. Fetch JWKS from the `jwks` URL via HTTPS
+  4. Match the key by `kid`
+  5. Verify the HTTPSig signature using the matched public key
 
-**Mode 2: Identifier + Metadata (when `id` parameter is present):**
-1. Extract `id`, optional `well-known`, and `kid` from the dictionary member
-2. If `well-known` is present:
-   - Fetch metadata from `{id}/.well-known/{well-known}`
-   - Extract `jwks_uri` from metadata
-   - Fetch JWKS from `jwks_uri`
-3. If `well-known` is absent:
-   - Fetch `{id}` directly as JWKS
-4. Match the key by `kid`
-5. Verify the HTTPSig signature using the matched public key
+**Mode 2: Identifier + Metadata**
+- **REQUIRED parameters:** `id` (signer identifier as HTTPS URL), `kid` (key identifier)
+- **OPTIONAL parameters:** `well-known` (metadata document name)
+- **MUST NOT be present:** `jwks`
+- **Discovery procedure:**
+  1. Extract `id`, `kid`, and optional `well-known` from the dictionary member
+  2. Verify `jwks` parameter is absent; if present, **reject the request**
+  3. If `well-known` is present:
+     - Fetch metadata from `{id}/.well-known/{well-known}` via HTTPS
+     - Parse as JSON metadata document
+     - Extract `jwks_uri` property from metadata
+     - Fetch JWKS from `jwks_uri` via HTTPS
+  4. If `well-known` is absent:
+     - Fetch `{id}` directly as JWKS via HTTPS
+  5. Match the key by `kid`
+  6. Verify the HTTPSig signature using the matched public key
+
+Receivers **MUST** reject requests where both `jwks` and `id` parameters are present, or where neither is present
 
 **For scheme=x509 (X.509 Certificate Chain):**
 1. Extract `x5u` (certificate URL) and `x5t` (certificate thumbprint) from the dictionary member
