@@ -1470,28 +1470,20 @@ All AAuth requests **MUST** include the `Signature-Key` header, and `signature-k
 
 ### 10.1. Signature-Key Header
 
-The `Signature-Key` header provides the keying material required to verify the HTTP signature. It is a Structured Field Dictionary (RFC 8941) as defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
+The `Signature-Key` header provides the keying material required to verify the HTTP signature. Key discovery mechanisms are defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
 
-**Format:**
+**Structure:**
 
-```
-Signature-Key: <label>=(scheme=<token> <parameters>...)
-```
+`Signature-Key` is an RFC 8941 Structured Fields Dictionary. The dictionary:
+- **MUST** contain exactly one member
+- The dictionary member name is the signature label
+- The dictionary member value is an Inner List whose parameters describe key discovery
 
-**AAuth Profile Requirements:**
+**AAuth Profile:**
 
-The `Signature-Key` header in AAuth is constrained to exactly one signature per request. Receivers **MUST** follow this algorithm to validate label consistency and enforce single-signature behavior:
+AAuth supports one signature per request. Multiple signatures are out of scope.
 
-1. Parse `Signature-Key` as a Structured Fields Dictionary (RFC 8941)
-2. Verify the dictionary contains exactly one member; if zero or multiple members, **reject the request**
-3. Let the dictionary member name be **Lk** (the key label)
-4. Parse `Signature-Input` header and verify it contains exactly one label **Ls**; if zero or multiple labels, **reject the request**
-5. Parse `Signature` header and verify it contains exactly one label **Lσ**; if zero or multiple labels, **reject the request**
-6. Verify **Lk** = **Ls** = **Lσ**; if any mismatch occurs, **reject the request**
-
-**Scope and Proxy Behavior:**
-
-These requirements apply to the end-to-end signature between the originating client and the AAuth receiver (Authorization Server or Resource Server). AAuth does not define or support additional hop-by-hop signatures added by intermediate proxies or other infrastructure. If intermediaries modify requests, they invalidate the end-to-end signature, and the receiver **MUST** reject the request
+> **Note:** AAuth defines a single end-to-end signature between the client and the AAuth receiver (Authorization Server or Resource Server). Intermediaries or hop-by-hop signatures **MUST NOT** add, remove, or modify AAuth signature material.
 
 **Supported schemes:**
 
@@ -1508,6 +1500,19 @@ Signature: sig=:MEQCIAZg1fF0...:
 Signature-Key: sig=(scheme=hwk kty="OKP" crv="Ed25519" x="JrQLj5P...")
 ```
 
+#### 10.1.1. AAuth Signature Label Selection Algorithm
+
+Receivers **MUST** perform these steps:
+
+1. Parse `Signature-Key` as a Structured Fields Dictionary
+2. Verify `Signature-Key` contains exactly one dictionary member; otherwise reject
+3. Let the dictionary member name be **Lk**
+4. Parse `Signature-Input` and verify it contains exactly one label **Ls**; otherwise reject
+5. Parse `Signature` and verify it contains exactly one label; otherwise reject
+6. Verify that **Lk**, **Ls**, and the label in `Signature` are identical; if any mismatch occurs, reject
+
+This algorithm ensures unambiguous correlation of the signature label across all three headers
+
 ### 10.2. Signature Algorithm Requirements
 
 Implementations **MUST** support:
@@ -1523,9 +1528,7 @@ HTTP Message Signatures in AAuth **MUST** cover the following components:
 - `@method`: The HTTP request method
 - `@authority`: The request authority (see [Section 10.3.1](#1031-canonical-authority))
 - `@path`: The request path
-- `signature-key`: The Signature-Key header value
-
-> **Rationale for signature-key coverage:** Including `signature-key` as a covered component ensures the key discovery inputs are integrity-protected and bound to the signature. This prevents intermediaries from swapping or mutating key references (e.g., changing a `scheme=jwks` URL to a malicious endpoint, or substituting an attacker's public key in a `scheme=hwk` header). By covering `signature-key`, the signature cryptographically binds the verification key to the signed message
+- `signature-key`: The Signature-Key header value. Covering `signature-key` integrity-protects the key discovery inputs and prevents intermediaries from swapping or mutating the key reference without invalidating the signature
 
 **Conditional requirements:**
 - `@query`: **MUST** be included if and only if the request target contains a query string (indicated by the presence of `?`)
@@ -1660,11 +1663,10 @@ This section describes how to obtain the public key for verifying HTTP Message S
 
 **General Procedure:**
 
-1. Parse `Signature-Key` as a Structured Field Dictionary
-2. Extract the signature label from `Signature-Input` header
-3. Select the matching dictionary member from `Signature-Key` using the label
-4. Extract the `scheme` parameter to determine the key distribution method
-5. Follow the scheme-specific verification procedure below
+Receivers **MUST** first perform the label selection algorithm described in [Section 10.1.1](#1011-aauth-signature-label-selection-algorithm). After successfully extracting and validating the signature label:
+
+1. Extract the `scheme` parameter from the `Signature-Key` dictionary member
+2. Follow the scheme-specific verification procedure below
 
 **For scheme=hwk (Header Web Key - Pseudonymous):**
 1. Extract key parameters directly from the dictionary member (kty, crv, x, etc.)
