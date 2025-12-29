@@ -191,7 +191,7 @@ sequenceDiagram
     Agent->>Resource: unsigned request
     Resource->>Agent: 429 with<br/>Agent-Auth challenge
 
-    Agent->>Resource: HTTPSig request<br/>(sig=hwk)
+    Agent->>Resource: HTTPSig request<br/>(scheme=hwk)
     Resource->>Agent: 200 OK<br/>(higher rate limit)
 ```
 
@@ -204,7 +204,7 @@ sequenceDiagram
     participant Agent as agent server
     participant Resource as resource
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
     Resource->>Agent: fetch JWKS
     Agent->>Resource: JWKS
     Resource->>Resource: verify signature<br/>and identity
@@ -224,7 +224,7 @@ sequenceDiagram
     Delegate->>Server: request agent token
     Server->>Delegate: agent token
 
-    Delegate->>Resource: HTTPSig request<br/>(sig=jwt with agent-token)
+    Delegate->>Resource: HTTPSig request<br/>(scheme=jwt with agent-token)
     Resource->>Server: fetch JWKS
     Server->>Resource: JWKS
     Resource->>Resource: verify agent token<br/>and signature
@@ -241,14 +241,14 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
     Resource->>Agent: 401 with<br/>resource_token + auth_server
 
     Agent->>Auth: HTTPSig request<br/>with resource_token
     Auth->>Auth: validate resource_token<br/>evaluate policy
     Auth->>Agent: auth_token + refresh_token
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwt with auth-token)
     Resource->>Resource: verify auth token
     Resource->>Agent: 200 OK
 ```
@@ -288,7 +288,7 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
     Resource->>Agent: 401 with<br/>resource_token + auth_server
 
     Agent->>Auth: HTTPSig request<br/>with resource_token
@@ -302,7 +302,7 @@ sequenceDiagram
     Agent->>Auth: HTTPSig request<br/>with authorization_code
     Auth->>Agent: auth_token + refresh_token
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwt with auth-token)
     Resource->>Agent: 200 OK
 ```
 
@@ -322,7 +322,7 @@ sequenceDiagram
     Auth->>Auth: verify agent identity<br/>and token binding
     Auth->>Agent: new auth_token
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwt with auth-token)
     Resource->>Agent: 200 OK
 ```
 
@@ -337,7 +337,7 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwt with auth-token)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwt with auth-token)
     Resource->>Agent: 401 Agent-Auth:<br/>user_interaction="https://resource.example/auth?session=xyz"
 
     Agent->>User: redirect to user_interaction URL<br/>(with return_url)
@@ -371,19 +371,19 @@ sequenceDiagram
     participant Auth2 as auth server 2
     participant Resource2 as resource 2
 
-    Agent1->>Resource1: HTTPSig request<br/>(sig=jwt with auth token)
+    Agent1->>Resource1: HTTPSig request<br/>(scheme=jwt with auth token)
 
     Resource1->>Resource2: attempt access<br/>(no auth)
     Resource2->>Resource1: 401 Agent-Auth<br/>(resource_token, auth_server)
     Note over Resource1,Resource2: Resource 2 challenges<br/>with resource_token
 
-    Resource1->>Auth2: HTTPSig request<br/>(sig=jwt with upstream auth token)<br/>request_type=exchange<br/>+ resource_token
-    Note over Resource1,Auth2: Resource 1 acts as agent,<br/>presents upstream auth token via sig=jwt
+    Resource1->>Auth2: HTTPSig request<br/>(scheme=jwt with upstream auth token)<br/>request_type=exchange<br/>+ resource_token
+    Note over Resource1,Auth2: Resource 1 acts as agent,<br/>presents upstream auth token via scheme=jwt
 
     Auth2->>Auth2: Validate resource_token<br/>Validate upstream auth token<br/>Trust Auth Server 1<br/>Authorize exchange
     Auth2->>Resource1: auth_token with act claim<br/>(bound to Resource 1's key,<br/>shows delegation chain)
 
-    Resource1->>Resource2: HTTPSig request<br/>(sig=jwt with auth token)
+    Resource1->>Resource2: HTTPSig request<br/>(scheme=jwt with auth token)
     Resource2->>Resource1: 200 OK
 
     Resource1->>Agent1: 200 OK<br/>(aggregated response)
@@ -1390,7 +1390,7 @@ The downstream auth server (Auth Server 2) MUST:
    - Verify the `agent_jkt` matches the JWK Thumbprint of the requesting resource's signing key
    - Verify the token is not expired
    - Extract the `scope` or `auth_request_url` for authorization
-3. **Validate the upstream token** (presented in the `Signature-Key` header with `sig=jwt`):
+3. **Validate the upstream token** (presented in the `Signature-Key` header with `scheme=jwt`):
    - Verify the JWT signature using the upstream auth server's (Auth Server 1) published JWKS
    - Verify the token has not expired
    - Verify the `aud` claim matches the requesting resource
@@ -2123,7 +2123,7 @@ An existing OAuth 2.1 or OpenID Connect server can add AAuth support by implemen
 **HTTP Message Signing support:**
 - RFC 9421 implementation
 - Signature verification using keys from `Signature-Key` header
-- Support for `sig=hwk`, `sig=jwks`, `sig=x509`, and `sig=jwt` schemes
+- Support for `scheme=hwk`, `scheme=jwks`, `scheme=x509`, and `scheme=jwt` schemes
 
 **Agent token validation:**
 - Fetch and validate agent metadata
@@ -2155,7 +2155,7 @@ sequenceDiagram
     participant OAuth as OAuth/OIDC<br/>auth server
     participant API as OAuth-protected<br/>API
 
-    Agent->>Resource: HTTPSig request<br/>(sig=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
     Resource->>API: attempt to access<br/>(no token)
     API->>Resource: 401<br/>WWW-Authenticate: Bearer
 
@@ -2295,7 +2295,7 @@ $signer = (function() {
 
 ### B.6. Comparison to Agent Delegates
 
-Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `sig=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `sig=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
+Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `scheme=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `scheme=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
 
 ---
 
@@ -2534,7 +2534,7 @@ While fulfilling the web-bot-auth charter goals, AAuth extends to broader agent 
 - Providing a unified protocol for both bot identity and user authorization
 - Enabling interactive agents (browser, mobile, desktop) alongside autonomous bots
 
-The Signature-Key header's four schemes (sig=hwk, sig=jwks, sig=x509, sig=jwt) provide the flexibility to address both the web-bot-auth charter's requirements and the broader agent authorization scenarios that AAuth explores.
+The Signature-Key header's four schemes (scheme=hwk, scheme=jwks, scheme=x509, scheme=jwt) provide the flexibility to address both the web-bot-auth charter's requirements and the broader agent authorization scenarios that AAuth explores.
 
 ---
 
