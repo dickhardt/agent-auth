@@ -957,7 +957,7 @@ The agent makes a signed request to the resource including the `Signature-Key` h
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri");created=1730217600
+Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
@@ -1511,7 +1511,7 @@ The `created` timestamp **MUST NOT** be more than 60 seconds in the past or futu
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri");created=1730217600
+Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
 Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
