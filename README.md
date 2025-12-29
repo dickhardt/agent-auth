@@ -957,7 +957,7 @@ The agent makes a signed request to the resource including the `Signature-Key` h
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
@@ -966,7 +966,7 @@ Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 ```
@@ -975,7 +975,7 @@ Signature-Key: sig=jwt; jwt="eyJhbGc..."
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 ```
@@ -1021,7 +1021,7 @@ POST /resource/token HTTP/1.1
 Host: resource.example
 Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwks; id="https://agent.example"; kid="key-1"
 
@@ -1075,7 +1075,7 @@ POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
@@ -1090,7 +1090,7 @@ POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwks; id="https://agent.example"; kid="key-1"
 
@@ -1180,7 +1180,8 @@ If the auth server responds with a `request_token` (indicating user consent is r
    POST /agent/token HTTP/1.1
    Host: auth.example
    Content-Type: application/x-www-form-urlencoded
-   Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+   Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+   Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
    Signature: sig=:...signature bytes...:
    Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
@@ -1221,7 +1222,7 @@ POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
@@ -1255,7 +1256,7 @@ POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
@@ -1282,7 +1283,7 @@ The agent makes a signed request to the resource with the auth token.
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 ```
@@ -1355,7 +1356,7 @@ POST /agent/token HTTP/1.1
 Host: auth2.example
 Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@target-uri" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt; jwt="eyJhbGc..."
 
@@ -1463,6 +1464,10 @@ Auth servers **MAY** advertise supported request types in metadata using the `re
 
 AAuth uses HTTP Message Signing (HTTPSig) as defined in RFC 9421. This section provides a profile for AAuth implementations.
 
+All requirements in this section apply equally to AAuth receivers, which include both Authorization Servers and Resource Servers. When this section refers to "the receiver," it means any server verifying HTTP Message Signatures in an AAuth context.
+
+All AAuth requests **MUST** include the `Signature-Key` header, and `signature-key` **MUST** always be a covered component in the HTTP Message Signature. Requests missing the `Signature-Key` header or not covering `signature-key` in the signature **MUST** be rejected.
+
 ### 10.1. Signature-Key Header
 
 The `Signature-Key` header provides the keying material required to verify the HTTP signature. It uses the format defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
@@ -1485,58 +1490,142 @@ Implementations **MAY** support additional algorithms from the HTTP Signature Al
 
 ### 10.3. Covered Components
 
-Signatures **MUST** cover the following HTTP message components:
+HTTP Message Signatures in AAuth **MUST** cover the following components:
 
-**For all requests:**
-- `@method`: The HTTP method
-- `@target-uri`: The full request URI
-
-**For requests with a body:**
-- `content-type`: The Content-Type header
-- `content-digest`: The Content-Digest header (per RFC 9530)
-
-**For requests with Signature-Key header:**
+**Always required:**
+- `@method`: The HTTP request method
+- `@authority`: The request authority (see [Section 10.3.1](#1031-canonical-authority))
+- `@path`: The request path
 - `signature-key`: The Signature-Key header value
+
+**Conditional requirements:**
+- `@query`: **MUST** be included if and only if the request target contains a query string (indicated by the presence of `?`)
+- `@query` **MUST NOT** be included when no query string is present
+- `content-type` and `content-digest`: **MUST** be included if and only if the request contains a body
+- Body-related components **MUST NOT** be included when there is no body
+- `content-digest` **MUST** conform to RFC 9530
+
+**Optional components:**
+- `nonce`: **SHOULD** be included for non-idempotent requests (see [Section 10.5](#105-replay-prevention-with-nonce))
+
+### 10.3.1. Canonical Authority
+
+Each AAuth receiver **MUST** be configured with one or more canonical authorities. A canonical authority consists of:
+- The host (DNS name or IP address)
+- The port, if non-default for the scheme
+
+The canonical authority represents the authority value that callers are expected to use when making requests.
+
+When computing the signature base, the receiver **MUST** use the configured canonical authority as the value of `@authority`. The receiver **MUST NOT** derive `@authority` from request headers such as `Host`, `Forwarded`, `X-Forwarded-Host`, or similar headers.
+
+If the receiver's local routing or configuration indicates that the request was not received under an expected canonical authority, the receiver **MUST** reject the request.
+
+> **Note:** Implementations that are reachable under multiple authorities (e.g., multiple DNS names or load-balanced endpoints) MAY select among configured canonical authorities based on local routing information, provided the selected authority is one the receiver has been configured to accept.
 
 ### 10.4. Signature Parameters
 
 The `Signature-Input` header **MUST** include:
-- `created`: Signature creation timestamp
+- `created`: Signature creation timestamp (Unix time)
 
-The `created` timestamp **MUST NOT** be more than 60 seconds in the past or future to prevent replay attacks.
+The `created` timestamp **MUST NOT** be more than 60 seconds in the past or future relative to the receiver's current time, unless the receiver's policy specifies a different tolerance.
 
-### 10.5. Example Signatures
+The `created` parameter provides time-based bounds on signature validity and limits the window for replay attacks. However, the `created` timestamp alone does not prevent multiple replays of the same signed request within the validity window. For stronger replay protection on non-idempotent operations, receivers **SHOULD** require the `nonce` component (see [Section 10.5](#105-replay-prevention-with-nonce)).
 
-**Pseudonymous request (sig=hwk):**
+### 10.5. Replay Prevention with Nonce
+
+AAuth defines an **OPTIONAL** nonce mechanism for stronger replay protection beyond time-based validation.
+
+**Nonce header:**
+- Header field name: `Nonce`
+- Value format: base64url encoding (no padding) of at least 96 bits (12 bytes) of cryptographic entropy
+- Example: `Nonce: Y3VyaW91c2x5Y3VyaW91cw`
+
+**When to use nonces:**
+- Clients **SHOULD** include a `Nonce` header for non-idempotent requests (POST, PUT, DELETE, PATCH)
+- Receivers **SHOULD** require nonces for state-changing operations
+- Clients **MAY** omit nonces for idempotent operations (GET, HEAD) where replay is acceptable
+
+**Nonce signature coverage:**
+When a `Nonce` header is present in the request, it **MUST** be included as a covered component in the HTTP Message Signature.
+
+**Receiver validation:**
+When a receiver requires or accepts nonces:
+1. Verify the `Nonce` header is covered by the signature
+2. Verify the nonce has sufficient entropy (at least 96 bits)
+3. Check that the nonce has not been used previously within the replay window (determined by the `created` timestamp tolerance)
+4. Store the nonce in a replay cache to prevent reuse
+
+**Replay cache scoping:**
+Receivers **SHOULD** scope their replay cache at minimum by:
+- Canonical authority (the `@authority` value)
+- Public key identifier (derived from the `Signature-Key` header)
+- Nonce value
+
+This scoping ensures nonces are unique per (authority, key, nonce) tuple within the time window, preventing replay attacks without requiring global nonce tracking.
+
+### 10.6. Example Signatures
+
+The following examples demonstrate the required signature coverage for different request patterns. All examples use `sig=hwk` for brevity; the same component coverage applies to `sig=jwks`, `sig=x509`, and `sig=jwt`.
+
+**Example 1: GET request without query or body**
 ```http
 GET /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
 Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
 
-**Identified request (sig=jwt with agent token):**
+**Example 2: GET request with query, no body**
 ```http
-GET /api/data HTTP/1.1
+GET /api/data?user=alice&limit=10 HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "@query" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=jwt; jwt="eyJhbGciOiJFUzI1NiIsInR5cCI6ImFnZW50LXRva2VuIiwia2lkIjoia2V5LTEifQ..."
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 ```
 
-**Authorized request (sig=jwt with auth token):**
+**Example 3: POST request with body, no query**
 ```http
-GET /api/data HTTP/1.1
+POST /api/data HTTP/1.1
 Host: resource.example
-Signature-Input: sig=("@method" "@target-uri" "signature-key");created=1730217600
+Content-Type: application/json
+Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=jwt; jwt="eyJhbGciOiJFUzI1NiIsInR5cCI6ImF1dGgtdG9rZW4iLCJraWQiOiJrZXktMSJ9..."
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+
+{"action":"update","value":42}
 ```
 
-> **Note:** Requests with a body **MUST** include `content-type` and `content-digest` in the signature covered components ([Section 10.3](#103-covered-components)).
+**Example 4: POST request with body and query**
+```http
+POST /api/data?confirm=true HTTP/1.1
+Host: resource.example
+Content-Type: application/json
+Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+Signature-Input: sig=("@method" "@authority" "@path" "@query" "content-type" "content-digest" "signature-key");created=1730217600
+Signature: sig=:MEQCIAZg1fF0...:
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
 
-### 10.6. Key Discovery and Verification
+{"action":"update","value":42}
+```
+
+**Example 5: POST request with nonce (recommended for non-idempotent operations)**
+```http
+POST /api/data HTTP/1.1
+Host: resource.example
+Content-Type: application/json
+Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+Nonce: Y3VyaW91c2x5Y3VyaW91cw
+Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "nonce" "signature-key");created=1730217600
+Signature: sig=:MEQCIAZg1fF0...:
+Signature-Key: sig=hwk; kty="OKP"; crv="Ed25519"; x="JrQLj5P..."
+
+{"action":"update","value":42}
+```
+
+### 10.7. Key Discovery and Verification
 
 This section describes how to obtain the public key for verifying HTTP Message Signatures based on the `Signature-Key` header scheme.
 
@@ -1571,20 +1660,23 @@ This section describes how to obtain the public key for verifying HTTP Message S
 8. Cache the certificate indexed by `x5t` for future requests
 
 **For sig=jwt (Agent Token or Auth Token):**
+
+When `Signature-Key` uses `sig=jwt`, the JWT **MUST** be validated first according to the relevant AAuth JWT profile before the `cnf.jwk` claim can be trusted for HTTPSig verification.
+
 1. Extract the JWT from the Signature-Key header
 2. Parse the JWT and determine token type from `typ` in JOSE header
-3. Validate the JWT:
-   - If `typ` is `"agent+jwt"`: Follow validation steps in [Section 5.7](#57-validation-by-resources-and-auth-servers)
-   - If `typ` is `"auth+jwt"`: Follow validation steps in [Section 7.7](#77-validation-by-resources)
-4. Extract the public key from the JWT's `cnf.jwk` claim
+3. **Validate the JWT completely** according to its type:
+   - If `typ` is `"agent+jwt"`: Follow all validation steps in [Section 5.7](#57-validation-by-resources-and-auth-servers)
+   - If `typ` is `"auth+jwt"`: Follow all validation steps in [Section 7.7](#77-validation-by-resources)
+   - This includes verifying the JWT signature, issuer, audience, expiration, and all required claims
+4. **Only after successful JWT validation**, extract the public key from the JWT's `cnf.jwk` claim
 5. Verify the HTTPSig signature using the extracted public key
 
-### 10.7. Replay Prevention
+The two-step validation provides distinct security properties:
+- **JWT validation** establishes the token's issuer, audience, expiration, and authorization semantics
+- **HTTPSig verification** proves proof-of-possession of the private key corresponding to `cnf.jwk`
 
-While HTTPSig signatures include timestamps, applications **SHOULD** implement additional replay prevention:
-- Track recently seen `created` timestamps per agent
-- Reject requests with duplicate `created` values within the validity window
-- Use nonces for high-value operations
+Both validations **MUST** succeed for the request to be authenticated. This requirement applies equally to Authorization Servers and Resource Servers.
 
 ## 11. Auth Request Document
 
