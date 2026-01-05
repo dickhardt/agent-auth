@@ -1,0 +1,228 @@
+<pre class="metadata">
+Title: Auth Redirect Headers
+Shortname: auth-redirect-headers
+Status: ED
+Level: 1
+Editor: Dick Hardt
+Abstract:  
+  This specification defines a browser-mediated HTTP header transport
+  for authorization redirect parameters and results. The mechanism allows
+  Clients and Authorization Servers to exchange authorization request
+  parameters and authorization results via browser-set Sec-* headers
+  instead of URLs, DOM, or script-visible channels.
+Boilerplate: omit conformance
+Markup Shorthands: yes
+</pre>
+
+# Introduction
+
+Traditional OAuth and OpenID Connect redirect flows place authorization
+request parameters and response parameters in URLs (query, fragment)
+where they are exposed to:
+
+* page JavaScript
+* browser extensions
+* referer leakage
+* URL logging (browser history, analytics, proxies)
+* system components observing navigations
+
+This specification defines **Auth Redirect Headers**, a mechanism by which
+a User Agent may transport authorization redirect parameters using
+browser-controlled HTTP headers. These headers:
+
+* are **set by the User Agent**, not page script
+* are **not readable or writable** by page JavaScript
+* can be **hidden from unprivileged extensions**
+* allow authorization codes to be delivered without appearing in URLs
+* allow the User Agent to convey the initiating origin securely
+
+This specification does not introduce new authorization semantics. It
+defines an alternative transport for existing OAuth/OIDC redirect
+parameters.
+
+# Terminology
+
+User Agent (UA):
+: A Web browser or browser-like user agent implementing this specification.
+
+Client:
+: A Web application initiating an authorization request.
+
+Authorization Server (AS):
+: A Web service receiving authorization requests and producing authorization results.
+
+Redirect Parameters:
+: Parameters typically encoded in OAuth/OIDC redirects.
+
+Auth Redirect Header Transport:
+: The mechanism defined in this specification for transporting redirect
+  parameters via HTTP headers.
+
+# Conformance
+
+The key words **MUST**, **SHOULD**, and **MAY** are to be interpreted as
+described in RFC 2119.
+
+# Feature Discovery
+
+## Server Opt-In
+
+A Client or Authorization Server MAY advertise support by sending:
+
+Accept-CH: Sec-CH-Auth-Redirect
+
+The hint MAY be declared critical:
+
+Critical-CH: Sec-CH-Auth-Redirect
+
+## Browser Indication of Support
+
+A User Agent that supports this specification MUST, on subsequent
+requests, include:
+
+Sec-CH-Auth-Redirect: "v1"
+
+Absence of this header indicates that the User Agent does not support
+Auth Redirect Headers. Clients and Authorization Servers MUST fall back
+to classical redirect mechanisms when this header is absent.
+
+# Request Headers (Client → AS)
+
+## `Sec-Auth-Origin`
+
+The User Agent MUST include the header:
+
+Sec-Auth-Origin: <initiating-origin>
+
+The value MUST be the origin of the document that initiated the
+navigation.
+
+Page script MUST NOT be capable of setting or overriding this header.
+
+## `Sec-Auth-Params`
+
+The User Agent MUST include:
+
+Sec-Auth-Params: v1; enc=base64url; body=<base64url-encoded JSON>
+
+The `body` contains authorization redirect parameters supplied to the
+User Agent via a browser-controlled mechanism (see § parameter-injection).
+
+Page script MUST NOT be capable of setting this header.
+
+The Authorization Server MUST treat the value of `Sec-Auth-Params` as
+the authoritative representation of the authorization request.
+
+# Response Headers (AS → Client)
+
+## `Sec-Auth-Result`
+
+The Authorization Server MAY supply authorization results through:
+
+Sec-Auth-Result: v1; enc=base64url; body=<base64url-encoded JSON>
+
+### Authorization Code Handling
+
+* **Authorization codes MAY be delivered** via `Sec-Auth-Result`
+  when the User Agent ensures the header is not accessible to page script,
+  and is only exposed to the Client origin.
+
+* Authorization codes delivered in this manner MUST be short-lived and single-use.
+
+### Token Handling
+
+* **Access tokens, refresh tokens, and other bearer credentials MUST NOT**  
+  be delivered via this mechanism.
+* Such credentials MUST be delivered via an authenticated backchannel.
+
+## `Sec-Auth-Issuer`
+
+The Authorization Server MUST include:
+
+Sec-Auth-Issuer: <as-identifier>
+
+The Client MUST verify that this identifier matches the expected
+Authorization Server.
+
+# Redirect Flow
+
+## Client Initiation
+
+1. The Client constructs redirect parameters.
+2. The Client triggers navigation to the Authorization Server.
+3. The User Agent attaches `Sec-Auth-Origin` and `Sec-Auth-Params`.
+
+## AS Processing
+
+1. The Authorization Server validates `Sec-Auth-Origin`.
+2. The Authorization Server parses `Sec-Auth-Params`.
+
+## AS Response
+
+1. After user interaction, the AS returns a navigation to the Client.
+2. The AS attaches `Sec-Auth-Result` and `Sec-Auth-Issuer`.
+
+## Client Reception
+
+The User Agent MUST deliver the response headers to the Client origin.
+The User Agent MUST NOT expose these headers to page script unless explicitly
+permitted by server policy.
+
+# Supplying Redirect Parameters to the User Agent
+
+User Agents MUST provide a mechanism for Clients to supply redirect
+parameters without directly setting HTTP headers.
+
+User Agents MAY implement any of the following non-normative examples:
+
+* A new link or form attribute:
+
+  <a href="https://as.example/authorize"
+     authparams="base64url(JSON)">Sign In</a>
+
+* A structured JavaScript API that stores opaque parameters in browser state:
+
+  navigator.authRedirect.setParams(obj);
+
+The User Agent serializes and injects these parameters into
+`Sec-Auth-Params`.
+
+Page script MUST NOT be able to set or modify the HTTP headers directly.
+
+# Fallback Behavior
+
+When the User Agent does not send `Sec-CH-Auth-Redirect: "v1"`,
+Clients and Authorization Servers MUST use classical redirect mechanisms
+(URL parameters, fragment identifiers, PAR, etc.).
+
+# Security Considerations
+
+* Authorization codes MAY be transported in `Sec-Auth-Result` but MUST be short-lived and single-use.
+* Access tokens and refresh tokens MUST NOT be transmitted in this mechanism.
+* `Sec-Auth-*` headers MUST NOT be script-writable.
+* `Sec-Auth-*` headers SHOULD NOT be exposed to page script unless server policy permits.
+* Replay protection SHOULD be enforced; parameters SHOULD be single-use.
+* Authorization Servers MUST validate `Sec-Auth-Origin`.
+
+# Privacy Considerations
+
+* `Sec-Auth-Origin` reveals the initiating origin.
+* User Agents MAY restrict transmission of this header in high-privacy modes.
+* `Sec-Auth-*` headers MUST NOT be exposed cross-origin without explicit server opt-in.
+
+# IANA Considerations
+
+This specification registers the following HTTP headers:
+
+* `Sec-CH-Auth-Redirect`
+* `Sec-Auth-Origin`
+* `Sec-Auth-Params`
+* `Sec-Auth-Result`
+* `Sec-Auth-Issuer`
+
+# References
+
+* RFC 2119
+* HTTP Client Hints
+* Fetch Standard
+* HTML Standard

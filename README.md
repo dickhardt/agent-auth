@@ -204,7 +204,7 @@ sequenceDiagram
     participant Agent as agent server
     participant Resource as resource
 
-    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks_uri)
     Resource->>Agent: fetch JWKS
     Agent->>Resource: JWKS
     Resource->>Resource: verify signature<br/>and identity
@@ -241,7 +241,7 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks_uri)
     Resource->>Agent: 401 with<br/>resource_token + auth_server
 
     Agent->>Auth: HTTPSig request<br/>with resource_token
@@ -288,7 +288,7 @@ sequenceDiagram
     participant Resource as resource
     participant Auth as auth server
 
-    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks_uri)
     Resource->>Agent: 401 with<br/>resource_token + auth_server
 
     Agent->>Auth: HTTPSig request<br/>with resource_token
@@ -403,7 +403,7 @@ Requires HTTP Message Signing with any signature scheme (pseudonymous, identifie
 Agent-Auth: httpsig
 ```
 
-**Agent response:** Include `Signature-Key` header with any scheme (scheme=hwk, scheme=jwks, scheme=x509, or scheme=jwt).
+**Agent response:** Include `Signature-Key` header with any scheme (scheme=hwk, scheme=jwks_uri, scheme=x509, or scheme=jwt).
 
 ### 4.2. Identity Required
 
@@ -413,7 +413,7 @@ Requires agent identity verification using verifiable agent identifiers.
 Agent-Auth: httpsig; identity=?1
 ```
 
-**Agent response:** Use `scheme=jwks` or `scheme=x509` (agent server) or `scheme=jwt` with agent token (agent delegate).
+**Agent response:** Use `scheme=jwks_uri` or `scheme=x509` (agent server) or `scheme=jwt` with agent token (agent delegate).
 
 **With algorithm restrictions:**
 ```
@@ -472,7 +472,7 @@ Retry-After: 60
 
 **Example progressive rate limiting:**
 - Pseudonymous (scheme=hwk): 10 requests/minute
-- Identified (scheme=jwks, scheme=x509, or scheme=jwt with agent-token): 100 requests/minute
+- Identified (scheme=jwks_uri, scheme=x509, or scheme=jwt with agent-token): 100 requests/minute
 - Authorized (scheme=jwt with auth-token): 1000 requests/minute
 
 **403 Forbidden** - Access denied for current authentication level
@@ -1023,7 +1023,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwks;id="https://agent.example";kid="key-1"
+Signature-Key: sig=jwks_uri;id="https://agent.example";kid="key-1"
 
 scope=data.read+data.write
 ```
@@ -1092,7 +1092,7 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwks;id="https://agent.example";kid="key-1"
+Signature-Key: sig=jwks_uri;id="https://agent.example";kid="key-1"
 
 request_type=auth& \
 scope=profile+email& \
@@ -1488,7 +1488,7 @@ AAuth supports one signature per request. Multiple signatures are out of scope.
 **Supported schemes:**
 
 - `scheme=hwk` - Header Web Key (pseudonymous, no identity)
-- `scheme=jwks` - Identified signer (explicit identity with JWKS discovery)
+- `scheme=jwks_uri` - Identified signer (explicit identity with JWKS discovery)
 - `scheme=x509` - X.509 certificate chain (explicit identity via PKI)
 - `scheme=jwt` - JWT containing confirmation key (agent-token or auth-token)
 
@@ -1597,7 +1597,7 @@ This scoping ensures nonces are unique per (authority, key, nonce) tuple within 
 
 ### 10.6. Example Signatures
 
-The following examples demonstrate the required signature coverage for different request patterns. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks`, `scheme=x509`, and `scheme=jwt`.
+The following examples demonstrate the required signature coverage for different request patterns. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks_uri`, `scheme=x509`, and `scheme=jwt`.
 
 **Example 1: GET request without query or body**
 ```http
@@ -1673,38 +1673,16 @@ Receivers **MUST** first perform the label selection algorithm described in [Sec
 2. Reconstruct the public key from the parameters
 3. Verify the HTTPSig signature using the reconstructed key
 
-**For scheme=jwks (JWKS Discovery - Identified Signer):**
-
-The jwks scheme supports two mutually exclusive modes for key discovery. Receivers **MUST** determine the mode by checking which parameters are present:
-
-**Mode 1: Direct JWKS URL**
-- **REQUIRED parameters:** `jwks` (HTTPS URL to JWKS document), `kid` (key identifier)
-- **MUST NOT be present:** `id`, `well-known`
+**For scheme=jwks_uri (JWKS URI Discovery - Identified Signer):**
+- **REQUIRED parameters:** `id` (signer identifier as HTTPS URL), `well-known` (metadata document name), `kid` (key identifier)
 - **Discovery procedure:**
-  1. Extract `jwks` URL and `kid` from the dictionary member
-  2. Verify `id` and `well-known` parameters are absent; if present, **reject the request**
-  3. Fetch JWKS from the `jwks` URL via HTTPS
-  4. Match the key by `kid`
-  5. Verify the HTTPSig signature using the matched public key
-
-**Mode 2: Identifier + Metadata**
-- **REQUIRED parameters:** `id` (signer identifier as HTTPS URL), `kid` (key identifier)
-- **OPTIONAL parameters:** `well-known` (metadata document name)
-- **MUST NOT be present:** `jwks`
-- **Discovery procedure:**
-  1. Extract `id`, `kid`, and optional `well-known` from the dictionary member
-  2. Verify `jwks` parameter is absent; if present, **reject the request**
-  3. If `well-known` is present:
-     - Fetch metadata from `{id}/.well-known/{well-known}` via HTTPS
-     - Parse as JSON metadata document
-     - Extract `jwks_uri` property from metadata
-     - Fetch JWKS from `jwks_uri` via HTTPS
-  4. If `well-known` is absent:
-     - Fetch `{id}` directly as JWKS via HTTPS
-  5. Match the key by `kid`
-  6. Verify the HTTPSig signature using the matched public key
-
-Receivers **MUST** reject requests where both `jwks` and `id` parameters are present, or where neither is present
+  1. Extract `id`, `well-known`, and `kid` from the dictionary member
+  2. Fetch metadata from `{id}/.well-known/{well-known}` via HTTPS
+  3. Parse as JSON metadata document
+  4. Extract `jwks_uri` property from metadata
+  5. Fetch JWKS from `jwks_uri` via HTTPS
+  6. Match the key by `kid`
+  7. Verify the HTTPSig signature using the matched public key
 
 **For scheme=x509 (X.509 Certificate Chain):**
 1. Extract `x5u` (certificate URL) and `x5t` (certificate thumbprint) from the dictionary member
@@ -2147,7 +2125,7 @@ An existing OAuth 2.1 or OpenID Connect server can add AAuth support by implemen
 **HTTP Message Signing support:**
 - RFC 9421 implementation
 - Signature verification using keys from `Signature-Key` header
-- Support for `scheme=hwk`, `scheme=jwks`, `scheme=x509`, and `scheme=jwt` schemes
+- Support for `scheme=hwk`, `scheme=jwks_uri`, `scheme=x509`, and `scheme=jwt` schemes
 
 **Agent token validation:**
 - Fetch and validate agent metadata
@@ -2179,7 +2157,7 @@ sequenceDiagram
     participant OAuth as OAuth/OIDC<br/>auth server
     participant API as OAuth-protected<br/>API
 
-    Agent->>Resource: HTTPSig request<br/>(scheme=jwks)
+    Agent->>Resource: HTTPSig request<br/>(scheme=jwks_uri)
     Resource->>API: attempt to access<br/>(no token)
     API->>Resource: 401<br/>WWW-Authenticate: Bearer
 
@@ -2319,7 +2297,7 @@ $signer = (function() {
 
 ### B.6. Comparison to Agent Delegates
 
-Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `scheme=jwks`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `scheme=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
+Agent servers with ephemeral keys (this pattern) have their own agent identifier and publish their own JWKS using `scheme=jwks_uri`. Agent delegates (Appendix C) receive agent tokens from an agent server and use `scheme=jwt`. Most WordPress/Drupal deployments only need the agent server pattern.
 
 ---
 
@@ -2558,7 +2536,7 @@ While fulfilling the web-bot-auth charter goals, AAuth extends to broader agent 
 - Providing a unified protocol for both bot identity and user authorization
 - Enabling interactive agents (browser, mobile, desktop) alongside autonomous bots
 
-The Signature-Key header's four schemes (scheme=hwk, scheme=jwks, scheme=x509, scheme=jwt) provide the flexibility to address both the web-bot-auth charter's requirements and the broader agent authorization scenarios that AAuth explores.
+The Signature-Key header's four schemes (scheme=hwk, scheme=jwks_uri, scheme=x509, scheme=jwt) provide the flexibility to address both the web-bot-auth charter's requirements and the broader agent authorization scenarios that AAuth explores.
 
 ---
 
