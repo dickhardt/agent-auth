@@ -1517,7 +1517,7 @@ Implementations **MAY** support additional algorithms from the HTTP Signature Al
 
 #### 10.3.1. Default Covered Components
 
-Unless the protected resource specifies otherwise (see [Section 10.3.3](#1033-resource-specific-requirements)), HTTP Message Signatures in AAuth **MUST** cover the following components:
+Unless the server specifies otherwise (see [Section 10.3.3](#1033-server-specific-requirements)), HTTP Message Signatures in AAuth **MUST** cover the following components:
 
 **Always required:**
 - `@method`: The HTTP request method
@@ -1546,11 +1546,9 @@ If the receiver's local routing or configuration indicates that the request was 
 
 > **Note:** Implementations that are reachable under multiple authorities (e.g., multiple DNS names or load-balanced endpoints) MAY select among configured canonical authorities based on local routing information, provided the selected authority is one the receiver has been configured to accept.
 
-### 10.3.3. Resource-Specific Requirements
+### 10.3.3. Server-Specific Requirements
 
-A protected resource **MAY** require additional covered components beyond the defaults by publishing its requirements in resource metadata or documentation.
-
-Additional requirements are specified as a list of component identifiers:
+Any AAuth server (resource, agent, or authorization server) **MAY** require additional covered components beyond the defaults by publishing the `additional_signature_components` property in its server metadata.
 
 ```json
 {
@@ -1558,9 +1556,11 @@ Additional requirements are specified as a list of component identifiers:
 }
 ```
 
+When present in server metadata, clients making signed requests to that server **MUST** include the specified components in the signature.
+
 Requirements for body-related components (`content-type`, `content-digest`) apply only to requests that contain a body. When `content-digest` is required, it **MUST** conform to RFC 9530.
 
-Resources that require `content-digest` accept the implementation complexity of raw body handling for signature verification.
+Servers that require `content-digest` accept the implementation complexity of raw body handling for signature verification.
 
 ### 10.4. Signature Parameters
 
@@ -1605,7 +1605,7 @@ This scoping ensures nonces are unique per (authority, key, nonce) tuple within 
 
 ### 10.6. Example Signatures
 
-The following examples demonstrate signature coverage for different request patterns. Examples 1-4 show the default covered components; Example 5 shows resource-specific requirements. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks_uri`, `scheme=x509`, and `scheme=jwt`.
+The following examples demonstrate signature coverage for different request patterns. Examples 1-4 show the default covered components; Example 5 shows server-specific requirements. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks_uri`, `scheme=x509`, and `scheme=jwt`.
 
 **Example 1: GET request without query or body**
 ```http
@@ -1650,9 +1650,9 @@ Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
 {"action":"update","value":42}
 ```
 
-**Example 5: POST request with body integrity (resource-specific requirement)**
+**Example 5: POST request with body integrity (server-specific requirement)**
 
-When a resource requires body integrity via `additional_signature_components: ["content-type", "content-digest"]`:
+When a server requires body integrity via `additional_signature_components: ["content-type", "content-digest"]`:
 ```http
 POST /api/data HTTP/1.1
 Host: resource.example
