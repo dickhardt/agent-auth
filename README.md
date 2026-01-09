@@ -1020,8 +1020,7 @@ The agent makes a signed POST request to the resource's `resource_token_endpoint
 POST /resource/token HTTP/1.1
 Host: resource.example
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwks_uri;id="https://agent.example";kid="key-1"
 
@@ -1074,8 +1073,7 @@ When an agent requests authorization **to itself** (agent identifier matches res
 POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
@@ -1089,8 +1087,7 @@ redirect_uri=https://agent.example/callback
 POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwks_uri;id="https://agent.example";kid="key-1"
 
@@ -1180,8 +1177,7 @@ If the auth server responds with a `request_token` (indicating user consent is r
    POST /agent/token HTTP/1.1
    Host: auth.example
    Content-Type: application/x-www-form-urlencoded
-   Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-   Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+   Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
    Signature: sig=:...signature bytes...:
    Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
@@ -1221,8 +1217,7 @@ The agent exchanges the authorization code for an auth token by making a signed 
 POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
@@ -1255,8 +1250,7 @@ When the auth token expires, the agent requests a new token using the refresh to
 POST /agent/token HTTP/1.1
 Host: auth.example
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
@@ -1355,8 +1349,7 @@ The upstream auth token MUST be presented via the `Signature-Key` header using `
 POST /agent/token HTTP/1.1
 Host: auth2.example
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
@@ -1470,7 +1463,7 @@ All AAuth requests **MUST** include the `Signature-Key` header, and `signature-k
 
 ### 10.1. Signature-Key Header
 
-The `Signature-Key` header provides the keying material required to verify the HTTP signature. Key discovery mechanisms are defined in the [Signature-Key specification](https://github.com/dickhardt/signature-key).
+The `Signature-Key` header provides the keying material required to verify the HTTP signature. Key discovery mechanisms are defined in the [Signature-Key specification](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key).
 
 **Structure:**
 
@@ -1522,25 +1515,24 @@ Implementations **MAY** support additional algorithms from the HTTP Signature Al
 
 ### 10.3. Covered Components
 
-HTTP Message Signatures in AAuth **MUST** cover the following components:
+#### 10.3.1. Default Covered Components
+
+Unless the protected resource specifies otherwise (see [Section 10.3.3](#1033-resource-specific-requirements)), HTTP Message Signatures in AAuth **MUST** cover the following components:
 
 **Always required:**
 - `@method`: The HTTP request method
-- `@authority`: The request authority (see [Section 10.3.1](#1031-canonical-authority))
+- `@authority`: The request authority (see [Section 10.3.2](#1032-canonical-authority))
 - `@path`: The request path
 - `signature-key`: The Signature-Key header value. Covering `signature-key` integrity-protects the key discovery inputs and prevents intermediaries from swapping or mutating the key reference without invalidating the signature
 
-**Conditional requirements:**
+**Conditional:**
 - `@query`: **MUST** be included if and only if the request target contains a query string (indicated by the presence of `?`)
 - `@query` **MUST NOT** be included when no query string is present
-- `content-type` and `content-digest`: **MUST** be included if and only if the request contains a body
-- Body-related components **MUST NOT** be included when there is no body
-- `content-digest` **MUST** conform to RFC 9530
 
-**Optional components:**
+**Optional:**
 - `nonce`: **SHOULD** be included for non-idempotent requests (see [Section 10.5](#105-replay-prevention-with-nonce))
 
-### 10.3.1. Canonical Authority
+### 10.3.2. Canonical Authority
 
 Each AAuth receiver **MUST** be configured with one or more canonical authorities. A canonical authority consists of:
 - The host (DNS name or IP address)
@@ -1553,6 +1545,22 @@ When computing the signature base, the receiver **MUST** use the configured cano
 If the receiver's local routing or configuration indicates that the request was not received under an expected canonical authority, the receiver **MUST** reject the request.
 
 > **Note:** Implementations that are reachable under multiple authorities (e.g., multiple DNS names or load-balanced endpoints) MAY select among configured canonical authorities based on local routing information, provided the selected authority is one the receiver has been configured to accept.
+
+### 10.3.3. Resource-Specific Requirements
+
+A protected resource **MAY** require additional covered components beyond the defaults by publishing its requirements in resource metadata or documentation.
+
+Additional requirements are specified as a list of component identifiers:
+
+```json
+{
+  "additional_signature_components": ["content-type", "content-digest"]
+}
+```
+
+Requirements for body-related components (`content-type`, `content-digest`) apply only to requests that contain a body. When `content-digest` is required, it **MUST** conform to RFC 9530.
+
+Resources that require `content-digest` accept the implementation complexity of raw body handling for signature verification.
 
 ### 10.4. Signature Parameters
 
@@ -1597,7 +1605,7 @@ This scoping ensures nonces are unique per (authority, key, nonce) tuple within 
 
 ### 10.6. Example Signatures
 
-The following examples demonstrate the required signature coverage for different request patterns. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks_uri`, `scheme=x509`, and `scheme=jwt`.
+The following examples demonstrate signature coverage for different request patterns. Examples 1-4 show the default covered components; Example 5 shows resource-specific requirements. All examples use `scheme=hwk` for brevity; the same component coverage applies to `scheme=jwks_uri`, `scheme=x509`, and `scheme=jwt`.
 
 **Example 1: GET request without query or body**
 ```http
@@ -1617,40 +1625,40 @@ Signature: sig=:MEQCIAZg1fF0...:
 Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
 ```
 
-**Example 3: POST request with body, no query**
+**Example 3: POST request with body (default coverage)**
+```http
+POST /api/data HTTP/1.1
+Host: resource.example
+Content-Type: application/json
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
+Signature: sig=:MEQCIAZg1fF0...:
+Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
+
+{"action":"update","value":42}
+```
+
+**Example 4: POST request with nonce (recommended for non-idempotent operations)**
+```http
+POST /api/data HTTP/1.1
+Host: resource.example
+Content-Type: application/json
+Nonce: Y3VyaW91c2x5Y3VyaW91cw
+Signature-Input: sig=("@method" "@authority" "@path" "nonce" "signature-key");created=1730217600
+Signature: sig=:MEQCIAZg1fF0...:
+Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
+
+{"action":"update","value":42}
+```
+
+**Example 5: POST request with body integrity (resource-specific requirement)**
+
+When a resource requires body integrity via `additional_signature_components: ["content-type", "content-digest"]`:
 ```http
 POST /api/data HTTP/1.1
 Host: resource.example
 Content-Type: application/json
 Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
 Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "signature-key");created=1730217600
-Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
-
-{"action":"update","value":42}
-```
-
-**Example 4: POST request with body and query**
-```http
-POST /api/data?confirm=true HTTP/1.1
-Host: resource.example
-Content-Type: application/json
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Signature-Input: sig=("@method" "@authority" "@path" "@query" "content-type" "content-digest" "signature-key");created=1730217600
-Signature: sig=:MEQCIAZg1fF0...:
-Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
-
-{"action":"update","value":42}
-```
-
-**Example 5: POST request with nonce (recommended for non-idempotent operations)**
-```http
-POST /api/data HTTP/1.1
-Host: resource.example
-Content-Type: application/json
-Content-Digest: sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
-Nonce: Y3VyaW91c2x5Y3VyaW91cw
-Signature-Input: sig=("@method" "@authority" "@path" "content-type" "content-digest" "nonce" "signature-key");created=1730217600
 Signature: sig=:MEQCIAZg1fF0...:
 Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="JrQLj5P..."
 
@@ -1781,7 +1789,41 @@ Content-Type: application/json
 
 ### 12.2. Error Codes
 
-TBD
+AAuth defines the following error codes in addition to those defined by OAuth 2.0:
+
+#### `invalid_signature`
+
+The HTTP Message Signature is missing, malformed, or verification failed. This includes cases where:
+- The `Signature`, `Signature-Input`, or `Signature-Key` headers are missing
+- The signature does not cover the required components
+- The signature verification fails using the public key from `Signature-Key`
+- The `created` timestamp is outside the acceptable time window
+
+When the signature is missing required components, the response SHOULD include a `required_components` field listing the components the resource requires:
+
+```json
+{
+  "error": "invalid_signature",
+  "error_description": "Signature missing required components",
+  "required_components": ["@method", "@authority", "@path", "signature-key", "content-type", "content-digest"]
+}
+```
+
+#### `invalid_agent_token`
+
+The agent token is missing, malformed, expired, or signature verification failed.
+
+#### `invalid_resource_token`
+
+The resource token is missing, malformed, expired, or signature verification failed.
+
+#### `invalid_auth_token`
+
+The auth token is missing, malformed, expired, or signature verification failed.
+
+#### `key_binding_failed`
+
+The key binding verification failed. The public key used to sign the request does not match the key bound in the token (via `cnf` or `agent_jkt` claim).
 
 ## 13. Security Model
 
@@ -1940,7 +1982,7 @@ This specification establishes a new IANA registry for AAuth protocol parameters
 
 ### 14.7. Error Codes
 
-AAuth-specific error codes are defined in [Section 12.2](#122-error-codes) (TBD). These error codes extend the OAuth 2.0 error response framework for AAuth-specific validation failures including signature validation, agent token validation, and key binding verification.
+AAuth-specific error codes are defined in [Section 12.2](#122-error-codes). These error codes extend the OAuth 2.0 error response framework for AAuth-specific validation failures including signature validation, agent token validation, and key binding verification.
 
 The registration of these error codes in an appropriate IANA registry is **to be determined** based on whether AAuth establishes its own error registry or extends an existing OAuth error registry.
 
