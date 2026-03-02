@@ -18,17 +18,17 @@
 <meta content="draft-hardt-aauth-latest" name="ietf.draft">
 <!-- Generator version information:
   xml2rfc 3.31.0
-    Python 3.14.3
-    ConfigArgParse 1.7.1
+    Python 3.12.12
+    ConfigArgParse 1.7
     google-i18n-address 3.1.1
     intervaltree 3.2.1
     Jinja2 3.1.6
     lxml 6.0.2
-    platformdirs 4.9.2
-    pycountry 26.2.16
+    platformdirs 4.5.1
+    pycountry 24.6.1
     PyYAML 6.0.3
     requests 2.32.5
-    wcwidth 0.6.0
+    wcwidth 0.3.0
 -->
 <link href="draft-hardt-aauth.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
@@ -169,7 +169,7 @@
   font-weight: 400;
   font-display: swap;
   src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: 'Oxygen Mono';
@@ -177,7 +177,8 @@
   font-weight: 400;
   font-display: swap;
   src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 }
 
 @font-face {
@@ -569,6 +570,7 @@ aside, blockquote {
 }
 blockquote {
   margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
 }
 cite {
   display: block;
@@ -639,7 +641,7 @@ a.pilcrow {
   }
 }
 @media not print {
-  :hover > a.pilcrow {
+  :hover > a.pilcrow, a.pilcrow:focus {
     opacity: 1;
   }
   a.pilcrow[href]:hover {
@@ -1837,6 +1839,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
     Agent-&gt;&gt;Resource: HTTPSig request&lt;br/&gt;(scheme=jwks_uri or scheme=jwt)
     Resource-&gt;&gt;Resource: verify agent identity
     Resource-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.1-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -1862,6 +1865,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 
     Agent-&gt;&gt;Resource: HTTPSig request&lt;br/&gt;(scheme=jwt with auth-token)
     Resource-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.2-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -1901,6 +1905,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 
     Agent-&gt;&gt;Resource: HTTPSig request&lt;br/&gt;(scheme=jwt with auth-token)
     Resource-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.3-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -1928,6 +1933,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
     Auth-&gt;&gt;Agent: 200 OK&lt;br/&gt;auth_token
 
     Note over Agent: auth_token used for:&lt;br/&gt;1. User identity (SSO)&lt;br/&gt;2. API access by delegates
+
 </pre><a href="#section-5.7.4-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -1961,6 +1967,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 
     Agent-&gt;&gt;Resource: HTTPSig request&lt;br/&gt;(scheme=jwt with auth-token)
     Resource-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.5-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -1993,6 +2000,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 
     Agent-&gt;&gt;Resource: HTTPSig request&lt;br/&gt;(scheme=jwt with auth-token)
     Resource-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.6-2" class="pilcrow">¶</a>
 </div>
 <p id="section-5.7.6-3">In this flow, the auth server handles the approval process directly. The <code>require=approval</code> value tells the agent that the request is waiting on external approval, but the agent does not need to facilitate any user interaction.<a href="#section-5.7.6-3" class="pilcrow">¶</a></p>
@@ -2018,6 +2026,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 
     Agent-&gt;&gt;Resource: HTTPSig request&lt;br/&gt;(scheme=jwt with auth-token)
     Resource-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.7-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2049,11 +2058,13 @@ svg :is([fill="white"], [fill^="#fff"]) {
 
     Agent-&gt;&gt;Resource: GET /pending/xyz
     Resource-&gt;&gt;Agent: 200 OK (original response)
+
 </pre><a href="#section-5.7.8-3" class="pilcrow">¶</a>
 </div>
 <p id="section-5.7.8-4">The agent directs the user to the resource's interaction URL with the code. For a direct redirect:<a href="#section-5.7.8-4" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-5.7.8-5">
 <pre>https://resource.example/interact?code="MNOP3456"&amp;callback=https%3A%2F%2Fagent.example%2Fcallback%3Fstate%3Dxyz
+
 </pre><a href="#section-5.7.8-5" class="pilcrow">¶</a>
 </div>
 <p id="section-5.7.8-6">After user interaction completes, the agent polls the pending URL:<a href="#section-5.7.8-6" class="pilcrow">¶</a></p>
@@ -2064,6 +2075,7 @@ Prefer: wait=45
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
+
 </pre><a href="#section-5.7.8-7" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2096,6 +2108,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
     Agent-&gt;&gt;Auth: GET /pending/abc&lt;br/&gt;Prefer: wait=45
     Auth-&gt;&gt;Agent: 200 OK with auth_token
+
 </pre><a href="#section-5.7.9-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2135,6 +2148,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
     R2-&gt;&gt;R1: 200 OK
 
     R1-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.10.1-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2175,6 +2189,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
     R1-&gt;&gt;User: redirect to agent callback_url
     Agent-&gt;&gt;R1: GET /pending/xyz
     R1-&gt;&gt;Agent: 200 OK
+
 </pre><a href="#section-5.7.10.2-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2200,6 +2215,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <div class="lang-http sourcecode" id="section-6.1-2">
 <pre>HTTP/1.1 401 Unauthorized
 AAuth: require=pseudonym
+
 </pre><a href="#section-6.1-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2213,6 +2229,7 @@ AAuth: require=pseudonym
 <div class="lang-http sourcecode" id="section-6.2-2">
 <pre>HTTP/1.1 401 Unauthorized
 AAuth: require=identity
+
 </pre><a href="#section-6.2-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2226,6 +2243,7 @@ AAuth: require=identity
 <div class="lang-http sourcecode" id="section-6.3-2">
 <pre>HTTP/1.1 401 Unauthorized
 AAuth: require=auth-token; resource-token="..."; auth-server="https://auth.example"
+
 </pre><a href="#section-6.3-2" class="pilcrow">¶</a>
 </div>
 <p id="section-6.3-3">Parameters:<a href="#section-6.3-3" class="pilcrow">¶</a></p>
@@ -2259,6 +2277,7 @@ Content-Type: application/json
   "require": "interaction",
   "code": "ABCD1234"
 }
+
 </pre><a href="#section-6.4-2" class="pilcrow">¶</a>
 </div>
 <p id="section-6.4-3">The <code>code</code> field is REQUIRED when <code>require</code> is <code>"interaction"</code>. The agent MUST direct the user to the server's <code>interaction_endpoint</code> (from metadata) with the code and poll the <code>Location</code> URL with <code>GET</code> for the result.<a href="#section-6.4-3" class="pilcrow">¶</a></p>
@@ -2283,6 +2302,7 @@ Content-Type: application/json
   "location": "/pending/res_def456",
   "require": "approval"
 }
+
 </pre><a href="#section-6.5-2" class="pilcrow">¶</a>
 </div>
 <p id="section-6.5-3">The agent knows the request is waiting on external approval but does not need to take any action. The agent polls the <code>Location</code> URL until the request resolves.<a href="#section-6.5-3" class="pilcrow">¶</a></p>
@@ -2322,6 +2342,7 @@ Content-Type: application/json
 <p id="section-7.2-1">Agent delegates present agent tokens via the <code>Signature-Key</code> header using <code>scheme=jwt</code>:<a href="#section-7.2-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-7.2-2">
 <pre>Signature-Key: sig=jwt; jwt="eyJhbGciOiJFZERTQSIsInR5cCI6ImFnZW50K2p3dCJ9..."
+
 </pre><a href="#section-7.2-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2361,6 +2382,7 @@ Content-Type: application/json
 <p id="section-8.2-1">Resources include resource tokens in the <code>AAuth</code> header when requiring authorization:<a href="#section-8.2-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-8.2-2">
 <pre>AAuth: require=auth-token; resource-token="eyJ..."; auth-server="https://auth.example"
+
 </pre><a href="#section-8.2-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2405,6 +2427,7 @@ Content-Type: application/json
 <p id="section-9.2-1">Agents present auth tokens via the <code>Signature-Key</code> header using <code>scheme=jwt</code>:<a href="#section-9.2-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-9.2-2">
 <pre>Signature-Key: sig=jwt; jwt="eyJhbGciOiJFZERTQSIsInR5cCI6ImF1dGgrand0In0..."
+
 </pre><a href="#section-9.2-2" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2444,11 +2467,13 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 {
   "resource_token": "eyJhbGc..."
 }
+
 </pre><a href="#section-10.1-2" class="pilcrow">¶</a>
 </div>
 <p id="section-10.1-3">The <code>wait</code> preference tells the server the agent is willing to hold the connection open for up to N seconds before the server MUST respond. The server confirms the honored duration with <code>Preference-Applied</code>:<a href="#section-10.1-3" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-10.1-4">
 <pre>Preference-Applied: wait=45
+
 </pre><a href="#section-10.1-4" class="pilcrow">¶</a>
 </div>
 <p id="section-10.1-5">The server SHOULD respond within the requested wait duration. If the request cannot be resolved within that time, it returns a <code>202</code>.<a href="#section-10.1-5" class="pilcrow">¶</a></p>
@@ -2471,6 +2496,7 @@ Content-Type: application/json
   "status": "pending",
   "location": "/pending/f7a3b9c"
 }
+
 </pre><a href="#section-10.2-2" class="pilcrow">¶</a>
 </div>
 <p id="section-10.2-3">Headers:<a href="#section-10.2-3" class="pilcrow">¶</a></p>
@@ -2519,6 +2545,7 @@ Prefer: wait=45
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
+
 </pre><a href="#section-10.3-2" class="pilcrow">¶</a>
 </div>
 <ul class="compact">
@@ -2645,6 +2672,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "error_description": "User denied the request",
   "error_uri": "https://auth.example/docs/errors#denied"
 }
+
 </pre><a href="#section-10.6-2" class="pilcrow">¶</a>
 </div>
 <ul class="compact">
@@ -2685,6 +2713,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
                +-- 410 --&gt; invalid_code — do not retry
                +-- 500 --&gt; server_error — start over
                +-- 503 --&gt; temporarily_unavailable — back off (Retry-After)
+
 </pre><a href="#section-10.7-1" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2742,6 +2771,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "resource_token": "eyJhbGc...",
   "purpose": "Find available meeting times"
 }
+
 </pre><a href="#section-11.1-6" class="pilcrow">¶</a>
 </div>
 </section>
@@ -2758,6 +2788,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "auth_token": "eyJhbGc...",
   "expires_in": 3600
 }
+
 </pre><a href="#section-11.2-3" class="pilcrow">¶</a>
 </div>
 <p id="section-11.2-4"><strong>User interaction required response</strong> (<code>202</code> — deferred):<a href="#section-11.2-4" class="pilcrow">¶</a></p>
@@ -2775,6 +2806,7 @@ Content-Type: application/json
   "require": "interaction",
   "code": "ABCD1234"
 }
+
 </pre><a href="#section-11.2-5" class="pilcrow">¶</a>
 </div>
 <p id="section-11.2-6">The <code>location</code> field contains the pending URL the agent polls with <code>GET</code>. When <code>require</code> is <code>"interaction"</code>, the agent directs the user to the auth server's <code>interaction_endpoint</code> with the <code>code</code>. When <code>require</code> is <code>"approval"</code>, the auth server is obtaining approval directly (from a user or auth agent) and the agent simply polls.<a href="#section-11.2-6" class="pilcrow">¶</a></p>
@@ -2784,6 +2816,7 @@ Content-Type: application/json
   "error": "invalid_resource_token",
   "error_description": "Resource token has expired"
 }
+
 </pre><a href="#section-11.2-8" class="pilcrow">¶</a>
 </div>
 <p id="section-11.2-9">See Token Endpoint Errors in the Deferred Responses section for the full set of error codes.<a href="#section-11.2-9" class="pilcrow">¶</a></p>
@@ -2803,6 +2836,7 @@ Content-Type: application/json
   "location": "/pending/abc123",
   "clarification": "Why do you need access to my calendar?"
 }
+
 </pre><a href="#section-11.3-3" class="pilcrow">¶</a>
 </div>
 <p id="section-11.3-4">The agent responds by POSTing JSON with <code>clarification_response</code> to the pending URL:<a href="#section-11.3-4" class="pilcrow">¶</a></p>
@@ -2817,6 +2851,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 {
   "clarification_response": "I need to find available meeting times for your Tokyo trip next week"
 }
+
 </pre><a href="#section-11.3-5" class="pilcrow">¶</a>
 </div>
 <p id="section-11.3-6">Auth servers SHOULD enforce limits on clarification rounds (recommended: 5 rounds maximum) and overall timeout to prevent abuse.<a href="#section-11.3-6" class="pilcrow">¶</a></p>
@@ -2832,16 +2867,19 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <p id="section-11.4-3"><strong>QR code</strong>: Encode the full URL for scanning:<a href="#section-11.4-3" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-11.4-4">
 <pre>{interaction_endpoint}?code={interaction_code}
+
 </pre><a href="#section-11.4-4" class="pilcrow">¶</a>
 </div>
 <p id="section-11.4-5"><strong>Direct redirect</strong> (when the agent has a browser): Navigate the user directly, optionally with a callback:<a href="#section-11.4-5" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-11.4-6">
 <pre>{interaction_endpoint}?code={interaction_code}&amp;callback={callback_url}
+
 </pre><a href="#section-11.4-6" class="pilcrow">¶</a>
 </div>
 <p id="section-11.4-7"><strong>Example redirect URL:</strong><a href="#section-11.4-7" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-11.4-8">
 <pre>https://auth.example/interact?code="ABCD1234"&amp;callback=https%3A%2F%2Fagent.example%2Fcallback%3Fstate%3Dabc123
+
 </pre><a href="#section-11.4-8" class="pilcrow">¶</a>
 </div>
 <p id="section-11.4-9">The server authenticates the user and displays consent information (including the agent's <code>purpose</code>, identity, and requested scopes).<a href="#section-11.4-9" class="pilcrow">¶</a></p>
@@ -2850,6 +2888,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <div class="lang-http sourcecode" id="section-11.4-12">
 <pre>HTTP/1.1 303 See Other
 Location: https://agent.example/callback?state=abc123
+
 </pre><a href="#section-11.4-12" class="pilcrow">¶</a>
 </div>
 <p id="section-11.4-13">If no <code>callback</code> was provided, the server displays a completion page telling the user they may close the window.<a href="#section-11.4-13" class="pilcrow">¶</a></p>
@@ -2873,6 +2912,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 {
   "auth_token": "eyJhbGc..."
 }
+
 </pre><a href="#section-11.5-3" class="pilcrow">¶</a>
 </div>
 <p id="section-11.5-4"><strong>Response:</strong><a href="#section-11.5-4" class="pilcrow">¶</a></p>
@@ -2881,6 +2921,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "auth_token": "eyJhbGc...",
   "expires_in": 3600
 }
+
 </pre><a href="#section-11.5-5" class="pilcrow">¶</a>
 </div>
 <p id="section-11.5-6">The auth server verifies the agent's HTTP signature, validates the expired auth token, and issues a new auth token. The auth server MAY reject the refresh if the token has been expired beyond its refresh window.<a href="#section-11.5-6" class="pilcrow">¶</a></p>
@@ -2932,6 +2973,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "tos_uri": "https://agent.example/tos",
   "policy_uri": "https://agent.example/privacy"
 }
+
 </pre><a href="#section-13.1-2" class="pilcrow">¶</a>
 </div>
 <p id="section-13.1-3">Fields:<a href="#section-13.1-3" class="pilcrow">¶</a></p>
@@ -2979,6 +3021,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "interaction_endpoint": "https://auth.example/interact",
   "jwks_uri": "https://auth.example/.well-known/jwks.json"
 }
+
 </pre><a href="#section-13.2-2" class="pilcrow">¶</a>
 </div>
 <p id="section-13.2-3">Fields:<a href="#section-13.2-3" class="pilcrow">¶</a></p>
@@ -3019,6 +3062,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   },
   "additional_signature_components": ["content-type", "content-digest"]
 }
+
 </pre><a href="#section-13.3-2" class="pilcrow">¶</a>
 </div>
 <p id="section-13.3-3">Fields:<a href="#section-13.3-3" class="pilcrow">¶</a></p>
@@ -3180,6 +3224,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "error": "invalid_request",
   "error_description": "Human-readable description"
 }
+
 </pre><a href="#section-16.1-1" class="pilcrow">¶</a>
 </div>
 </section>
@@ -3202,6 +3247,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   "error_description": "Signature missing required components",
   "required_components": ["@method", "@authority", "@path", "signature-key"]
 }
+
 </pre><a href="#section-16.2.1-2" class="pilcrow">¶</a>
 </div>
 </section>
