@@ -24,7 +24,7 @@ AAuth is not intended as a replacement for OAuth or OIDC. It is not OAuth 3.0. I
 
 **Progressive authentication.** A single protocol covers pseudonymous access (signed requests for rate limiting), verified identity (agent tokens with JWKS), and full authorization (auth tokens with user delegation). Resources declare which level they require.
 
-**Informed consent.** A `purpose` parameter declares why access is requested. Clarification chat lets users ask the agent questions during consent. The declared purpose creates an audit trail for behavioral drift detection.
+**Informed consent.** A `purpose` parameter declares why access is requested. Clarification chat lets users ask the agent questions during consent. The auth server logs the declared purpose alongside the authorization decision, creating an audit trail for behavioral drift detection.
 
 **Unified auth and authz.** AAuth combines authentication and authorization in a single flow, eliminating the friction of coordinating separate OAuth and OIDC deployments.
 
@@ -143,6 +143,12 @@ An agent delegate SHOULD be associated with at most one user. This binding, main
 
 The agent itself need not know the user's identity. The binding is an auth-server-side concern.
 
+## Audience-Restricted Agent Tokens
+
+By default, agent tokens have no audience restriction — a delegate uses the same agent token with any resource or auth server. But agent servers may optionally restrict a delegate to specific servers by including an `aud` claim. This limits exposure if the delegate's key is compromised.
+
+Agent servers may also include an `aud_sub` claim — the user identifier from a previous auth token — to signal to the auth server which user the delegate is acting for. This enables the auth server to skip interactive identification and proceed directly to authorization, improving the experience for re-authorization of long-running agents.
+
 ## Relationship to Web-Bot-Auth
 
 The IETF Web Bot Authentication (webbotauth) Working Group is developing standards for websites to manage automated traffic. AAuth's progressive authentication levels directly address the webbotauth charter goals:
@@ -172,7 +178,7 @@ AAuth uses JSON for both requests and responses. JSON naturally represents struc
 AAuth supports two distinct deferred response modes:
 
 - **`require=interaction`**: The agent must facilitate a redirect — presenting an interaction code to the user via manual entry, QR code, or direct redirect to the auth server's interaction endpoint.
-- **`require=approval`**: The auth server is obtaining approval directly, without the agent's involvement. The approval may come from a user (via push notification, existing session, or email) or from an auth agent. The agent simply polls until the request resolves.
+- **`require=approval`**: The auth server is obtaining approval directly, without the agent's involvement. The approval may come from a user (via push notification, existing session, or email) or from policy evaluation. The agent simply polls until the request resolves.
 
 The distinction matters because it tells the agent exactly what action to take (or not take). With `require=interaction`, the agent must actively help the user reach the auth server. With `require=approval`, the agent waits passively — no UX is needed.
 
@@ -225,11 +231,44 @@ In AAuth, the callback URL carries no tokens or codes. It exists purely to wake 
 
 ## Call Chaining
 
-When a resource needs to access a downstream resource on behalf of the caller, it acts as an agent. The resource presents the downstream resource's challenge along with the auth token it received from the original caller (as an `upstream_token`), allowing the downstream auth server to verify the authorization chain.
+When a resource needs to access a downstream resource on behalf of the caller, it acts as an agent. The resource presents the downstream resource's resource token along with the auth token it received from the original caller (as an `upstream_token`), allowing the downstream auth server to verify the authorization chain. Because the resource acts as an agent, it must publish agent metadata so downstream parties can verify its identity.
+
+The downstream auth server evaluates its own policy based on both the upstream auth token and the downstream resource token. The resulting authorization is not necessarily a subset of the upstream scopes — the downstream auth server may grant independent scopes based on organizational policy. For example, an upstream token granting `calendar.read` might lead the downstream auth server to grant `availability.read` based on a policy that allows calendar services to query availability. The upstream token provides provenance and user identity context, not a scope ceiling.
 
 If the downstream auth server requires user interaction, the resource chains the interaction back to the original agent. The resource returns its own `202` with an interaction code to the agent, and when the user arrives at the resource's interaction endpoint, the resource redirects them onward to the downstream interaction endpoint. Each link in the chain manages only its own interaction redirect — the downstream interaction URL is never exposed to the upstream agent.
 
 This enables multi-hop resource access where authorization passes downstream and interaction requirements bubble up, without any participant needing visibility into the full chain.
+
+## Agent as Audience (SSO and First-Party Access)
+
+An agent can request an auth token where it is the audience — either for SSO (obtaining user identity) or for first-party resource access by its delegates. The agent calls the token endpoint with `scope` and no `resource_token`, since the agent itself is the resource.
+
+This is the same flow, endpoint, and token format as resource access. The auth token's `aud` is the agent server's URL, and the `sub` identifies the authenticated user. This unified model means SSO, user login, and API authorization all use the same protocol — there is no separate "ID token" concept as in OpenID Connect.
+
+## Resource Interaction
+
+Resources — not just auth servers — can return deferred responses. When a resource requires user interaction (login, consent for downstream access), it returns `202 Accepted` with an interaction code, just like an auth server would. The agent directs the user to the resource's `interaction_endpoint`. This means any endpoint in AAuth can defer, and agents handle all `202` responses uniformly regardless of origin.
+
+## Proactive Authorization (Resource Token Endpoint)
+
+In the standard flow, an agent discovers authorization requirements by making an API call and receiving a `401` challenge with a resource token. But sometimes the agent already knows what scopes it needs — from the resource's published `scope_descriptions` metadata.
+
+When a resource publishes a `resource_token_endpoint` in its metadata, agents can request a resource token proactively without first triggering a `401`. This enables two patterns:
+
+- **Pre-authorization**: The agent obtains authorization before making its first API call, avoiding the initial `401` round-trip.
+- **Scope upgrade**: The agent already has an auth token but needs additional scopes. It requests a new resource token with the broader scope, obtains a new auth token, and retries. The new auth token replaces the previous one.
+
+The resource returns the resource token, the auth server URL, and the granted scope (which may be narrower than requested). The agent then proceeds to the auth server's token endpoint as in the standard flow.
+
+## Transaction Correlation (txn)
+
+Resources may include an optional `txn` (transaction) claim in resource tokens. When present, the auth server copies it into the issued auth token. This creates a correlation identifier that all three parties — resource, auth server, and agent — can use to link related events in their audit logs.
+
+Combined with `purpose` (which the auth server logs from the token request) and `jti` (unique token identifiers), deployments can reconstruct the full chain: which agent requested what access, for what stated purpose, with what authorization decision, and how the token was used.
+
+## Agent Token Attestation
+
+Agent tokens provide an extension point for attestation. Agent servers may include additional claims in the agent token to convey evidence about the delegate's environment — platform integrity, secure enclave status, or workload identity assertions. This allows auth servers and resources to make trust decisions based on the delegate's runtime properties, not just the agent's identity.
 
 ## What's Next
 
