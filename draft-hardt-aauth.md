@@ -175,7 +175,7 @@ These are returned as `202` responses during authorization, indicating what must
 
 ## Scopes
 
-Scopes may request identity claims (using OpenID Connect scope values such as `openid`, `profile`, `email`) or resource authorization (using scopes defined by the resource, such as `data.read` or `calendar.write` as defined in the resource's `scope_descriptions` metadata), or both. 
+Scopes may request identity claims (using OpenID Connect scope values such as `openid`, `profile`, `email`) or resource authorization (using scopes defined by the resource, such as `data.read` or `calendar.write` as defined in the resource's `scope_descriptions` metadata), or both.
 
 When the agent is the audience, scopes typically request identity claims. When accessing a resource, scopes are defined in the resource's `scope_descriptions` metadata.
 
