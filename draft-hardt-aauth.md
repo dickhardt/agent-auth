@@ -73,7 +73,7 @@ Source for this draft and an issue tracker can be found at https://github.com/Di
 
 # Introduction
 
-OAuth 2.0 [@!RFC6749] was created to solve a specific problem: users were sharing their passwords with third-party web applications so those applications could access their data at other sites. OAuth replaced this anti-pattern with a delegation model — the user's browser redirects to the authorization server, the user consents, and the application receives an access token without ever seeing the user's credentials. OpenID Connect extended this to federated login. Together, they serve these use cases well and continue to be the right choice for them.
+OAuth 2.0 [@!RFC6749] was created to solve a security problem: users were sharing their passwords with third-party web applications so those applications could access their data at other sites. OAuth replaced this anti-pattern with a delegation model — the user's browser redirects to the authorization server, the user consents, and the application receives an access token without ever seeing the user's credentials. OpenID Connect extended this to federated login. Together, they serve these use cases well and continue to be the right choice for them.
 
 But the landscape has changed. New use cases have emerged that OAuth and OIDC were not designed to address:
 
@@ -113,6 +113,15 @@ Agent Delegate
 Agent Token
 : A JWT issued by an agent server to an agent delegate, binding the delegate's signing key to the agent's identity.
 
+Session Identifier
+: An opaque string identifying an agent session, assigned by the agent server.
+The agent server conveys the session identifier to auth servers and resources
+either as the `aauth_sid` claim in the agent token, or via the `AAuth-Session`
+request header when no token carrying `aauth_sid` is present in the request.
+The auth server copies `aauth_sid` into every auth token it issues within the
+session and records it in the audit log alongside every token issuance event.
+The agent server determines when a session begins and ends.
+
 Auth Server
 : A server that authenticates users, obtains consent, evaluates authorization policies, and issues auth tokens. Publishes metadata at `/.well-known/aauth-issuer.json`.
 
@@ -123,7 +132,7 @@ Resource
 : A protected API at a service that requires authentication and/or authorization. Like agents, resources have cryptographic identity via an HTTPS URL and publish metadata at `/.well-known/aauth-resource.json`.
 
 Resource Token
-: A JWT issued by a resource that binds an access request to the resource's identity, preventing confused deputy attacks (see Security Considerations).
+: A JWT issued by a resource that binds an access request to the resource's identity, preventing confused deputy attacks (#security-considerations).
 
 Interaction Endpoint
 : A URL where the user is sent for authentication, consent, or other interaction. Declared as `interaction_endpoint` in entity metadata. Both auth servers and resources may have interaction endpoints.
@@ -134,52 +143,47 @@ Interaction Code
 
 # Protocol Overview
 
-AAuth has three participant types — agents, resources, and auth servers — though not all participate in every use case.
+AAuth has three server types — agents, resources, and auth servers — and a user who may or may not be involved. An agent is always present: it makes requests to resources, to auth servers, or both. A user may direct the agent, authorize requests, or be entirely absent in machine-to-machine scenarios.
+
+## Identity and Discovery
+
+Every participant — agent, resource, and auth server — is identified by an HTTPS URL and publishes metadata and public keys at a well-known endpoint (#metadata-documents). This means any agent can discover any resource (and vice versa) without pre-registration. There are no shared secrets and no out-of-band setup required.
 
 ## Request Signing
 
-All AAuth requests are signed using HTTP Message Signatures ([@!RFC9421]). Keys are conveyed in the `Signature-Key` header ([@!I-D.hardt-httpbis-signature-key]). When the agent includes its public key directly (using `scheme=hwk`), the request is pseudonymous — the signature proves possession of the included key without establishing verified identity. When the agent presents a JWT (agent token or auth token) via `scheme=jwt`, the JWT's `cnf` claim binds the signing key to a verified identity or authorization.
+Every AAuth request is signed using HTTP Message Signatures ([@!RFC9421]). There are no bearer tokens — every token is bound to the signer's key via a `cnf` (confirmation) claim ([@!RFC7800]), so a stolen token is useless without the corresponding private key (#http-message-signing-profile).
 
+An agent can sign requests at three levels of identity assurance:
 
+- **Pseudonymous**: The agent includes its public key directly. The signature proves key possession without revealing identity.
+- **Identified**: The agent presents a verifiable identity via its JWKS URL or an agent token issued by its agent server.
+- **Authorized**: The agent presents an auth token issued by an auth server, granting access to a specific resource.
 
-## Token Types
+## Challenge and Response
 
+Resources tell agents what they need using the `AAuth-Challenge` HTTP response header (#aauth-challenge-http-response-header). A resource that requires authorization returns `401` with an `AAuth-Challenge` header indicating the requirement level and a resource token that binds the challenge to the resource's identity. The agent takes this resource token to the indicated auth server's token endpoint to obtain an auth token, then retries the request.
 
-AAuth defines three token types, all of which are proof-of-possession tokens:
+This decouples resources from auth servers — the resource decides *what* authorization is needed, the auth server decides *whether* to grant it. Either side can change independently.
 
-- **Agent Token** (`agent+jwt`): Binds an agent delegate's key to an agent server's identity
-- **Resource Token** (`resource+jwt`): Binds an access request to a resource's identity
-- **Auth Token** (`auth+jwt`): Binds identity claims and authorization for a given audience to an agent
+## Tokens
 
-All three token types use the `cnf` (confirmation) claim ([@!RFC7800]) to bind the token to a specific signing key, making them proof-of-possession tokens usable only by a specific agent.
+AAuth defines three proof-of-possession token types, all JWTs bound to a specific signing key:
 
+- **Agent Token** (`agent+jwt`): Issued by an agent server to a delegate, binding the delegate's key to the agent's identity (#agent-tokens).
+- **Resource Token** (`resource+jwt`): Issued by a resource in response to a request, binding the access challenge to the resource's identity. This prevents confused deputy attacks (#resource-tokens).
+- **Auth Token** (`auth+jwt`): Issued by an auth server, granting an agent access to a specific audience. A single auth token can carry both identity claims (such as `sub` and `email`) and authorization scopes (such as `data.read`), unifying authentication and authorization (#auth-tokens).
 
-## Requirement Levels
+## Deferred Responses
 
-Resources and auth servers indicate what is needed from the agent using the `AAuth` HTTP response header.
+When authorization requires time — user consent, policy evaluation, external approval — the auth server returns `202 Accepted` with a `Location` header pointing to a pending URL. The agent polls this URL until the auth token is ready. This standard HTTP async pattern means the protocol never requires redirects or callbacks between protocol participants (#deferred-responses).
 
-### Request Requirements
-
-These are returned as `401` responses from resources, indicating what the agent must provide:
-
-1. **Pseudonym** (`require=pseudonym`): Signed request proves possession of an included public key, providing consistent identity without verification
-2. **Identified** (`require=identity`): Agent identity verified via JWKS or agent token
-3. **Authorized** (`require=auth-token`): Full authorization with auth token
-
-### Pending States
-
-These are returned as `202` responses during authorization, indicating what must happen before the request can complete:
-
-4. **Interaction** (`require=interaction`): The agent must direct the user to the interaction endpoint with the provided code
-5. **Approval** (`require=approval`): The auth server is obtaining approval directly from a user or policy evaluation — the agent polls until resolved
+User interaction — login pages, consent screens, push notifications — happens outside the protocol. The auth server provides an interaction code and an interaction endpoint URL; how the agent gets the user there (browser redirect, QR code, deep link, clipboard) is an application-level concern. This is what makes AAuth work for headless agents, CLI tools, and browser-based apps alike.
 
 ## Scopes
 
 Scopes may request identity claims (using OpenID Connect scope values such as `openid`, `profile`, `email`) or resource authorization (using scopes defined by the resource, such as `data.read` or `calendar.write` as defined in the resource's `scope_descriptions` metadata), or both.
 
 When the agent is the audience, scopes typically request identity claims. When accessing a resource, scopes are defined in the resource's `scope_descriptions` metadata.
-
-Agents MAY act as a resource and include `scope_descriptions` in their metadata to enable users to grant scopes to resources at the agent during consent, enabling an agent delegate to obtain consent to access protected resources at the agent.
 
 When an agent needs additional scopes beyond its current authorization, it requests a new auth token from the auth server's `token_endpoint` — with a new `resource_token` when accessing another resource, or with the new `scope` values when the agent is the audience. The new auth token replaces the previous one.
 
@@ -196,16 +200,15 @@ Agent                          Resource
   |------------------------------>|
   |                               |
   |  401 Unauthorized             |
-  |  AAuth: require=pseudonym     |
+  |  AAuth-Challenge: require=pseudonym     |
   |<------------------------------|
   |                               |
   |  HTTPSig request              |
   |  (scheme=hwk)                 |
   |------------------------------>|
-  |                               |
-  |            verify signature,  |
-  |            track by key       |
-  |            thumbprint         |
+  |                               |  verify signature,
+  |                               |  track by key
+  |                               |  thumbprint
   |                               |
   |  200 OK                       |
   |<------------------------------|
@@ -214,27 +217,89 @@ Agent                          Resource
 
 If the agent already knows the resource requires pseudonymous access (from a previous interaction or metadata), it MAY sign the initial request directly without waiting for a `401` challenge.
 
+**Use cases:** Rate limiting anonymous requests, tracking repeat visitors by key thumbprint, spam prevention without requiring verified identity.
+
 ### Agent Identity Only
 
-An agent accesses a resource using only its agent identity, without authorization from an auth server.
+An agent accesses a resource using its verified agent identity, without authorization from an auth server.
 
 ~~~ ascii-art
 Agent                          Resource
   |                               |
   |  HTTPSig request              |
-  |  (scheme=jwks_uri or jwt)     |
   |------------------------------>|
   |                               |
-  |                  verify agent identity
+  |  401 Unauthorized             |
+  |  AAuth-Challenge: require=identity      |
+  |<------------------------------|
+  |                               |
+  |  HTTPSig request              |
+  |  (scheme=jwks_uri or jwt)     |
+  |------------------------------>|
+  |                               |  verify agent identity,
+  |                               |  apply policy
   |                               |
   |  200 OK                       |
   |<------------------------------|
   |                               |
 ~~~
 
-### Autonomous Agent (Direct Grant)
+If the agent already knows the resource requires agent identity, it MAY present its identity on the initial request without waiting for a `401` challenge.
 
-A machine-to-machine agent obtains authorization directly without user interaction.
+**Use cases:** API access policies based on known agents, webhook signature verification, allowlisting trusted agents for elevated rate limits.
+
+### Resource Interaction
+
+When a resource requires user interaction — such as login, consent, payment confirmation, or terms acceptance — it returns `202 Accepted` with a `Location` header and `AAuth-Challenge: require=interaction; code="..."`. This is a deferral, not a denial — the request has been accepted but requires user action before it can complete.
+
+The agent directs the user to the resource's `interaction_endpoint` with the interaction code. The resource handles the interaction directly, which may involve its own OAuth, OIDC, or login flow with an identity provider. After completion, the resource redirects the user back to the agent's callback URL. The agent polls the `Location` URL with `GET` until the response is ready.
+
+~~~ ascii-art
+User            Agent                Resource
+  |               |                      |
+  |               |  HTTPSig request     |
+  |               |--------------------->|
+  |               |                      |
+  |               |  202 Accepted        |
+  |               |  Location: /pending/xyz
+  |               |  AAuth-Challenge: require=interaction;
+  |               |         code="MNOP3456"
+  |               |<---------------------|
+  |               |                      |
+  |  direct to resource                  |
+  |  interaction_endpoint with code      |
+  |<--------------|                      |
+  |               |                      |
+  |  login / consent / confirm           |
+  |------------------------------------->|
+  |               |                      |
+  |               |   [Resource may perform
+  |               |    OAuth, OIDC, or its
+  |               |    own login flow]
+  |               |                      |
+  |  redirect to callback_url           |
+  |<-------------------------------------|
+  |               |                      |
+  |  callback     |                      |
+  |-------------->|                      |
+  |               |                      |
+  |               |  GET /pending/xyz    |
+  |               |--------------------->|
+  |               |                      |
+  |               |  200 OK              |
+  |               |<---------------------|
+  |               |                      |
+~~~
+
+**Use cases:** Resource requires user login via its own identity provider, payment confirmation before a purchase, terms of service acceptance, user consent for a specific operation.
+
+### Autonomous Agent
+
+A machine-to-machine agent obtains authorization directly without user interaction. The auth server evaluates policy based on the agent's identity and the resource token, and either grants or denies the request immediately.
+
+#### Resource Challenge
+
+The resource challenges the agent with a `401` response containing a resource token:
 
 ~~~ ascii-art
 Agent                    Resource                  Auth Server
@@ -249,79 +314,59 @@ Agent                    Resource                  Auth Server
   |  POST token_endpoint with resource_token           |
   |--------------------------------------------------->|
   |                         |                          |
-  |                         |       validate resource_token,
-  |                         |       evaluate policy    |
+  |                         |  validate resource_token,|
+  |                         |  evaluate policy         |
   |                         |                          |
-  |  auth_token (direct grant)                         |
+  |  auth_token                                        |
   |<---------------------------------------------------|
   |                         |                          |
   |  HTTPSig request        |                          |
   |  (with auth-token)      |                          |
   |------------------------>|                          |
   |                         |                          |
+  |          verify auth_token                         |
+  |                         |                          |
   |  200 OK                 |                          |
   |<------------------------|                          |
   |                         |                          |
 ~~~
 
-### User Authorization
+#### Proactive Token Request
 
-Full flow with deferred response and polling for user-authorized access.
-
+When the agent knows the resource's requirements from metadata, it can request a resource token proactively via the `resource_token_endpoint`:
 
 ~~~ ascii-art
-User            Agent                Resource           Auth Server
-  |               |                      |                    |
-  |               |  HTTPSig request     |                    |
-  |               |--------------------->|                    |
-  |               |                      |                    |
-  |               |  401 + resource_token                     |
-  |               |  + auth_server       |                    |
-  |               |<---------------------|                    |
-  |               |                      |                    |
-  |               |  POST token_endpoint                      |
-  |               |  resource_token, purpose                  |
-  |               |  Prefer: wait=45                          |
-  |               |------------------------------------------>|
-  |               |                      |                    |
-  |               |  202 Accepted, Location: /pending/abc     |
-  |               |  AAuth: require=interaction;              |
-  |               |         code="ABCD1234"                   |
-  |               |<------------------------------------------|
-  |               |                      |                    |
-  |  direct to    |                      |                    |
-  |  interaction_endpoint                |                    |
-  |  with code    |                      |                    |
-  |<--------------|                      |                    |
-  |               |                      |                    |
-  |               |    [polling]         |                    |
-  |               |  GET /pending/abc    |                    |
-  |               |------------------------------------------>|
-  |               |  202 Accepted        |                    |
-  |               |<------------------------------------------|
-  |               |                      |                    |
-  |  authenticate and consent            |                    |
-  |------------------------------------------------------>----|
-  |               |                      |                    |
-  |  redirect to callback_url            |                    |
-  |<----------------------------------------------------------|
-  |               |                      |                    |
-  |  callback     |                      |                    |
-  |-------------->|                      |                    |
-  |               |                      |                    |
-  |               |  GET /pending/abc    |                    |
-  |               |------------------------------------------>|
-  |               |  200 OK, auth_token  |                    |
-  |               |<------------------------------------------|
-  |               |                      |                    |
-  |               |  HTTPSig request     |                    |
-  |               |  (with auth-token)   |                    |
-  |               |--------------------->|                    |
-  |               |                      |                    |
-  |               |  200 OK              |                    |
-  |               |<---------------------|                    |
-  |               |                      |                    |
+Agent                    Resource                  Auth Server
+  |                         |                          |
+  |  POST                   |                          |
+  |  resource_token_endpoint|                          |
+  |------------------------>|                          |
+  |                         |                          |
+  |  resource_token         |                          |
+  |  + auth_server          |                          |
+  |<------------------------|                          |
+  |                         |                          |
+  |  POST token_endpoint with resource_token           |
+  |--------------------------------------------------->|
+  |                         |                          |
+  |                         |  validate resource_token,|
+  |                         |  evaluate policy         |
+  |                         |                          |
+  |  auth_token                                        |
+  |<---------------------------------------------------|
+  |                         |                          |
+  |  HTTPSig request        |                          |
+  |  (with auth-token)      |                          |
+  |------------------------>|                          |
+  |                         |                          |
+  |          verify auth_token                         |
+  |                         |                          |
+  |  200 OK                 |                          |
+  |<------------------------|                          |
+  |                         |                          |
 ~~~
+
+**Use cases:** Machine-to-machine API calls, automated pipelines, cron jobs, service-to-service communication where no user is involved.
 
 ### Agent as Audience
 
@@ -337,7 +382,7 @@ User           Agent                        Auth Server
   |              |                               |
   |              |  202 Accepted                 |
   |              |  Location: /pending/def       |
-  |              |  AAuth: require=interaction;  |
+  |              |  AAuth-Challenge: require=interaction;  |
   |              |         code="EFGH5678"       |
   |              |<------------------------------|
   |              |                               |
@@ -362,89 +407,115 @@ User           Agent                        Auth Server
   |              |                               |
 ~~~
 
-### Direct Approval
+**Use cases:** Single sign-on (obtaining user identity claims such as email and name), enabling agent delegates to access protected resources at the agent on behalf of the user.
 
-The auth server obtains approval directly — from a user (e.g., push notification, existing session, email) — without the agent facilitating a redirect. The agent simply polls until the request resolves.
+### Third-Party Initiated Login
+
+A third party — such as an auth server, enterprise portal, app marketplace, or partner site — directs the user to the agent's `login_endpoint` with enough context to start a login flow. The agent then initiates a standard "agent as audience" flow. Because the user may already be authenticated at the auth server, the interaction step can resolve near-instantly.
 
 ~~~ ascii-art
-User              Agent                Resource           Auth Server
-  |                 |                      |                    |
-  |                 |  HTTPSig request     |                    |
-  |                 |--------------------->|                    |
-  |                 |                      |                    |
-  |                 |  401 + resource_token                     |
-  |                 |  + auth_server       |                    |
-  |                 |<---------------------|                    |
-  |                 |                      |                    |
-  |                 |  POST token_endpoint                      |
-  |                 |  resource_token, purpose                  |
-  |                 |  Prefer: wait=45                          |
-  |                 |------------------------------------------>|
-  |                 |                      |                    |
-  |                 |  202 Accepted                             |
-  |                 |  Location: /pending/jkl                   |
-  |                 |  AAuth: require=approval                  |
-  |                 |<------------------------------------------|
-  |                 |                      |                    |
-  |  push notification / existing session  |                    |
-  |<------------------------------------------------------------|
-  |                 |                      |                    |
-  |  approve        |                      |                    |
-  |------------------------------------------------------------>|
-  |                 |                      |                    |
-  |                 |  GET /pending/jkl    |                    |
-  |                 |  Prefer: wait=45     |                    |
-  |                 |------------------------------------------>|
-  |                 |  200 OK, auth_token  |                    |
-  |                 |<------------------------------------------|
-  |                 |                      |                    |
-  |                 |  HTTPSig request     |                    |
-  |                 |  (with auth-token)   |                    |
-  |                 |--------------------->|                    |
-  |                 |                      |                    |
-  |                 |  200 OK              |                    |
-  |                 |<---------------------|                    |
-  |                 |                      |                    |
+User         Third Party        Agent                    Auth Server
+  |               |               |                          |
+  |  select agent |               |                          |
+  |-------------->|               |                          |
+  |               |               |                          |
+  |  redirect to login_endpoint   |                          |
+  |  (issuer, tenant, start_path) |                          |
+  |<--------------|               |                          |
+  |               |               |                          |
+  |  login_endpoint               |                          |
+  |------------------------------>|                          |
+  |               |               |                          |
+  |               |               |  POST token_endpoint     |
+  |               |               |  scope, tenant           |
+  |               |               |  Prefer: wait=45         |
+  |               |               |------------------------->|
+  |               |               |                          |
+  |               |               |  202 Accepted            |
+  |               |               |  Location: /pending/ghi  |
+  |               |               |  AAuth-Challenge:        |
+  |               |               |    require=interaction;  |
+  |               |               |    code="JKLM9012"       |
+  |               |               |<-------------------------|
+  |               |               |                          |
+  |  direct to interaction_endpoint                          |
+  |  with code    |               |                          |
+  |<------------------------------|                          |
+  |               |               |                          |
+  |  auth server recognizes user  |                          |
+  |  (existing session),          |                          |
+  |  auto-approves                |                          |
+  |------------------------------------------------------>--|
+  |               |               |                          |
+  |  redirect to callback_url     |                          |
+  |<----------------------------------------------------------
+  |               |               |                          |
+  |  callback     |               |                          |
+  |------------------------------>|                          |
+  |               |               |                          |
+  |               |               |  GET /pending/ghi        |
+  |               |               |------------------------->|
+  |               |               |  200 OK, auth_token      |
+  |               |               |<-------------------------|
+  |               |               |                          |
+  |  redirect to start_path       |                          |
+  |<------------------------------|                          |
+  |               |               |                          |
 ~~~
 
-In this flow, the auth server handles the approval process directly. The `require=approval` value tells the agent that the request is waiting on external approval, but the agent does not need to facilitate any user interaction.
+The third party does not need to be the auth server. Any party that knows the agent's `login_endpoint` (from agent metadata) and the appropriate `issuer` can initiate the flow. The agent treats the redirect as untrusted input — it verifies the auth server through normal metadata discovery and initiates a signed flow.
 
-### Resource Interaction
+If the user is already authenticated at the auth server, the interaction at the auth server's `interaction_endpoint` resolves immediately — the auth server recognizes the user from its own session and auto-approves. If the user is not authenticated, the auth server conducts a normal authentication and consent flow before redirecting back.
 
-When a resource requires user interaction (login, consent for downstream access), it returns `202 Accepted` with a `Location` header and `AAuth: require=interaction; code="..."`. Resource-level user interaction is a deferral, not a denial — the request has been accepted but requires user action before it can complete.
+**Use cases:** Enterprise portal SSO, app marketplace "connect" buttons, partner site deep links, auth server dashboard launching an agent.
 
-The agent directs the user to the resource's `interaction_endpoint` with the interaction code. The resource handles the interaction (which may involve its own AAuth, OAuth, or OIDC flow with a downstream auth server). After completion, the resource redirects the user back to the agent's callback URL. The agent polls the `Location` URL with `GET` until the response is ready.
+### User Authorization
+
+Full flow with user-authorized access. The agent obtains a resource token from the resource's `resource_token_endpoint`, then requests authorization from the auth server. The auth server returns a deferred response while the user authenticates and consents.
 
 ~~~ ascii-art
 User            Agent                Resource           Auth Server
   |               |                      |                    |
-  |               |  HTTPSig request     |                    |
-  |               |  (with auth-token)   |                    |
+  |               |  POST                |                    |
+  |               |  resource_token_endpoint                  |
   |               |--------------------->|                    |
   |               |                      |                    |
-  |               |  202 Accepted        |                    |
-  |               |  Location: /pending/xyz                   |
-  |               |  AAuth: require=interaction;              |
-  |               |         code="MNOP3456"                   |
+  |               |  resource_token      |                    |
+  |               |  + auth_server       |                    |
   |               |<---------------------|                    |
   |               |                      |                    |
-  |  direct to resource                  |                    |
-  |  interaction_endpoint with code      |                    |
+  |               |  POST token_endpoint                      |
+  |               |  resource_token, scope                    |
+  |               |  Prefer: wait=45                          |
+  |               |------------------------------------------>|
+  |               |                      |                    |
+  |               |  202 Accepted                             |
+  |               |  Location: /pending/abc                   |
+  |               |  AAuth-Challenge: require=interaction;              |
+  |               |         code="ABCD1234"                   |
+  |               |<------------------------------------------|
+  |               |                      |                    |
+  |  direct to    |                      |                    |
+  |  interaction_endpoint                |                    |
+  |  with code    |                      |                    |
   |<--------------|                      |                    |
   |               |                      |                    |
-  |  authenticate/consent                |                    |
-  |------------------------------------->|                    |
+  |  authenticate and consent            |                    |
+  |----------------------------------------------------->----|
   |               |                      |                    |
-  |               |          [Resource may perform AAuth,     |
-  |               |           OAuth, or OIDC flow]            |
-  |               |                      |                    |
-  |  redirect to callback_url            |                    |
-  |<-------------------------------------|                    |
+  |  redirect to callback_url                                |
+  |<---------------------------------------------------------|
   |               |                      |                    |
   |  callback     |                      |                    |
   |-------------->|                      |                    |
   |               |                      |                    |
-  |               |  GET /pending/xyz    |                    |
+  |               |  GET /pending/abc    |                    |
+  |               |------------------------------------------>|
+  |               |  200 OK, auth_token  |                    |
+  |               |<------------------------------------------|
+  |               |                      |                    |
+  |               |  HTTPSig request     |                    |
+  |               |  (with auth-token)   |                    |
   |               |--------------------->|                    |
   |               |                      |                    |
   |               |  200 OK              |                    |
@@ -452,22 +523,58 @@ User            Agent                Resource           Auth Server
   |               |                      |                    |
 ~~~
 
-The agent directs the user to the resource's interaction URL with the code. For a direct redirect:
+**Use cases:** User-delegated access to third-party APIs, accessing user data at a resource on behalf of the user, requesting specific scopes that require user consent.
 
-```
-https://resource.example/interact?code="MNOP3456"&callback=https%3A%2F%2Fagent.example%2Fcallback%3Fstate%3Dxyz
-```
+### Direct Approval
 
-After user interaction completes, the agent polls the pending URL:
+The auth server obtains approval directly — from a user (e.g., push notification, existing session, email) — without the agent facilitating a redirect. The agent simply polls until the request resolves. The user is shown to the right of the auth server to highlight that the auth server mediates between the agent and the user.
 
-```http
-GET /pending/xyz HTTP/1.1
-Host: resource.example
-Prefer: wait=45
-Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
-Signature: sig=:...signature bytes...:
-Signature-Key: sig=jwt;jwt="eyJhbGc..."
-```
+~~~ ascii-art
+Agent              Resource          Auth Server             User
+  |                    |                   |                    |
+  |  POST              |                   |                    |
+  |  resource_token_endpoint               |                    |
+  |------------------->|                   |                    |
+  |                    |                   |                    |
+  |  resource_token    |                   |                    |
+  |  + auth_server     |                   |                    |
+  |<-------------------|                   |                    |
+  |                    |                   |                    |
+  |  POST token_endpoint                   |                    |
+  |  resource_token, scope                 |                    |
+  |  Prefer: wait=45                       |                    |
+  |--------------------------------------->|                    |
+  |                    |                   |                    |
+  |  202 Accepted                          |                    |
+  |  Location: /pending/jkl               |                    |
+  |  AAuth-Challenge: require=approval              |                    |
+  |<---------------------------------------|                    |
+  |                    |                   |                    |
+  |                    |                   |  push / email /    |
+  |                    |                   |  existing session  |
+  |                    |                   |------------------->|
+  |                    |                   |                    |
+  |                    |                   |  approve           |
+  |                    |                   |<-------------------|
+  |                    |                   |                    |
+  |  GET /pending/jkl  |                   |                    |
+  |  Prefer: wait=45   |                   |                    |
+  |--------------------------------------->|                    |
+  |  200 OK, auth_token|                   |                    |
+  |<---------------------------------------|                    |
+  |                    |                   |                    |
+  |  HTTPSig request   |                   |                    |
+  |  (with auth-token) |                   |                    |
+  |------------------->|                   |                    |
+  |                    |                   |                    |
+  |  200 OK            |                   |                    |
+  |<-------------------|                   |                    |
+  |                    |                   |                    |
+~~~
+
+In this flow, the auth server handles the approval process directly. The `require=approval` value tells the agent that the request is waiting on external approval, but the agent does not need to facilitate any user interaction.
+
+**Use cases:** Push notification approval on a user's device, admin approval workflows, approval via an existing authenticated session, email-based authorization.
 
 ### Call Chaining
 
@@ -477,7 +584,7 @@ When a resource needs to access a downstream resource on behalf of the caller, i
 
 The downstream auth server (AS2) evaluates its own policy based on both the upstream auth token and the resource token from Resource 2. The resulting authorization is not necessarily a subset of the upstream scopes — AS2 may grant scopes that are independent of those in the upstream auth token. For example, an upstream token granting `calendar.read` on Resource 1 might lead AS2 to grant `availability.read` on Resource 2 based on an organizational policy that allows calendar services to query availability. The upstream token provides provenance and user identity context, not a scope ceiling.
 
-Because the resource acts as an agent, it MUST publish agent metadata at `/.well-known/aauth-agent.json` (see Agent Server Metadata) so that downstream resources and auth servers can verify its identity. The resource / agent MAY use the same `jwks_uri` in the `/.well-known/aauth-resource.json` and the `/.well-known/aauth-agent.json`.
+Because the resource acts as an agent, it MUST publish agent metadata at `/.well-known/aauth-agent.json` (#agent-server-metadata) so that downstream resources and auth servers can verify its identity. The resource / agent MAY use the same `jwks_uri` in the `/.well-known/aauth-resource.json` and the `/.well-known/aauth-agent.json`.
 
 #### Direct Grant
 
@@ -555,7 +662,7 @@ User         Agent          Resource 1        Resource 2          AS2
   |            |                 |                 |                |
   |            |  202 Accepted   |                 |                |
   |            |  Location: /pending/xyz           |                |
-  |            |  AAuth: require=interaction;      |                |
+  |            |  AAuth-Challenge: require=interaction;      |                |
   |            |         code="MNOP"               |                |
   |            |<----------------|                 |                |
   |            |                 |                 |                |
@@ -642,9 +749,9 @@ When `localhost_callback_allowed` is `true` in the agent's metadata, the agent M
 
 The `jwks_uri`, `tos_uri`, `policy_uri`, `logo_uri`, and `logo_dark_uri` values MUST use the `https` scheme.
 
-# AAuth HTTP Response Header
+# AAuth-Challenge HTTP Response Header
 
-Servers use the `AAuth` response header to indicate authentication and interaction requirements. The header value is a Structured Fields Dictionary ([@!RFC8941]) with a `require` key whose token value indicates the requirement level. Additional parameters provide context for the requirement.
+Servers use the `AAuth-Challenge` response header to indicate authentication and interaction requirements. The header value is a Structured Fields Dictionary ([@!RFC8941]) with a `require` key whose token value indicates the requirement level. Additional parameters provide context for the requirement.
 
 ## Pseudonym Required
 
@@ -652,7 +759,7 @@ When a resource requires only a signed request:
 
 ```http
 HTTP/1.1 401 Unauthorized
-AAuth: require=pseudonym
+AAuth-Challenge: require=pseudonym
 ```
 
 ## Identity Required
@@ -661,7 +768,7 @@ When a resource requires verified agent identity:
 
 ```http
 HTTP/1.1 401 Unauthorized
-AAuth: require=identity
+AAuth-Challenge: require=identity
 ```
 
 ## Auth Token Required
@@ -670,7 +777,7 @@ When a resource requires an auth token:
 
 ```http
 HTTP/1.1 401 Unauthorized
-AAuth: require=auth-token; resource-token="..."; auth-server="https://auth.example"
+AAuth-Challenge: require=auth-token; resource-token="..."; auth-server="https://auth.example"
 ```
 
 Parameters:
@@ -680,14 +787,14 @@ Parameters:
 
 ## Interaction Required
 
-When a server requires user interaction, it returns `202 Accepted` per the Deferred Responses protocol with an `AAuth` header and a JSON body:
+When a server requires user interaction, it returns `202 Accepted` per the Deferred Responses protocol with an `AAuth-Challenge` header and a JSON body:
 
 ```http
 HTTP/1.1 202 Accepted
 Location: /pending/res_abc123
 Retry-After: 0
 Cache-Control: no-store
-AAuth: require=interaction; code="ABCD1234"
+AAuth-Challenge: require=interaction; code="ABCD1234"
 Content-Type: application/json
 
 {
@@ -707,7 +814,7 @@ When the auth server is obtaining approval directly — from a user (e.g., push 
 ```http
 HTTP/1.1 202 Accepted
 Location: /pending/res_def456
-AAuth: require=approval
+AAuth-Challenge: require=approval
 Retry-After: 0
 Cache-Control: no-store
 Content-Type: application/json
@@ -720,6 +827,49 @@ Content-Type: application/json
 ```
 
 The agent knows the request is waiting on external approval but does not need to take any action. The agent polls the `Location` URL until the request resolves.
+
+## Interaction Started
+
+When the user has arrived at the interaction endpoint and interaction is in progress, the server returns `202 Accepted` with `status=interacting` on a polling response:
+
+```http
+HTTP/1.1 202 Accepted
+Location: /pending/res_abc123
+Retry-After: 5
+Cache-Control: no-store
+Content-Type: application/json
+
+{
+  "status": "interacting",
+  "location": "/pending/res_abc123"
+}
+```
+
+This signals the agent that the user has begun the interaction flow. The agent SHOULD stop prompting the user to visit the interaction endpoint (e.g., stop displaying the code or QR code) and simply poll the `Location` URL until the request resolves.
+
+A server transitions from `status=pending` to `status=interacting` when the user presents the interaction code at the interaction endpoint. The server MAY continue returning `status=pending` with `require=interaction` if it does not track whether the user has arrived.
+
+# AAuth-Session HTTP Request Header
+
+The `AAuth-Session` header conveys the session identifier to a server when the
+request does not already carry `aauth_sid` in a token. An agent MUST NOT
+include `AAuth-Session` if the request includes a token that contains an
+`aauth_sid` claim — the claim in the token is authoritative and the header
+would be redundant.
+
+The agent server SHOULD include `AAuth-Session` on requests to both auth
+servers and resources whenever `aauth_sid` is not already present in a token
+being sent with the request. This ensures that resources can correlate session
+activity even on pseudonymous or identity-only requests where no auth token is
+present.
+
+```http
+AAuth-Session: sess_7f3a9b2c
+```
+
+The value MUST be an opaque string assigned by the agent server. The
+`AAuth-Session` header MUST be included in the covered components of the HTTP
+Message Signature when present.
 
 # Agent Tokens
 
@@ -745,6 +895,7 @@ Required payload claims:
 Optional payload claims:
 - `aud`: Audience restriction. When present, the agent delegate MUST only present this agent token to the specified server(s). The value is a single URL or an array of URLs identifying the auth server(s) or resource(s) where this token is valid. Servers receiving an agent token with an `aud` claim MUST verify that their own identifier is listed.
 - `aud_sub`: The user identifier (`sub` value) from a previous auth token issued by the auth server in `aud`. This signals to the auth server which user the agent server believes the delegate is acting on behalf of, enabling the auth server to skip interactive identification and proceed directly to authorization. The auth server MUST verify this claim against its own records and MAY ignore it if the binding is no longer valid.
+- `aauth_sid`: Session identifier assigned by the agent server. When present, the auth server MUST copy this value unchanged into every auth token issued in response to this request.
 
 When `aud` is absent, the agent token establishes agent identity across all interactions — the delegate uses the same agent token regardless of which resource or auth server it communicates with. When `aud` is present, the agent server is restricting the delegate to specific interactions, which limits exposure if the delegate's key is compromised.
 
@@ -784,10 +935,10 @@ Payload:
 
 ## Resource Token Usage
 
-Resources include resource tokens in the `AAuth` header when requiring authorization:
+Resources include resource tokens in the `AAuth-Challenge` header when requiring authorization:
 
 ```http
-AAuth: require=auth-token; resource-token="eyJ..."; auth-server="https://auth.example"
+AAuth-Challenge: require=auth-token; resource-token="eyJ..."; auth-server="https://auth.example"
 ```
 
 ## Resource Token Endpoint
@@ -861,6 +1012,7 @@ Conditional payload claims (at least one MUST be present):
 
 Conditional payload claims (REQUIRED when present in the resource token):
 - `txn`: Transaction identifier copied from the resource token's `txn` claim. Enables correlation of the authorization grant with the original resource request across all parties and audit logs.
+- `aauth_sid`: Session identifier. REQUIRED when the agent token contains an `aauth_sid` claim or when the request included an `AAuth-Session` header. The auth server MUST copy this value unchanged from the agent token claim or the `AAuth-Session` header into the auth token. MUST be carried forward unchanged on every token refresh.
 
 **Editor's Note:** A future version may define a URI-based authorization claim (referencing a Rich Authorization Request document with a SHA-256 hash of the contents) as an alternative to scope.
 
@@ -937,7 +1089,7 @@ Every `202` response MUST include a `Location` header, making each response self
 
 Body fields:
 
-- `status` (REQUIRED): Always `"pending"`.
+- `status` (REQUIRED): `"pending"` while the request is waiting. `"interacting"` when the user has arrived at the interaction endpoint and interaction is in progress — the agent SHOULD stop prompting the user and simply poll. Agents MUST treat unrecognized `status` values as `"pending"` and continue polling.
 - `location` (REQUIRED): The pending URL (echoes the `Location` header).
 - `require` (OPTIONAL): The requirement level. `"interaction"` when the agent must direct the user to an interaction endpoint (with `code`). `"approval"` when the auth server is obtaining approval directly from a user.
 - `code` (OPTIONAL): The interaction code. Present only with `require: "interaction"`. The agent MUST direct the user to the server's `interaction_endpoint` with this code.
@@ -960,7 +1112,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 - The `Location` URL contains all state the server needs
 - The agent SHOULD include `Prefer: wait=N` on every poll
 - While still pending, the server responds with `202` including the same `Location`
-- **Exception**: During clarification chat, the agent uses `POST` to deliver a clarification response to the pending URL (see Clarification Chat). This is the only case where the agent sends a non-`GET` request to a pending URL.
+- **Exception**: During clarification chat, the agent uses `POST` to deliver a clarification response to the pending URL (#clarification-chat). This is the only case where the agent sends a non-`GET` request to a pending URL.
 
 The distinction between POST and GET is intentional:
 
@@ -1005,7 +1157,8 @@ Initial POST (with Prefer: wait=N)
                GET Location (with Prefer: wait=N)
                |
                +-- 200 --> done
-               +-- 202 --> continue polling (check for clarification)
+               +-- 202 --> continue polling (check status and clarification)
+               |           status=interacting → stop prompting user
                +-- 403 --> denied or abandoned — surface to user
                +-- 408 --> expired — MAY retry with fresh request
                +-- 410 --> invalid_code — do not retry
@@ -1015,7 +1168,7 @@ Initial POST (with Prefer: wait=N)
 
 # Token Endpoint
 
-The auth server's `token_endpoint` is the endpoint for initiating authorization requests and refreshing auth tokens. Polling and clarification use the pending URL returned in `202` responses (see Deferred Responses).
+The auth server's `token_endpoint` is the endpoint for initiating authorization requests and refreshing auth tokens. Polling and clarification use the pending URL returned in `202` responses (#deferred-responses).
 
 ## Token Endpoint Modes
 
@@ -1034,7 +1187,7 @@ The agent makes a signed POST to the `token_endpoint` to initiate an authorizati
 
 **Request parameters:**
 
-- `resource_token` (CONDITIONAL): The resource token from a resource's AAuth challenge or from the resource's `resource_token_endpoint` (see Resource Token Endpoint). Required when requesting access to another resource.
+- `resource_token` (CONDITIONAL): The resource token from a resource's AAuth challenge or from the resource's `resource_token_endpoint` (#resource-token-endpoint). Required when requesting access to another resource.
 - `scope` (CONDITIONAL): Space-separated scope values. Used when the agent requests authorization to itself (agent is resource).
 - `upstream_token` (OPTIONAL): An auth token from an upstream authorization, used in call chaining when a resource acts as an agent to access a downstream resource. Allows the auth server to verify the authorization chain.
 - `purpose` (OPTIONAL): Human-readable string declaring why access is being requested.
@@ -1078,7 +1231,7 @@ HTTP/1.1 202 Accepted
 Location: /pending/abc123
 Retry-After: 0
 Cache-Control: no-store
-AAuth: require=interaction; code="ABCD1234"
+AAuth-Challenge: require=interaction; code="ABCD1234"
 Content-Type: application/json
 
 {
@@ -1178,7 +1331,7 @@ Auth servers SHOULD enforce limits on clarification rounds (recommended: 5 round
 
 ## User Interaction
 
-When a server responds with `202` and `AAuth: require=interaction; code="..."`, the agent directs the user to the server's `interaction_endpoint` with the interaction code. The agent has three options:
+When a server responds with `202` and `AAuth-Challenge: require=interaction; code="..."`, the agent directs the user to the server's `interaction_endpoint` with the interaction code. The agent has three options:
 
 **Manual entry**: Display the `interaction_endpoint` and the code separately. The agent MAY insert hyphens into the code for readability (e.g., `ABCD-1234`). The code itself MUST NOT contain hyphens.
 
@@ -1210,6 +1363,31 @@ Location: https://agent.example/callback?state=abc123
 
 If no `callback` was provided, the server displays a completion page telling the user they may close the window.
 
+## Third-Party Initiated Login
+
+When a third party directs a user to the agent's `login_endpoint`, the agent initiates a standard "agent as audience" login flow with the specified auth server.
+
+**Login endpoint parameters:**
+
+- `issuer` (REQUIRED): The auth server URL. The agent MUST verify this is a valid auth server by fetching its metadata at `/.well-known/aauth-issuer.json`.
+- `domain_hint` (OPTIONAL): Domain hint, per OpenID Connect Enterprise Extensions 1.0 [@OpenID.Enterprise].
+- `tenant` (OPTIONAL): Tenant identifier, per OpenID Connect Enterprise Extensions 1.0 [@OpenID.Enterprise].
+- `start_path` (OPTIONAL): Path on the agent's origin where the user should be directed after login completes. The agent MUST validate that `start_path` is a relative path on its own origin.
+
+**Example login URL:**
+```
+https://agent.example/login?issuer=https://auth.example&tenant=corp&start_path=/projects/tokyo-trip
+```
+
+Upon receiving a request at its `login_endpoint`, the agent:
+
+1. Validates the `issuer` by fetching the auth server's metadata.
+2. POSTs to the auth server's `token_endpoint` with `scope` and any provided `domain_hint` or `tenant` parameters.
+3. Proceeds with the standard deferred response flow — directing the user to the auth server's `interaction_endpoint` with the interaction code.
+4. After obtaining the auth token, redirects the user to `start_path` if provided, or to the agent's default landing page.
+
+If the user is already authenticated at the auth server, the interaction step resolves near-instantly — the auth server recognizes the user from its own session. If not, the user completes a normal authentication and consent flow.
+
 ## Token Refresh
 
 When an auth token expires, the agent requests a new one by presenting the expired auth token.
@@ -1238,6 +1416,8 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
 The auth server verifies the agent's HTTP signature, validates the expired auth token, and issues a new auth token. The auth server MAY reject the refresh if the token has been expired beyond its refresh window.
 
+The auth server MUST carry the `aauth_sid` claim forward unchanged from the expired auth token into the newly issued auth token.
+
 # Agent Delegate User Binding
 
 An agent delegate SHOULD be associated with at most one user. The auth server tracks the association between an agent delegate (identified by the `sub` claim in the agent token) and the user who authorized it. The user may be anonymous to the agent and to the resource, but the auth server always knows who authorized the delegate.
@@ -1247,6 +1427,66 @@ This association enables:
 - **Re-authorization for long-running tasks**: When an agent delegate needs to refresh an expired auth token or re-authorize access, the auth server can associate the request with the original authorizing user without requiring a new interactive flow.
 - **Organizational authorization**: In enterprise contexts, any authorized person within a tenant can approve access for the agent delegate. The auth server tracks which user authorized the delegate, but the agent need not know the user's identity.
 - **Audit trail**: The auth server maintains a record of which user authorized which agent delegate, enabling compliance and security review.
+
+# Observability
+
+## Session Identifier
+
+The session identifier (`aauth_sid`) provides end-to-end correlation across all
+authorization events within an agent session. Session boundaries are determined
+by the agent server — the agent server assigns `aauth_sid` and decides when a
+new session begins.
+
+The agent server conveys `aauth_sid` to servers in exactly one of two ways per
+request, never both simultaneously:
+
+- As the `aauth_sid` claim in the agent token, when an agent token is included
+  in the request
+- As the `AAuth-Session` request header, when no token carrying `aauth_sid` is
+  included in the request
+
+The auth server copies `aauth_sid` into every auth token issued during the
+session and records it in the audit log alongside every token issuance event.
+
+Because `aauth_sid` travels in every auth token, every resource the agent
+accesses within the session receives it. On pseudonymous and identity-only
+requests — where no auth token is present — the `AAuth-Session` header conveys
+the session identifier directly to the resource.
+
+This enables:
+
+- **Resource-side correlation**: Resources can associate all requests from a
+  session without maintaining their own session state.
+- **Auth server audit**: A complete log of all tokens issued in a session is
+  queryable by `aauth_sid`.
+- **Cross-party tracing**: Operators can reconstruct which agent did what, in
+  which session, using which authorization, by joining on `aauth_sid` across
+  auth server and resource logs.
+
+### Session Identifier Format
+
+`aauth_sid` is an opaque string. Servers MUST NOT interpret its structure. The
+agent server SHOULD generate `aauth_sid` using at least 128 bits of
+cryptographically random entropy.
+
+Recommended format: a URL-safe prefix followed by a base64url-encoded random
+value without padding, for example `sess_` followed by 22 base64url characters
+representing 16 random bytes.
+
+### Relationship to `jti`
+
+`aauth_sid` and `jti` serve complementary but distinct purposes:
+
+| Claim | Assigned by | Scope | Purpose |
+|-------|-------------|-------|---------|
+| `aauth_sid` | Agent server | Session — spans many tokens and many resources | Correlate all activity within a session |
+| `jti` | Token issuer | Token — one specific token | Replay detection; uniquely identify a token |
+
+`aauth_sid` answers "what happened in this session across all resources and
+tokens". `jti` answers "has this exact token been seen before". Both SHOULD be
+recorded in audit logs. Joining on `aauth_sid` across auth server and resource
+logs reconstructs the full session history; `jti` values within that history
+identify the specific tokens authorizing each action.
 
 # Metadata Documents
 
@@ -1263,6 +1503,7 @@ Published at `/.well-known/aauth-agent.json`:
   "client_name": "Example AI Assistant",
   "logo_uri": "https://agent.example/logo.png",
   "logo_dark_uri": "https://agent.example/logo-dark.png",
+  "login_endpoint": "https://agent.example/login",
   "callback_endpoint": "https://agent.example/callback",
   "localhost_callback_allowed": true,
   "clarification_supported": true,
@@ -1278,6 +1519,7 @@ Fields:
 - `client_name` (OPTIONAL): Human-readable agent name (per [@RFC7591])
 - `logo_uri` (OPTIONAL): URL to agent logo (per [@RFC7591])
 - `logo_dark_uri` (OPTIONAL): URL to agent logo for dark backgrounds
+- `login_endpoint` (OPTIONAL): URL where third parties direct users to initiate a login flow at the agent. Accepts `issuer` (REQUIRED), `domain_hint` (OPTIONAL), `tenant` (OPTIONAL), and `start_path` (OPTIONAL) as query parameters. If absent, the agent does not support third-party initiated login.
 - `callback_endpoint` (OPTIONAL): The agent's HTTPS callback endpoint URL. The agent MAY append path and query parameters at runtime to construct the callback URL — any URL on the same origin is valid. If absent, the agent does not support callbacks.
 - `localhost_callback_allowed` (OPTIONAL): Boolean indicating whether the agent supports localhost callbacks (for CLI tools and desktop applications). Default: `false`. When `true`, any `http` URL with a loopback address (`127.0.0.1`, `[::1]`, or `localhost`) and a port is permitted as a callback URL at runtime.
 - `clarification_supported` (OPTIONAL): Boolean indicating whether the agent supports clarification chat during consent. Default: `false`.
@@ -1395,6 +1637,8 @@ HTTP Message Signatures in AAuth MUST cover:
 
 Resources MAY require additional components via `additional_signature_components` in metadata.
 
+- `aauth-session`: The `AAuth-Session` header. MUST be included in the covered components when the `AAuth-Session` header is present in the request.
+
 ## Signature Parameters
 
 The `Signature-Input` header MUST include:
@@ -1415,7 +1659,7 @@ When a server (resource or auth server) receives a signed request, it MUST perfo
 4. Obtain the public key from the `Signature-Key` header according to the scheme:
    - `scheme=hwk`: Use the inline public key.
    - `scheme=jwks_uri`: Fetch the JWKS from the specified URI and select the key matching the signature's `keyid`.
-   - `scheme=jwt`: Extract the public key from the JWT's `cnf` claim (see JWT Verification below).
+   - `scheme=jwt`: Extract the public key from the JWT's `cnf` claim (#jwt-verification).
    - `scheme=x509`: Extract the public key from the certificate.
 5. Verify the HTTP Message Signature ([@!RFC9421]) using the obtained public key.
 
@@ -1476,9 +1720,9 @@ When an agent receives an auth token from an auth server (either as a direct gra
 
 ## Resource Challenge Verification
 
-When an agent receives a `401` response with `AAuth: require=auth-token`:
+When an agent receives a `401` response with `AAuth-Challenge: require=auth-token`:
 
-1. Extract the `resource-token` and `auth-server` parameters from the `AAuth` header.
+1. Extract the `resource-token` and `auth-server` parameters from the `AAuth-Challenge` header.
 2. Decode the resource token JWT header and verify `typ` is `resource+jwt`.
 3. Verify the resource token JWT signature using the resource's JWKS (fetched from `jwks_uri` in `/.well-known/aauth-resource.json`).
 4. Verify `iss` matches the resource the agent sent the request to.
@@ -1644,6 +1888,13 @@ AAuth uses HTTPS URLs as agent identifiers rather than pre-registered client IDs
 - **Different user experiences**: Interaction requires the agent to present a code or redirect a user. Approval may use push notifications, existing sessions, or email — none requiring agent involvement.
 - **Prevents unnecessary UX**: Without distinct values, agents would not know whether to prompt the user or wait silently.
 
+## Why Interaction Started Is a Separate State
+
+- **Stops redundant prompting**: Once the user has arrived at the interaction endpoint, the agent no longer needs to display the code, QR code, or redirect link. Without `status=interacting`, the agent would keep prompting the user who is already in the middle of the consent flow.
+- **Better UX for multi-device flows**: When the user scans a QR code on their phone, the agent (e.g., a CLI on a laptop) can update its display from "scan this code" to "waiting for you to complete authorization" — a meaningful status change.
+- **Status, not requirement**: `interacting` is a progress signal, not something the server requires from the agent. Using the `status` field (rather than `require`) reflects this — the server is informing the agent, not asking it to act.
+- **Optional for servers**: Servers that do not track user arrival can continue returning `status=pending` with `require=interaction` throughout. The transition to `status=interacting` is an improvement, not a requirement.
+
 ## Why Restrict Interaction Code Character Set
 
 Interaction codes are restricted to unreserved URI characters ([@!RFC3986] Section 2.3: `A-Z a-z 0-9 - . _ ~`). Unreserved characters do not require percent-encoding in URI query parameters, eliminating double-encoding, missing encoding, and inconsistent encoding across implementations.
@@ -1688,7 +1939,7 @@ HTTP Message Signatures provide:
 
 ## Auth Server Discovery
 
-Resources include the `auth-server` parameter in their `AAuth` response header when returning a resource token. The agent MUST use the auth server URL from the resource's challenge — the resource determines which auth server to use for its tokens.
+Resources include the `auth-server` parameter in their `AAuth-Challenge` response header when returning a resource token. The agent MUST use the auth server URL from the resource's challenge — the resource determines which auth server to use for its tokens.
 
 An agent MUST NOT substitute a different auth server than the one specified by the resource. Auth servers MUST verify that the resource token's `aud` matches their own identifier.
 
@@ -1709,6 +1960,14 @@ The `upstream_token` parameter in the token request allows the downstream auth s
 This specification does not define a token revocation mechanism. Auth tokens are short-lived and bound to specific signing keys, limiting the window of exposure. Auth servers SHOULD issue auth tokens with the shortest practical lifetime. When a resource detects misuse, it can reject the token and require re-authorization.
 
 Auth servers MAY implement revocation by maintaining a deny list of `jti` values. Resources can check revocation by querying the auth server, though this adds latency to every request. A future specification may define a standardized revocation mechanism.
+
+## Third-Party Initiated Login Security
+
+The agent's `login_endpoint` accepts parameters from untrusted sources — any party can redirect a user to it. Agents MUST treat all login endpoint parameters as untrusted input:
+
+- **Issuer validation**: The agent MUST verify that the `issuer` is a valid auth server by fetching its metadata. The agent SHOULD restrict the set of accepted `issuer` values to known and trusted auth servers.
+- **`start_path` validation**: The agent MUST validate that `start_path` is a relative path on its own origin. Accepting arbitrary URLs would make the agent an open redirector.
+- **No pre-authorized state**: The login endpoint does not carry any tokens, codes, or pre-authorized state. The agent initiates a standard signed flow with the auth server, which independently authenticates the user through its own session. This eliminates authorization code interception and session fixation attacks — the agent never accepts identity assertions from the redirect itself.
 
 ## Replay Protection
 
@@ -1738,7 +1997,24 @@ This specification registers the following media types:
 
 This specification registers the following HTTP header:
 
-- `AAuth`: Authentication, authorization, and interaction requirements
+- `AAuth-Challenge`: Authentication, authorization, and interaction requirements
+
+## JWT Claim Registrations
+
+This specification registers the following JWT claim in the IANA JSON Web Token
+Claims Registry:
+
+| Claim | Description | Change Controller | Reference |
+|-------|-------------|-------------------|-----------|
+| `aauth_sid` | Session identifier assigned by the agent server and propagated by the auth server into auth tokens. | IETF | This document |
+
+## Additional HTTP Header Field Registrations
+
+This specification registers the following HTTP request header field:
+
+| Header | Description | Reference |
+|--------|-------------|-----------|
+| `AAuth-Session` | Conveys the session identifier from the agent to auth servers and resources when the session identifier is not present as a claim in a token included in the request. | This document |
 
 {backmatter}
 

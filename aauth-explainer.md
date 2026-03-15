@@ -28,6 +28,28 @@ AAuth is not intended as a replacement for OAuth or OIDC. It is not OAuth 3.0. I
 
 **Unified auth and authz.** AAuth combines authentication and authorization in a single flow, eliminating the friction of coordinating separate OAuth and OIDC deployments.
 
+## Why Adopt AAuth
+
+### 1. No registration, no shared secrets — agents work everywhere immediately
+
+OAuth requires every client to pre-register with every auth server it will ever talk to, exchanging client IDs and secrets out of band. This breaks down in open ecosystems where any agent might need to talk to any resource — MCP, autonomous agents, multi-vendor toolchains. AAuth agents self-publish identity at an HTTPS URL. Any agent can interact with any auth server or resource on first contact with no admin portal, no client credentials, and no onboarding friction. This is the difference between "works in a walled garden" and "works on the internet."
+
+### 2. Stolen tokens are worthless
+
+Every OAuth deployment starts with bearer tokens. Bolting on proof-of-possession (DPoP, mTLS) is optional and partial — DPoP does not cover request integrity, mTLS terminates at the first proxy. AAuth has no bearer path. Every request is signed with HTTP Message Signatures. Every token is bound to the signer's key via a `cnf` claim. A leaked token, a leaked log line, a compromised CDN cache — none of these yield usable credentials. This is not a hardening option; it is the only mode.
+
+### 3. Resources have cryptographic identity — not just agents
+
+In OAuth, the resource is a passive token consumer that trusts whatever the auth server issued. In AAuth, the resource signs a resource token that binds the access challenge to its own identity, specifying exactly what is being requested, by whom, and for what scope. The auth server validates the resource's signature before issuing an auth token. This prevents confused deputy attacks at the protocol level and decouples resources from auth servers so either side can change independently.
+
+### 4. One async pattern handles every interaction model
+
+OAuth has separate specs for browser redirects, device flow, client credentials, token exchange, and CIBA — each with its own mechanics. AAuth has one pattern: `202 Accepted` + `Location` + `Prefer: wait`. It handles immediate grants, user consent, headless polling, enterprise approval workflows, push notifications, and clarification chat during consent — all through the same state machine. An agent that can handle a `202` response can handle every authorization scenario, including ones that do not exist yet. A resource that was synchronous can become async without breaking any client.
+
+### 5. Progressive trust without protocol switching
+
+OAuth is binary: you have an access token or you do not. If a resource just needs to rate-limit anonymous requests or verify which agent is calling, OAuth has no answer short of full authorization. AAuth provides a trust ladder within a single protocol: pseudonymous (sign with a bare key, tracked by thumbprint), identified (present agent identity, policy based on who you are), and authorized (present an auth token, full user-delegated access). A resource can start at pseudonymous and escalate on demand using the same `AAuth-Challenge` mechanism. A single API can serve anonymous browsing, known-agent access, and fully authorized operations with the same protocol, same signing, and same headers.
+
 ## How AAuth Differs from OAuth 2.0/OIDC
 
 ### Identity Model
