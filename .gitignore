@@ -1,3 +1,9 @@
 lib/
 *.xml
+*.html
+*.txt
+*.md~
+.DS_Store
+node_modules/
 comparison-klrc-aauth.md
+notes
