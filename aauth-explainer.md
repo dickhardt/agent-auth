@@ -8,9 +8,11 @@ AAuth is not intended as a replacement for OAuth or OIDC. It is not OAuth 3.0. I
 
 **Autonomous agents operate without browsers.** In environments like the Model Context Protocol (MCP), agents interact with servers they were never pre-registered with. Many are headless processes that cannot receive browser redirects. Pre-registration of client credentials is impractical when any agent may call any server.
 
+**On-demand authorization across trust domains.** Long-running agents discover authorization needs at runtime — they do not know what resources they will require until they encounter them. Resources may be governed by different auth servers than the agent's own, requiring cross-domain federation that OAuth's single-authorization-server model does not support.
+
 **Progressive trust is needed.** Resources need different levels of assurance for different operations — rate limiting anonymous requests, verifying agent identity, or requiring full user authorization — but OAuth provides only a binary authenticated/unauthenticated model.
 
-**Consent needs context.** OAuth scopes like `read` or `write` convey what access is requested but not why, for what purpose, or under what conditions. Users cannot ask questions about what an agent intends to do.
+**Consent needs context.** OAuth scopes like `read` or `write` convey what access is requested but not why or under what conditions. Users cannot ask questions about what an agent intends to do.
 
 **Security has evolved.** Bearer token exfiltration is a common attack vector. Proof-of-possession with digital signatures is now practical and widely supported, yet bearer tokens and shared secrets remain the default. Applications are distributed across desktop, mobile, and CLI environments where a single shared secret is impractical.
 
@@ -18,15 +20,17 @@ AAuth is not intended as a replacement for OAuth or OIDC. It is not OAuth 3.0. I
 
 **Proof-of-possession by default.** HTTP Message Signatures on every request eliminate bearer tokens. Signatures cover method, path, and headers, providing message integrity that DPoP and mTLS do not offer, and survive proxies and CDNs unlike mTLS.
 
-**Agent identity without pre-registration.** Agents use HTTPS URLs as identifiers with self-published metadata and JWKS. Any party can verify agent identity without prior registration, enabling open ecosystems.
+**Agent identity without pre-registration.** Agents use HTTPS URLs as server identifiers with self-published metadata and JWKS. Each agent instance has its own identifier (`local@domain`) and signing key, so authorization grants are per-instance, not per-application. Any party can verify agent identity without prior registration, enabling open ecosystems.
 
 **Polling-based token delivery.** Deferred responses (`202 Accepted` + `Location` + `Prefer: wait`) decouple token delivery from browser redirects. Headless agents, CLI tools, and background services obtain authorization via polling. Long-running consent flows and clarification chat use the same mechanism.
 
 **Progressive authentication.** A single protocol covers pseudonymous access (signed requests for rate limiting), verified identity (agent tokens with JWKS), and full authorization (auth tokens with user delegation). Resources declare which level they require.
 
-**Informed consent.** A `purpose` parameter declares why access is requested. Clarification chat lets users ask the agent questions during consent. The auth server logs the declared purpose alongside the authorization decision, creating an audit trail for behavioral drift detection.
+**Justification and clarification.** A `justification` parameter declares why access is requested. Clarification chat lets users ask the agent questions during consent. The auth server logs the declared justification alongside the authorization decision, creating an audit trail for behavioral drift detection.
 
 **Unified auth and authz.** AAuth combines authentication and authorization in a single flow, eliminating the friction of coordinating separate OAuth and OIDC deployments.
+
+**Cross-domain federation.** An agent's auth server can call a resource's auth server to obtain an auth token on behalf of its agent, enabling cross-domain access without the agent or resource being aware of the federation.
 
 ## Why Adopt AAuth
 
@@ -48,7 +52,7 @@ OAuth has separate specs for browser redirects, device flow, client credentials,
 
 ### 5. Progressive trust without protocol switching
 
-OAuth is binary: you have an access token or you do not. If a resource just needs to rate-limit anonymous requests or verify which agent is calling, OAuth has no answer short of full authorization. AAuth provides a trust ladder within a single protocol: pseudonymous (sign with a bare key, tracked by thumbprint), identified (present agent identity, policy based on who you are), and authorized (present an auth token, full user-delegated access). A resource can start at pseudonymous and escalate on demand using the same `AAuth-Challenge` mechanism. A single API can serve anonymous browsing, known-agent access, and fully authorized operations with the same protocol, same signing, and same headers.
+OAuth is binary: you have an access token or you do not. If a resource just needs to rate-limit anonymous requests or verify which agent is calling, OAuth has no answer short of full authorization. AAuth provides a trust ladder within a single protocol: pseudonymous (sign with a bare key, tracked by thumbprint), identified (present agent identity, policy based on who you are), and authorized (present an auth token, full user-delegated access). A resource can start at pseudonymous and escalate on demand using the same `AAuth-Requirement` mechanism. A single API can serve anonymous browsing, known-agent access, and fully authorized operations with the same protocol, same signing, and same headers.
 
 ## How AAuth Differs from OAuth 2.0/OIDC
 
@@ -56,10 +60,10 @@ OAuth is binary: you have an access token or you do not. If a resource just need
 
 | Aspect | OAuth 2.0 | AAuth |
 |--------|-----------|-------|
-| Client identity | Pre-registered `client_id` | HTTPS URL with published metadata |
+| Client identity | Pre-registered `client_id` | `local@domain` identifier with published metadata |
 | Client metadata | Stored at authorization server | Self-published at `/.well-known/aauth-agent.json` |
 | Key management | Client secrets or registered public keys | Ephemeral keys bound via agent tokens |
-| Multiple instances | Share single `client_id` and secret | Each instance is an agent delegate with unique `sub` |
+| Multiple instances | Share single `client_id` and secret | Each instance has unique `local@domain` and signing key |
 | Discovery | Optional (RFC 8414) | Built-in via well-known metadata |
 
 ### Token Delivery
@@ -85,8 +89,8 @@ OAuth is binary: you have an access token or you do not. If a resource just need
 
 | Aspect | OAuth 2.0 | AAuth |
 |--------|-----------|-------|
-| What is requested | Scopes | Scopes + purpose |
-| Why it's requested | Not conveyed | `purpose` parameter |
+| What is requested | Scopes | Scopes + justification |
+| Why it's requested | Not conveyed | `justification` parameter |
 | User questions | Not supported | Clarification chat during consent |
 | Enterprise hints | Separate extensions | Built-in: `login_hint`, `tenant`, `domain_hint` |
 
@@ -96,7 +100,7 @@ OAuth uses several types of opaque strings for state management: authorization c
 
 AAuth consolidates these into a simpler model built on standard HTTP async patterns. When a request cannot be resolved immediately, the server returns `202 Accepted` with a `Location` header pointing to a pending URL and a JSON body echoing the status and location. The agent polls that URL with `GET` until the response is ready.
 
-When user interaction is needed, the server includes an `AAuth: require=interaction; code="ABCD1234"` header in the 202 response. The **interaction code** is a short alphanumeric string that binds the user's interaction to the pending request. The agent directs the user to the auth server's `interaction_endpoint` (from metadata) with the code as a query parameter. Users can enter the code manually, scan a QR code, or be redirected directly.
+When user interaction is needed, the server includes an `AAuth-Requirement: requirement=interaction; code="ABCD1234"` header in the 202 response. The **interaction code** is a short alphanumeric string that binds the user's interaction to the pending request. The agent directs the user to the auth server's `interaction_endpoint` (from metadata) with the code as a query parameter. Users can enter the code manually, scan a QR code, or be redirected directly.
 
 The agent may include a **callback URL** in the interaction redirect. The callback is a UX optimization — the agent is already polling and will get its answer regardless. The callback wakes the agent up immediately.
 
@@ -125,7 +129,7 @@ The token never passes through the user's browser. The agent polls the pending U
 
 During OAuth consent, the user sees a permissions screen and either approves or denies. There is no mechanism for the user to ask questions.
 
-AAuth introduces clarification chat: during consent, the user can ask the agent questions about its purpose. For example:
+AAuth introduces clarification chat: during consent, the user can ask the agent questions about its justification. For example:
 
 - User: "Why do you need access to my calendar?"
 - Agent: "I need to find available meeting times for your Tokyo trip next week."
@@ -134,7 +138,7 @@ AAuth introduces clarification chat: during consent, the user can ask the agent 
 
 The auth server mediates this exchange via polling responses on the pending URL. The agent's responses are displayed to the user, providing transparency into agent intent.
 
-This is particularly valuable for AI agents, where the purpose may be complex or context-dependent. It enables informed consent that scopes alone cannot provide.
+This is particularly valuable for AI agents, where the justification may be complex or context-dependent. It enables informed consent that scopes alone cannot provide.
 
 Auth servers enforce limits on clarification rounds and overall timeout to prevent abuse.
 
@@ -175,9 +179,9 @@ Agent servers may also include an `aud_sub` claim — the user identifier from a
 
 The IETF Web Bot Authentication (webbotauth) Working Group is developing standards for websites to manage automated traffic. AAuth's progressive authentication levels directly address the webbotauth charter goals:
 
-- **Pseudonym** (`require=pseudonym`): Signed requests prove consistent identity for rate limiting, without revealing who the agent is. This addresses bot abuse mitigation.
-- **Identified** (`require=identity`): Verified agent identity via JWKS or agent tokens. This addresses bot allowlisting and differentiated policies.
-- **Authorized** (`require=auth-token`): Full authorization for user-delegated or autonomous access.
+- **Pseudonym** (`requirement=pseudonym`): Signed requests prove consistent identity for rate limiting, without revealing who the agent is. This addresses bot abuse mitigation.
+- **Identified** (`requirement=identity`): Verified agent identity via JWKS or agent tokens. This addresses bot allowlisting and differentiated policies.
+- **Authorized** (`requirement=auth-token`): Full authorization for user-delegated or autonomous access.
 
 AAuth extends beyond the webbotauth charter by supporting authorization flows, user delegation, and interactive agents (browser, mobile, desktop) alongside autonomous bots. The same protocol serves both bot identity and user authorization.
 
@@ -199,10 +203,10 @@ AAuth uses JSON for both requests and responses. JSON naturally represents struc
 
 AAuth supports two distinct deferred response modes:
 
-- **`require=interaction`**: The agent must facilitate a redirect — presenting an interaction code to the user via manual entry, QR code, or direct redirect to the auth server's interaction endpoint.
-- **`require=approval`**: The auth server is obtaining approval directly, without the agent's involvement. The approval may come from a user (via push notification, existing session, or email) or from policy evaluation. The agent simply polls until the request resolves.
+- **`requirement=interaction`**: The agent must facilitate a redirect — presenting an interaction code to the user via manual entry, QR code, or direct redirect to the auth server's interaction endpoint.
+- **`requirement=approval`**: The auth server is obtaining approval directly, without the agent's involvement. The approval may come from a user (via push notification, existing session, or email) or from policy evaluation. The agent simply polls until the request resolves.
 
-The distinction matters because it tells the agent exactly what action to take (or not take). With `require=interaction`, the agent must actively help the user reach the auth server. With `require=approval`, the agent waits passively — no UX is needed.
+The distinction matters because it tells the agent exactly what action to take (or not take). With `requirement=interaction`, the agent must actively help the user reach the auth server. With `requirement=approval`, the agent waits passively — no UX is needed.
 
 ## Design Rationale
 
@@ -271,6 +275,20 @@ This is the same flow, endpoint, and token format as resource access. The auth t
 
 Resources — not just auth servers — can return deferred responses. When a resource requires user interaction (login, consent for downstream access), it returns `202 Accepted` with an interaction code, just like an auth server would. The agent directs the user to the resource's `interaction_endpoint`. This means any endpoint in AAuth can defer, and agents handle all `202` responses uniformly regardless of origin.
 
+## Mobile Interaction
+
+AAuth's interaction model maps cleanly onto mobile platform APIs. The agent needs to open a URL and receive a callback — the platform decides how.
+
+On iOS, the agent app uses `ASWebAuthenticationSession` to open the auth server's interaction endpoint with the code. On Android, Chrome Custom Tabs or Auth Tab serve the same role. Both are system-managed browser contexts that keep the auth server's session isolated from the app.
+
+The advantage over OAuth on mobile is structural. OAuth's redirect carries an authorization code — a sensitive credential that grants token access. The entire reason `ASWebAuthenticationSession` and Auth Tab exist is to protect that code from interception by other apps. PKCE adds another layer of defense. With AAuth, the callback carries nothing sensitive. It is a wake-up signal. If a malicious app captured the redirect, it gets nothing useful — it cannot poll the pending URL without the agent's signing key.
+
+If the auth server has a native app with an iOS Extensible SSO extension deployed via MDM, `ASWebAuthenticationSession` routes through the SSO extension automatically — native UI, biometrics, no browser. The agent app does not need to know or care.
+
+The protocol does not prescribe how the user reaches the interaction endpoint. Whether the platform uses `ASWebAuthenticationSession`, an SSO extension, a system browser, or the user manually types a code on a different device, the protocol works the same.
+
+For the `requirement=approval` flow, the auth server can reach the user via push notification to a native app or PWA, email, or an existing browser session. The agent just polls — the auth server chooses the channel. The mobile agent has no interaction responsibility at all.
+
 ## Proactive Authorization (Resource Token Endpoint)
 
 In the standard flow, an agent discovers authorization requirements by making an API call and receiving a `401` challenge with a resource token. But sometimes the agent already knows what scopes it needs — from the resource's published `scope_descriptions` metadata.
@@ -282,16 +300,51 @@ When a resource publishes a `resource_token_endpoint` in its metadata, agents ca
 
 The resource returns the resource token, the auth server URL, and the granted scope (which may be narrower than requested). The agent then proceeds to the auth server's token endpoint as in the standard flow.
 
-## Transaction Correlation (txn)
-
-Resources may include an optional `txn` (transaction) claim in resource tokens. When present, the auth server copies it into the issued auth token. This creates a correlation identifier that all three parties — resource, auth server, and agent — can use to link related events in their audit logs.
-
-Combined with `purpose` (which the auth server logs from the token request) and `jti` (unique token identifiers), deployments can reconstruct the full chain: which agent requested what access, for what stated purpose, with what authorization decision, and how the token was used.
-
 ## Agent Token Attestation
 
 Agent tokens provide an extension point for attestation. Agent servers may include additional claims in the agent token to convey evidence about the delegate's environment — platform integrity, secure enclave status, or workload identity assertions. This allows auth servers and resources to make trust decisions based on the delegate's runtime properties, not just the agent's identity.
 
-## What's Next
+## Missions
 
-A planned `aauth-use-cases` document will provide detailed use case descriptions, deployment scenarios, and implementation guidance for specific environments including MCP (Model Context Protocol), enterprise integration, and call chaining.
+### The Problem: Authorization for Open-Ended Work
+
+AAuth's core protocol handles individual resource access — an agent needs a specific scope at a specific resource, and obtains an auth token for it. But AI agents often perform multi-step work that spans many resources: research a topic across multiple sources, analyze the results, draft a document, book a reservation. The agent doesn't know at the outset every resource it will need. Pre-enumerating scopes is impractical for the same reason that detailed battle plans don't survive first contact.
+
+### Mission Command as a Model
+
+AAuth's mission model draws from *Auftragstaktik* (mission command), the command philosophy developed by the Prussian army in the 19th century and adopted by the US Army (ADP 6-0) and NATO. The core principle: communicate the objective and intent, then let subordinates decide how to accomplish it — intervening only when they go off course.
+
+The contrast is *Befehlstaktik* (detailed command): specify every step in advance, require approval before each action. This works when the environment is predictable. It fails when conditions change faster than orders can flow up and back down. As Moltke observed, no plan of operations extends with certainty beyond first contact.
+
+OAuth's model — pre-registered clients, static scopes, upfront consent — is detailed command. It works for predictable interactions between known parties. AAuth missions are mission command: approve the objective, let the agent execute, evaluate each action against the approved intent, and intervene when necessary.
+
+### How It Works
+
+The agent submits a **mission proposal** to its Mission Authority (MA) — its own auth server. The MA evaluates the proposal (potentially deferring for human review or engaging in clarification chat) and returns an approved mission, identified by the SHA-256 hash of the approved text.
+
+As the agent works, it includes the mission identifier in each token request. The MA evaluates whether each resource access is consistent with the mission and can deny requests that fall outside scope. Because the agent always routes token requests through its MA — even for cross-domain resources — the MA has a complete audit trail of every authorization decision within the mission. Decentralized execution with centralized visibility.
+
+### Mission Control
+
+Mission Control is the administrative interface to the MA. Because the MA is in the authorization path for every mission action, it already holds all mission data — Mission Control simply exposes it.
+
+**Example: a travel planning mission.** A user asks their agent to plan a week in Tokyo — research flights, find hotels near the conference venue, book dinner reservations, and compile an itinerary. The MA approves the mission. As the agent works, each authorization flows through the MA:
+
+```
+10:00  Agent → flights.example      scope: search        granted
+10:02  Agent → flights.example      scope: fare.hold     granted
+10:05  Agent → hotels.example       scope: search        granted
+10:08  Agent → hotels.example       scope: reserve       granted
+10:12  Agent → restaurants.example  scope: book          granted
+10:15  Agent → payments.example     scope: charge        denied — outside mission scope
+```
+
+The user sees this in Mission Control as a live audit trail. The MA denied the payment charge because the approved mission was to *plan* the trip, not pay for it. The agent can see the denial and explain to the user what happened, or the user can amend the mission.
+
+**Suspension.** Midway through, the user notices the agent is searching for hotels in Osaka instead of Tokyo. From Mission Control, they suspend the mission. All in-flight token requests immediately start returning errors — the agent cannot access any more resources until the user investigates. After reviewing the audit trail and correcting the agent, the user resumes the mission.
+
+**Delegation tree.** The hotel booking involved a chain: the agent called hotels.example, which called availability.example downstream to check room inventory. Mission Control shows the full delegation tree — every agent, resource, and auth server involved — so the user can see exactly where their data flowed.
+
+**Completion.** When the agent finishes the itinerary, it declares the mission complete. Alternatively, the mission could complete automatically when the user's calendar event for the trip passes, via a business event from the calendar system.
+
+Missions progress through states: **proposed → active → completed**, with **suspended**, **revoked**, and **expired** as intervention and terminal states. Users can inspect their own missions. Administrators can manage any mission in their organization. The MA's audit trail is the authoritative record of what happened, when, and why.

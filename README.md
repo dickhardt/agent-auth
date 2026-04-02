@@ -16,7 +16,12 @@ The foundation. A standalone HTTP specification (not AAuth-specific) that define
 
 ## AAuth Headers
 
-**[HTTP AAuth Headers](draft-hardt-aauth-headers.md)** (draft-hardt-aauth-headers) — Status: Internet-Draft
+**HTTP AAuth Headers** (draft-hardt-aauth-headers) — Status: Internet-Draft
+
+* [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-aauth-headers.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-aauth-headers)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-aauth-headers)
+* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/AAuth/#go.draft-hardt-aauth-headers.diff)
 
 Profiles HTTP Message Signatures + Signature-Key for the AAuth context. Defines two HTTP response headers:
 
@@ -27,7 +32,12 @@ Profiles HTTP Message Signatures + Signature-Key for the AAuth context. Defines 
 
 ## AAuth Protocol
 
-**[AAuth Protocol](draft-hardt-aauth-protocol.md)** (draft-hardt-aauth-protocol) — Status: Internet-Draft
+**AAuth Protocol** (draft-hardt-aauth-protocol) — Status: Internet-Draft
+
+* [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-aauth-protocol.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-aauth-protocol)
+* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/AAuth/#go.draft-hardt-aauth-protocol.diff)
 
 The authorization protocol built on the Headers layer. Defines:
 
