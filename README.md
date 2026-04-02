@@ -4,43 +4,49 @@
 
 AAuth is an authentication and authorization protocol for autonomous agents and dynamic ecosystems. It is not intended as a replacement for OAuth or OIDC — it addresses new use cases where pre-registered clients, browser redirects, and bearer tokens are not a good fit.
 
-## Documents
+## Document Suite
 
-| Document | Link |
+AAuth is defined by a family of specifications. Each document covers a distinct aspect of the protocol:
+
+| Document | Description | Status |
+|----------|-------------|--------|
+| **[HTTP AAuth Headers](draft-hardt-aauth-headers.md)** | AAuth-Challenge and AAuth-Error headers, HTTP Message Signing profile, pseudonymous/identity/interaction/approval requirement levels | Draft |
+| **[AAuth Protocol](draft-hardt-aauth-protocol.md)** | Token types (agent, resource, auth), token endpoint, deferred responses, clarification chat, call chaining, cross-domain federation | Draft |
+| **[AAuth Rich Resource Requests (R3)](draft-hardt-aauth-r3.md)** | Vocabulary-based authorization: structured R3 documents, proactive resource token acquisition, and vocabulary-format grants in auth tokens | Exploratory |
+| **[AAuth Mission Protocol](draft-hardt-aauth-mission-protocol.md)** | Mission-scoped authorization, MA countersignatures, centralized audit for multi-step agent workflows | Exploratory |
+| **[AAuth Mission Control](draft-hardt-aauth-mission-control.md)** | API surface for managing and auditing missions: list, inspect, suspend, revoke, complete | Exploratory |
+| **[Explainer](aauth-explainer.md)** | Non-normative overview of AAuth concepts, comparisons to OAuth/OIDC, and design rationale | — |
+
+The original monolithic draft (`draft-hardt-aauth.md`) is retained for reference during the transition to the multi-document structure.
+
+## Links
+
+| Resource | Link |
 |----------|------|
-| **IETF Draft (Editor's Copy)** | [draft-hardt-aauth.html](https://dickhardt.github.io/draft-hardt-aauth/draft-hardt-aauth.html) |
-| **Explainer** | [aauth-explainer.md](aauth-explainer.md) |
+| **GitHub Repository** | https://github.com/dickhardt/AAuth |
+| **Website** | https://aauth.ai |
 | **TypeScript Implementation** | [github.com/hellocoop/AAuth](https://github.com/hellocoop/AAuth) |
+
+## Building
+
+This repository uses the [i-d-template](https://github.com/martinthomson/i-d-template) build system. To build HTML from all draft documents:
+
+```sh
+make
+```
+
+Each `draft-*.md` file produces a corresponding HTML file.
 
 ## Versions
 
 | Date | Link |
 |------|------|
-| **Latest** | [Editor's Copy](https://dickhardt.github.io/draft-hardt-aauth/draft-hardt-aauth.html) |
-| **2026-03-02** | [draft-hardt-aauth.html](https://dickhardt.github.io/draft-hardt-aauth/2026-03-02/draft-hardt-aauth.html) |
-| **2026-01-09** | [draft-hardt-aauth.html](https://dickhardt.github.io/draft-hardt-aauth/2026-01-09/draft-hardt-aauth.html) |
+| **Latest** | [Editor's Copy](https://dickhardt.github.io/AAuth/) |
+| **2026-03-02** | [draft-hardt-aauth.html](https://dickhardt.github.io/AAuth/2026-03-02/draft-hardt-aauth.html) |
+| **2026-01-09** | [draft-hardt-aauth.html](https://dickhardt.github.io/AAuth/2026-01-09/draft-hardt-aauth.html) |
 
-## Changelog
+## Contributing
 
-**2026-03-02 vs [2026-01-09](https://dickhardt.github.io/draft-hardt-aauth/2026-01-09/draft-hardt-aauth.html)**
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to participate.
 
-- Replaced authorization code flow with HTTP async pattern (`202 Accepted`, `Location`, `Prefer: wait`)
-- Introduced `AAuth` response header with `require=` structured syntax (SF Dictionary)
-- Five requirement levels: `pseudonym`, `identity`, `auth-token`, `interaction`, `approval`
-- Dropped refresh tokens — agent presents expired auth token to refresh; HTTP signatures already prove agent identity
-- Switched all token endpoint requests from form-encoded to JSON
-- Added `purpose` parameter for agent-declared intent during authorization requests
-- Added clarification chat during user consent (via polling)
-- Added enterprise hint parameters: `login_hint`, `tenant`, `domain_hint`
-- Added `require=approval` for auth server direct approval without agent-facilitated redirect
-- Added agent delegate user binding
-- Enriched metadata with `client_name`, `logo_uri`, `logo_dark_uri`, `callback_endpoint`, `localhost_callback_allowed`, `tos_uri`, `policy_uri`, `scope_descriptions`
-- Added resource `interaction_endpoint` for resource-level user interaction
-- Added call chaining with `upstream_token` for multi-hop resource access
-- Added design rationale section
-- Rewrote introduction to clarify relationship to OAuth/OIDC
-- Wrote substantive explainer document
-
-**[2026-01-09](https://dickhardt.github.io/draft-hardt-aauth/2026-01-09/draft-hardt-aauth.html)**
-
-- Initial IETF draft
+Discussion happens on [GitHub Issues](https://github.com/dickhardt/AAuth/issues).
