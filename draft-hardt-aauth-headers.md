@@ -20,7 +20,7 @@ surname = "Hardt"
 fullname = "Dick Hardt"
 organization = "Hellō"
   [author.address]
-  email = "dick.hardt@hello.coop"
+  email = "dick.hardt@gmail.com"
 
 %%%
 
@@ -36,7 +36,7 @@ organization = "Hellō"
 
 .# Abstract
 
-This document defines two HTTP response headers — AAuth-Challenge and AAuth-Error — and profiles HTTP Message Signatures ([@!RFC9421]) for request authentication, with keying material conveyed via the Signature-Key header ([@!I-D.hardt-httpbis-signature-key]). A server uses AAuth-Challenge to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. AAuth-Error conveys structured error information. Both headers use extensible registries for their values.
+This document defines two HTTP response headers — AAuth-Requirement and AAuth-Error — and profiles HTTP Message Signatures ([@!RFC9421]) for request authentication, with keying material conveyed via the Signature-Key header ([@!I-D.hardt-httpbis-signature-key]). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. AAuth-Error conveys structured error information. Both headers use extensible registries for their values.
 
 .# Discussion Venues
 
@@ -50,11 +50,11 @@ This document is part of the AAuth specification family. Source for this draft a
 
 # Introduction
 
-Modern distributed systems need a standard way for servers to communicate requirements to agents and for agents to present cryptographic identity. The existing HTTP `WWW-Authenticate` header ([@!RFC9110], Section 11.6.1) is limited to a fixed set of authentication schemes, cannot express progressive requirements, and cannot appear in `202 Accepted` responses. The AAuth-Challenge header provides an extensible mechanism for progressive requirements — from pseudonymous access and verified identity to user interaction and deferred approval.
+Modern distributed systems need a standard way for servers to communicate requirements to agents and for agents to present cryptographic identity. The existing HTTP `WWW-Authenticate` header ([@!RFC9110], Section 11.6.1) is limited to a fixed set of authentication schemes, cannot express progressive requirements, and cannot appear in `202 Accepted` responses. The AAuth-Requirement header provides an extensible mechanism for progressive requirements — from pseudonymous access and verified identity to user interaction and deferred approval.
 
 This specification defines:
 
-- The `AAuth-Challenge` HTTP response header with an extensible requirement level registry
+- The `AAuth-Requirement` HTTP response header with an extensible requirement level registry
 - Four requirement levels: `pseudonym`, `identity`, `interaction`, and `approval`
 - A profile of HTTP Message Signatures ([@!RFC9421]) for request authentication, specifying required covered components, signature parameters, and keying material via the `Signature-Key` header ([@!I-D.hardt-httpbis-signature-key])
 - The `AAuth-Error` HTTP response header with an extensible error code registry
@@ -68,33 +68,33 @@ All HTTP requests and responses in AAuth MUST use HTTPS (HTTP over TLS ([@!RFC84
 # Terminology
 
 - **Agent**: An HTTP client ([@!RFC9110], Section 3.5) that signs its requests. In AAuth, agents have cryptographic identity.
-- **Server**: An HTTP origin server ([@!RFC9110], Section 3.6) that communicates requirements via the `AAuth-Challenge` header.
+- **Server**: An HTTP origin server ([@!RFC9110], Section 3.6) that communicates requirements via the `AAuth-Requirement` header.
 
-# AAuth-Challenge HTTP Response Header
+# AAuth-Requirement HTTP Response Header
 
-Servers use the `AAuth-Challenge` response header to indicate requirements to agents. The header MAY be sent with `401 Unauthorized` or `202 Accepted` responses. A `401` response indicates that authentication or authorization is required. A `202` response indicates that the request is pending and additional action is required — either user interaction (`require=interaction`) or third-party approval (`require=approval`).
+Servers use the `AAuth-Requirement` response header to indicate requirements to agents. The header MAY be sent with `401 Unauthorized` or `202 Accepted` responses. A `401` response indicates that authentication or authorization is required. A `202` response indicates that the request is pending and additional action is required — either user interaction (`requirement=interaction`) or third-party approval (`requirement=approval`).
 
-`AAuth-Challenge` and `WWW-Authenticate` are independent header fields; a response MAY include both. A client that understands AAuth processes `AAuth-Challenge`; a legacy client processes `WWW-Authenticate`. Neither header's presence invalidates the other.
+`AAuth-Requirement` and `WWW-Authenticate` are independent header fields; a response MAY include both. A client that understands AAuth processes `AAuth-Requirement`; a legacy client processes `WWW-Authenticate`. Neither header's presence invalidates the other.
 
-The header MAY also be sent with `402 Payment Required` when a server requires both authentication and payment. The `AAuth-Challenge` conveys the authentication requirement; the payment requirement is conveyed by a separate mechanism such as x402 [@x402] or the Micropayment Protocol (MPP) ([@I-D.ryan-httpauth-payment]).
+The header MAY also be sent with `402 Payment Required` when a server requires both authentication and payment. The `AAuth-Requirement` conveys the authentication requirement; the payment requirement is conveyed by a separate mechanism such as x402 [@x402] or the Micropayment Protocol (MPP) ([@I-D.ryan-httpauth-payment]).
 
 ## Header Structure
 
-The `AAuth-Challenge` header field is a Dictionary ([@!RFC8941], Section 3.2). It MUST contain the following member:
+The `AAuth-Requirement` header field is a Dictionary ([@!RFC8941], Section 3.2). It MUST contain the following member:
 
-- `require`: A Token ([@!RFC8941], Section 3.3.4) indicating the requirement level.
+- `requirement`: A Token ([@!RFC8941], Section 3.3.4) indicating the requirement level.
 
 Additional members are defined per requirement level by the specification that registers the level. Recipients MUST ignore unknown members.
 
 Example:
 
 ```http
-AAuth-Challenge: require=pseudonym
+AAuth-Requirement: requirement=pseudonym
 ```
 
 ## Requirement Levels
 
-The `require` value is an extension point. This document defines four levels:
+The `requirement` value is an extension point. This document defines four levels:
 
 | Level | Status Code | Meaning |
 |-------|-------------|---------|
@@ -111,7 +111,7 @@ When a server requires a signed request:
 
 ```http
 HTTP/1.1 401 Unauthorized
-AAuth-Challenge: require=pseudonym
+AAuth-Requirement: requirement=pseudonym
 ```
 
 The agent retries with an HTTP Message Signature using a pseudonymous Signature-Key scheme ({{keying-material}}). The server can track the agent by JWK Thumbprint ([@!RFC7638]) without knowing its identity.
@@ -123,7 +123,7 @@ Agent                                          Server
   |---------------------------------------------->|
   |                                               |
   |  401 Unauthorized                             |
-  |  AAuth-Challenge: require=pseudonym           |
+  |  AAuth-Requirement: requirement=pseudonym           |
   |<----------------------------------------------|
   |                                               |
   |  HTTPSig request                              |
@@ -148,7 +148,7 @@ When a server requires verified agent identity:
 
 ```http
 HTTP/1.1 401 Unauthorized
-AAuth-Challenge: require=identity
+AAuth-Requirement: requirement=identity
 ```
 
 The agent retries with a signed request using an identity Signature-Key scheme ({{keying-material}}).
@@ -160,7 +160,7 @@ Agent                                          Server
   |---------------------------------------------->|
   |                                               |
   |  401 Unauthorized                             |
-  |  AAuth-Challenge: require=identity            |
+  |  AAuth-Requirement: requirement=identity            |
   |<----------------------------------------------|
   |                                               |
   |  HTTPSig request                              |
@@ -185,13 +185,13 @@ When a server requires user action — such as authentication, consent, payment 
 
 ```http
 HTTP/1.1 202 Accepted
-AAuth-Challenge: require=interaction; url="https://example.com/interact";
+AAuth-Requirement: requirement=interaction; url="https://example.com/interact";
     code="A1B2-C3D4"
 Location: /pending/f7a3b9c
 Retry-After: 0
 ```
 
-The `AAuth-Challenge` header MUST include the following parameters:
+The `AAuth-Requirement` header MUST include the following parameters:
 
 - `url` (String): The interaction URL where the user completes the required action. MUST use the `https` scheme and MUST NOT contain query or fragment components.
 - `code` (String): An interaction code that links the agent's pending request to the user's session at the interaction URL.
@@ -212,8 +212,8 @@ After directing the user, the agent polls the `Location` URL with GET requests, 
 Agent                        User                         Server
   |                            |                             |
   |  202 Accepted                                            |
-  |  AAuth-Challenge:                                        |
-  |    require=interaction;                                  |
+  |  AAuth-Requirement:                                        |
+  |    requirement=interaction;                                  |
   |    url="..."; code="..."                                 |
   |  Location: /pending/...                                  |
   |<---------------------------------------------------------|
@@ -243,7 +243,7 @@ When a server is obtaining approval from another party without requiring the age
 
 ```http
 HTTP/1.1 202 Accepted
-AAuth-Challenge: require=approval
+AAuth-Requirement: requirement=approval
 Location: /pending/f7a3b9c
 Retry-After: 30
 ```
@@ -395,7 +395,7 @@ AAuth-Error: error=expired_jwt
 
 ## Access Denied
 
-When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns `403 Forbidden`. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an `AAuth-Challenge` or `AAuth-Error` header.
+When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns `403 Forbidden`. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an `AAuth-Requirement` or `AAuth-Error` header.
 
 # Privacy Considerations
 
@@ -439,7 +439,7 @@ When signature verification fails due to an unknown key, the server SHOULD re-fe
 
 This specification registers the following entry in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" ([@!RFC9110], Section 16.3.1):
 
-- Header Field Name: `AAuth-Challenge`
+- Header Field Name: `AAuth-Requirement`
 - Status: permanent
 - Structured Type: Dictionary
 - Reference: This document
@@ -485,21 +485,21 @@ New values may be registered following the Specification Required policy ([@!RFC
 
 `WWW-Authenticate` ([@!RFC9110], Section 11.6.1) tells the client which authentication scheme to use. Its challenge model is "present credentials" — it cannot express progressive requirements, authorization, or deferred approval, and it cannot appear in a `202 Accepted` response.
 
-AAuth-Challenge coexists with `WWW-Authenticate`. A `401` response MAY include both headers, and the client uses whichever it understands:
+AAuth-Requirement coexists with `WWW-Authenticate`. A `401` response MAY include both headers, and the client uses whichever it understands:
 
 ```http
 HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer realm="api"
-AAuth-Challenge: require=identity
+AAuth-Requirement: requirement=identity
 ```
 
-A `402` response MAY include `WWW-Authenticate` for payment (e.g., the Payment scheme defined by the Micropayment Protocol ([@!I-D.ryan-httpauth-payment])) alongside `AAuth-Challenge` for authentication or authorization:
+A `402` response MAY include `WWW-Authenticate` for payment (e.g., the Payment scheme defined by the Micropayment Protocol ([@!I-D.ryan-httpauth-payment])) alongside `AAuth-Requirement` for authentication or authorization:
 
 ```http
 HTTP/1.1 402 Payment Required
 WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
     request="eyJhbW91bnQiOiIxMDAw..."
-AAuth-Challenge: require=pseudonym
+AAuth-Requirement: requirement=pseudonym
 ```
 
 # Implementation Status
@@ -510,7 +510,7 @@ This section records the status of known implementations of the protocol defined
 
 The following implementations are known at the time of writing:
 
-- **@aauth npm packages** (https://www.npmjs.com/org/aauth): JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Challenge processing for agents and servers.
+- **@aauth npm packages** (https://www.npmjs.com/org/aauth): JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Requirement processing for agents and servers.
 
 - **aauth-implementation** (https://github.com/christian-posta/aauth-implementation): Python library implementing HTTP Message Signatures (RFC 9421), AAuth request signing/verification, and Signature-Key header support. Author: Christian Posta.
 

@@ -1,30 +1,81 @@
-# AAuth
+# AAuth Specification Family
 
-**Author:** Dick Hardt (dick.hardt@hello.coop)
+**Author:** Dick Hardt (dick.hardt@gmail.com)
 
 AAuth is an authentication and authorization protocol for autonomous agents and dynamic ecosystems. It is not intended as a replacement for OAuth or OIDC — it addresses new use cases where pre-registered clients, browser redirects, and bearer tokens are not a good fit.
 
-## Document Suite
+AAuth is defined by a family of layered specifications. Each layer builds on the one below it, providing primitives that higher layers use.
 
-AAuth is defined by a family of specifications. Each document covers a distinct aspect of the protocol:
+## Signature-Key
 
-| Document | Description | Status |
-|----------|-------------|--------|
-| **[HTTP AAuth Headers](draft-hardt-aauth-headers.md)** | AAuth-Challenge and AAuth-Error headers, HTTP Message Signing profile, pseudonymous/identity/interaction/approval requirement levels | Draft |
-| **[AAuth Protocol](draft-hardt-aauth-protocol.md)** | Token types (agent, resource, auth), token endpoint, deferred responses, clarification chat, call chaining, cross-domain federation | Draft |
-| **[AAuth Rich Resource Requests (R3)](draft-hardt-aauth-r3.md)** | Vocabulary-based authorization: structured R3 documents, proactive resource token acquisition, and vocabulary-format grants in auth tokens | Exploratory |
-| **[AAuth Mission Protocol](draft-hardt-aauth-mission-protocol.md)** | Mission-scoped authorization, MA countersignatures, centralized audit for multi-step agent workflows | Exploratory |
-| **[AAuth Mission Control](draft-hardt-aauth-mission-control.md)** | API surface for managing and auditing missions: list, inspect, suspend, revoke, complete | Exploratory |
-| **[Explainer](aauth-explainer.md)** | Non-normative overview of AAuth concepts, comparisons to OAuth/OIDC, and design rationale | — |
+**[Signature-Key](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key/)** (I-D.hardt-httpbis-signature-key) — Status: Internet-Draft
 
-The original monolithic draft (`draft-hardt-aauth.md`) is retained for reference during the transition to the multi-document structure.
+The foundation. A standalone HTTP specification (not AAuth-specific) that defines the `Signature-Key` header for conveying public keying material alongside HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)). Provides a standard way for a signer to tell a verifier which key to use — the building block that all AAuth signing depends on.
+
+**Primitives:** key conveyance, signature verification bootstrapping
+
+## AAuth Headers
+
+**[HTTP AAuth Headers](draft-hardt-aauth-headers.md)** (draft-hardt-aauth-headers) — Status: Internet-Draft
+
+Profiles HTTP Message Signatures + Signature-Key for the AAuth context. Defines two HTTP response headers:
+
+- **`AAuth-Requirement`** — progressive requirement levels: `pseudonym` → `identity` → `interaction` → `approval`
+- **`AAuth-Error`** — structured error codes for signature and authentication failures
+
+**Primitives:** requirement signaling, signed request authentication, error reporting
+
+## AAuth Protocol
+
+**[AAuth Protocol](draft-hardt-aauth-protocol.md)** (draft-hardt-aauth-protocol) — Status: Internet-Draft
+
+The authorization protocol built on the Headers layer. Defines:
+
+- Three token types: **agent** (delegate identity), **resource** (access challenge), **auth** (user-delegated authorization)
+- A unified **token endpoint** with deferred response support (`202 Accepted` + polling)
+- **Clarification chat** during consent flows
+- **Call chaining** for multi-hop resource access
+- **Cross-domain AS federation** between auth servers
+
+**Primitives:** token issuance, federation, deferred authorization, user delegation
+
+## AAuth Mission
+
+**[AAuth Mission](draft-hardt-aauth-mission.md)** (draft-hardt-aauth-mission) — Status: Exploratory
+
+Optional extension to the Protocol for multi-step agent workflows, inspired by military Mission Command (Auftragstaktik). Defines:
+
+- **Mission proposals** — natural language descriptions of intended work
+- **Mission-scoped token issuance** — each resource access evaluated against mission context
+- **MA countersignatures** — cryptographic proof the Mission Authority approved each step
+- **Mission control** — administrative interface for lifecycle management and audit
+
+**Primitives:** scoped authorization contexts, centralized audit, mission lifecycle management
+
+## AAuth Rich Resource Requests (R3)
+
+**[AAuth R3](draft-hardt-aauth-r3.md)** (draft-hardt-aauth-r3) — Status: Exploratory
+
+Optional extension to the Protocol for structured, vocabulary-based authorization. Defines:
+
+- **Vocabularies** — resource operations expressed in formats agents already understand (MCP, OpenAPI, gRPC, etc.)
+- **R3 documents** — content-addressed authorization definitions published by resources
+- **Vocabulary-based grants** — auth tokens carry granted operations in the same vocabulary format
+
+**Primitives:** human-readable and machine-precise authorization definitions, content-addressed audit provenance
+
+## Non-Normative
+
+| Document | Description |
+|----------|-------------|
+| **[Explainer](aauth-explainer.md)** | Overview of AAuth concepts, comparisons to OAuth/OIDC, and design rationale |
 
 ## Links
 
 | Resource | Link |
 |----------|------|
 | **GitHub Repository** | https://github.com/dickhardt/AAuth |
-| **Website** | https://aauth.ai |
+| **Website (coming)** | https://aauth.ai |
 | **TypeScript Implementation** | [github.com/hellocoop/AAuth](https://github.com/hellocoop/AAuth) |
 
 ## Building
