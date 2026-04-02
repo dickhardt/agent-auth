@@ -2,7 +2,7 @@
 
 ## Historical Reference
 
-`draft-hardt-aauth.archive.md` is the original monolithic AAuth specification. `appendixes.archive.md` contains orphaned appendix content. Do NOT modify these archived files. All new work happens in the split-out documents:
+`aauth-monolith.archive.md` is the original monolithic AAuth specification. `appendixes.archive.md` contains orphaned appendix content. Do NOT modify these archived files. All new work happens in the split-out documents:
 
 - `draft-hardt-aauth-headers.md` — AAuth Headers specification (AAuth-Requirement and AAuth-Error)
 - `draft-hardt-aauth-protocol.md` — AAuth Protocol specification

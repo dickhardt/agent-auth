@@ -1290,7 +1290,7 @@ A user publishes agent metadata and a JWKS at a domain they control (e.g., `user
 ## Browser-Based Applications
 
 
-1. The web server — which acts as the agent server — authenticates the user. The recommended mechanism is WebAuthn, which binds authentication to the device and origin, preventing scripts or headless browsers from impersonating the web page to obtain an agent token. 
+1. The web server — which acts as the agent server — authenticates the user. The recommended mechanism is WebAuthn, which binds authentication to the device and origin, preventing scripts or headless browsers from impersonating the web page to obtain an agent token.
 2. The web app generates an ephemeral signing key pair using the Web Crypto API (non-extractable if supported) and sends it to the web server.
 3. The web server issues an agent token binding the web app's ephemeral public key to an agent identifier and returns it.
 
