@@ -30,6 +30,8 @@ Profiles HTTP Message Signatures + Signature-Key for the AAuth context. Defines 
 
 **Primitives:** requirement signaling, signed request authentication, error reporting
 
+> NOTE: received a bunch of feedback already. The AAuth Headers has stood up to scrutiny, but feedback has led to significantly reworking the AAuth Protocol. Incorporate the Mission Authority as a party to the core protocol, and replacing the AS for the agent with the MA. Update coming soon!
+
 ## AAuth Protocol
 
 **AAuth Protocol** (draft-hardt-aauth-protocol) — Status: Internet-Draft
