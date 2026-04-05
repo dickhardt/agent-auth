@@ -170,7 +170,7 @@ The following diagram shows the five parties and their relationships:
 
 ~~~ ascii-art
               Agent Trust Domain   |  Resource Trust Domain
-                                   
+
                     +-----------+
                     |  Legal    |
                     |  Person   |
