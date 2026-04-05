@@ -4,8 +4,8 @@
 
 TBD                                                             D. Hardt
 Internet-Draft                                                     Hellō
-Intended status: Standards Track                            2 April 2026
-Expires: 4 October 2026
+Intended status: Standards Track                            5 April 2026
+Expires: 7 October 2026
 
 
                            HTTP AAuth Headers
@@ -14,13 +14,14 @@ Expires: 4 October 2026
 Abstract
 
    This document defines two HTTP response headers — AAuth-Requirement
-   and AAuth-Error — and profiles HTTP Message Signatures ([RFC9421])
-   for request authentication, with keying material conveyed via the
-   Signature-Key header ([I-D.hardt-httpbis-signature-key]).  A server
-   uses AAuth-Requirement to require pseudonymous or verified agent
-   identity, to request user interaction, or to signal that approval is
-   pending.  AAuth-Error conveys structured error information.  Both
-   headers use extensible registries for their values.
+   and Signature-Error — and profiles HTTP Message Signatures
+   ([RFC9421]) for request authentication, with keying material conveyed
+   via the Signature-Key header ([I-D.hardt-httpbis-signature-key]).  A
+   server uses AAuth-Requirement to require pseudonymous or verified
+   agent identity, to request user interaction, or to signal that
+   approval is pending.  Signature-Error conveys structured error
+   information.  Both headers use extensible registries for their
+   values.
 
 Discussion Venues
 
@@ -46,7 +47,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 4 October 2026.
+   This Internet-Draft will expire on 7 October 2026.
 
 Copyright Notice
 
@@ -81,7 +82,7 @@ Table of Contents
        5.3.1.  Covered Components
        5.3.2.  Signature Parameters
      5.4.  Verification (Server)
-   6.  AAuth-Error HTTP Response Header
+   6.  Signature-Error HTTP Response Header
      6.1.  Header Structure
      6.2.  Error Codes
        6.2.1.  invalid_request
@@ -104,15 +105,15 @@ Table of Contents
    9.  IANA Considerations
      9.1.  HTTP Header Field Registration
      9.2.  AAuth Requirement Level Registry
-     9.3.  AAuth Error Code Registry
-   10. Design Rationale
-     10.1.  Why Not Extend WWW-Authenticate?
-   11. Implementation Status
-   12. Document History
-   13. Acknowledgments
-   14. References
-     14.1.  Normative References
-     14.2.  Informative References
+     9.3.  Signature Error Code Registry
+   10. Implementation Status
+   11. Document History
+   12. Acknowledgments
+   13. References
+     13.1.  Normative References
+     13.2.  Informative References
+   Appendix A.  Design Rationale
+     A.1.  Why Not Extend WWW-Authenticate?
    Author's Address
 
 1.  Introduction
@@ -137,8 +138,8 @@ Table of Contents
       authentication, specifying required covered components, signature
       parameters, and keying material via the Signature-Key header
       ([I-D.hardt-httpbis-signature-key])
-   *  The AAuth-Error HTTP response header with an extensible error code
-      registry
+   *  The Signature-Error HTTP response header with an extensible error
+      code registry
 
 2.  Conventions and Definitions
 
@@ -451,7 +452,7 @@ Table of Contents
 
    When a server receives a signed request, it MUST perform the
    following steps.  Any failure MUST result in a 401 response with the
-   appropriate AAuth-Error header ({{error-codes}}).
+   appropriate Signature-Error header ({{error-codes}}).
 
    1.  Extract the Signature, Signature-Input, and Signature-Key
        headers.  If any are missing, return invalid_request.
@@ -459,10 +460,13 @@ Table of Contents
        defined in {{covered-components}}. If the server requires
        additional components, verify those are covered as well.  If not,
        return invalid_input with required_input.
-   3.  Verify the created parameter is present and within 60 seconds of
-       the server's current time.  Reject with invalid_signature if
-       outside this window.  Servers and agents SHOULD synchronize their
-       clocks using NTP ([RFC5905]).
+   3.  Verify the created parameter is present and within the server's
+       signature validity window of the server's current time.  The
+       default window is 60 seconds.  Servers MAY advertise a different
+       window via their metadata (e.g., signature_window in resource
+       metadata).  Reject with invalid_signature if outside this window.
+       Servers and agents SHOULD synchronize their clocks using NTP
+       ([RFC5905]).
    4.  Determine the signature algorithm from the alg parameter in the
        key.  If the algorithm is not supported, return
        unsupported_algorithm.
@@ -475,15 +479,15 @@ Table of Contents
        public key and determined algorithm.  Return invalid_signature if
        verification fails.
 
-6.  AAuth-Error HTTP Response Header
+6.  Signature-Error HTTP Response Header
 
    When a server rejects a request that includes AAuth signature headers
    (Signature, Signature-Input, and Signature-Key), the 401 response
-   MUST include the AAuth-Error header.
+   MUST include the Signature-Error header.
 
 6.1.  Header Structure
 
-   The AAuth-Error header field is a Dictionary ([RFC8941],
+   The Signature-Error header field is a Dictionary ([RFC8941],
    Section 3.2).  It MUST contain the following member:
 
    *  error: A Token ([RFC8941], Section 3.3.4) indicating the error
@@ -492,7 +496,7 @@ Table of Contents
    Additional members are defined per error code.  Recipients MUST
    ignore unknown members.
 
-   AAuth-Error: error=unsupported_algorithm,
+   Signature-Error: error=unsupported_algorithm,
        supported_algorithms=("EdDSA" "ES256")
 
    The response body is OPTIONAL and MAY contain a human-readable
@@ -508,7 +512,7 @@ Table of Contents
    signature verification — such as missing query parameters or an
    unsupported content type.
 
-   AAuth-Error: error=invalid_request
+   Signature-Error: error=invalid_request
 
 6.2.2.  invalid_input
 
@@ -517,7 +521,7 @@ Table of Contents
    components the server requires (see {{covered-components}} for the
    base set):
 
-   AAuth-Error: error=invalid_input,
+   Signature-Error: error=invalid_input,
        required_input=("@method" "@authority" "@path"
        "signature-key" "content-digest")
 
@@ -528,14 +532,14 @@ Table of Contents
    Input, or Signature-Key headers, an expired created timestamp, or a
    signature that does not verify.
 
-   AAuth-Error: error=invalid_signature
+   Signature-Error: error=invalid_signature
 
 6.2.4.  unsupported_algorithm
 
    The signing algorithm used by the agent is not supported by the
    server.  The response MUST include a supported_algorithms member:
 
-   AAuth-Error: error=unsupported_algorithm,
+   Signature-Error: error=unsupported_algorithm,
        supported_algorithms=("EdDSA" "ES256")
 
 6.2.5.  invalid_key
@@ -543,7 +547,7 @@ Table of Contents
    The public key in Signature-Key could not be parsed, is expired, or
    does not meet the server's trust requirements.
 
-   AAuth-Error: error=invalid_key
+   Signature-Error: error=invalid_key
 
 6.2.6.  unknown_key
 
@@ -553,21 +557,21 @@ Table of Contents
    fetch the JWKS once before returning this error, to handle key
    rotation.
 
-   AAuth-Error: error=unknown_key
+   Signature-Error: error=unknown_key
 
 6.2.7.  invalid_jwt
 
    The JWT in the Signature-Key header (when using scheme=jwt or
    scheme=jkt-jwt) is malformed or its signature verification failed.
 
-   AAuth-Error: error=invalid_jwt
+   Signature-Error: error=invalid_jwt
 
 6.2.8.  expired_jwt
 
    The JWT in the Signature-Key header (when using scheme=jwt or
    scheme=jkt-jwt) has expired (exp claim is in the past).
 
-   AAuth-Error: error=expired_jwt
+   Signature-Error: error=expired_jwt
 
 6.3.  Access Denied
 
@@ -576,7 +580,7 @@ Table of Contents
    authorized for this resource), the server returns 403 Forbidden.
    This is not an AAuth error — the authentication succeeded but
    authorization was denied.  The response MUST NOT include an AAuth-
-   Requirement or AAuth-Error header.
+   Requirement or Signature-Error header.
 
 7.  Privacy Considerations
 
@@ -618,18 +622,23 @@ Table of Contents
 
 8.2.  Replay Protection
 
-   The 60-second validity window on the created timestamp (see
+   The default 60-second validity window on the created timestamp (see
    {{verification-resource}}) limits the useful lifetime of a captured
-   signature.  The 60-second value balances clock-skew tolerance (NTP-
-   synchronized hosts typically drift less than 10 seconds) against
-   replay exposure — a shorter window would reject legitimate requests
-   from hosts with modest clock drift, while a longer window would widen
-   the replay attack surface.
+   signature.  Servers MAY configure a different window via metadata — a
+   shorter window (e.g., 30 seconds) for high-security environments, or
+   a longer window (e.g., 300 seconds) for agents with poor clock
+   synchronization (mobile devices, IoT).  The default value balances
+   clock-skew tolerance (NTP-synchronized hosts typically drift less
+   than 10 seconds) against replay exposure.
 
-   Within that window, resources MUST maintain a cache of recently seen
-   (key thumbprint, created) pairs and reject duplicate combinations.
-   Without this cache, an attacker who captures a signed request can
-   replay it within the validity window.
+   Within that window, resources SHOULD maintain a cache of recently
+   seen (key thumbprint, created) pairs and reject duplicate
+   combinations.  Because AAuth signatures are proof-of-possession (an
+   attacker cannot forge a new signature without the private key) and
+   TLS protects the transport, replay within the validity window
+   requires both a compromised TLS endpoint and access to a captured
+   signed request — a narrow threat model.  Resources with higher
+   security requirements MAY enforce strict replay detection.
 
 8.3.  JWKS Caching
 
@@ -659,7 +668,7 @@ Table of Contents
 
    *  Reference: This document
 
-   *  Header Field Name: AAuth-Error
+   *  Header Field Name: Signature-Error
 
    *  Status: permanent
 
@@ -689,10 +698,10 @@ Table of Contents
    New values may be registered following the Specification Required
    policy ([RFC8126]).
 
-9.3.  AAuth Error Code Registry
+9.3.  Signature Error Code Registry
 
-   This specification establishes the AAuth Error Code Registry.  The
-   initial contents are:
+   This specification establishes the Signature Error Code Registry.
+   The initial contents are:
 
                  +=======================+===============+
                  | Value                 | Reference     |
@@ -719,34 +728,7 @@ Table of Contents
    New values may be registered following the Specification Required
    policy ([RFC8126]).
 
-10.  Design Rationale
-
-10.1.  Why Not Extend WWW-Authenticate?
-
-   WWW-Authenticate ([RFC9110], Section 11.6.1) tells the client which
-   authentication scheme to use.  Its challenge model is "present
-   credentials" — it cannot express progressive requirements,
-   authorization, or deferred approval, and it cannot appear in a 202
-   Accepted response.
-
-   AAuth-Requirement coexists with WWW-Authenticate.  A 401 response MAY
-   include both headers, and the client uses whichever it understands:
-
-   HTTP/1.1 401 Unauthorized
-   WWW-Authenticate: Bearer realm="api"
-   AAuth-Requirement: requirement=identity
-
-   A 402 response MAY include WWW-Authenticate for payment (e.g., the
-   Payment scheme defined by the Micropayment Protocol
-   ([I-D.ryan-httpauth-payment])) alongside AAuth-Requirement for
-   authentication or authorization:
-
-   HTTP/1.1 402 Payment Required
-   WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
-       request="eyJhbW91bnQiOiIxMDAw..."
-   AAuth-Requirement: requirement=pseudonym
-
-11.  Implementation Status
+10.  Implementation Status
 
    _Note: This section is to be removed before publishing as an RFC._
 
@@ -770,24 +752,25 @@ Table of Contents
       Signatures (RFC 9421), AAuth request signing/verification, and
       Signature-Key header support.  Author: Christian Posta.
 
-12.  Document History
+11.  Document History
 
    _Note: This section is to be removed before publishing as an RFC._
 
    *  draft-hardt-aauth-headers-00
       -  Initial submission, renamed from draft-hardt-aauth-header
-      -  Added AAuth-Error header with extensible error code registry
+      -  Added Signature-Error header with extensible error code
+         registry
       -  Added interaction and approval requirement levels
       -  Added url parameter to interaction for self-contained challenge
       -  Renamed terminology from "resource" to "server"
 
-13.  Acknowledgments
+12.  Acknowledgments
 
    TBD
 
-14.  References
+13.  References
 
-14.1.  Normative References
+13.1.  Normative References
 
    [I-D.hardt-httpbis-signature-key]
               Hardt, D. and T. Meunier, "HTTP Signature-Key Header",
@@ -843,7 +826,7 @@ Table of Contents
               Message Signatures", RFC 9421, DOI 10.17487/RFC9421,
               February 2024, <https://www.rfc-editor.org/info/rfc9421>.
 
-14.2.  Informative References
+13.2.  Informative References
 
    [RFC5905]  Mills, D., Martin, J., Ed., Burbank, J., and W. Kasch,
               "Network Time Protocol Version 4: Protocol and Algorithms
@@ -870,6 +853,33 @@ Table of Contents
 
    [x402]     x402 Foundation, "x402: HTTP 402 Payment Protocol", 2025,
               <https://docs.x402.org>.
+
+Appendix A.  Design Rationale
+
+A.1.  Why Not Extend WWW-Authenticate?
+
+   WWW-Authenticate ([RFC9110], Section 11.6.1) tells the client which
+   authentication scheme to use.  Its challenge model is "present
+   credentials" — it cannot express progressive requirements,
+   authorization, or deferred approval, and it cannot appear in a 202
+   Accepted response.
+
+   AAuth-Requirement coexists with WWW-Authenticate.  A 401 response MAY
+   include both headers, and the client uses whichever it understands:
+
+   HTTP/1.1 401 Unauthorized
+   WWW-Authenticate: Bearer realm="api"
+   AAuth-Requirement: requirement=identity
+
+   A 402 response MAY include WWW-Authenticate for payment (e.g., the
+   Payment scheme defined by the Micropayment Protocol
+   ([I-D.ryan-httpauth-payment])) alongside AAuth-Requirement for
+   authentication or authorization:
+
+   HTTP/1.1 402 Payment Required
+   WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
+       request="eyJhbW91bnQiOiIxMDAw..."
+   AAuth-Requirement: requirement=pseudonym
 
 Author's Address
 

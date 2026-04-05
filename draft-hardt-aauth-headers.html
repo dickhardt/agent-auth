@@ -7,7 +7,7 @@
 <title>HTTP AAuth Headers</title>
 <meta content="Dick Hardt" name="author">
 <meta content="
-       This document defines two HTTP response headers — AAuth-Requirement and AAuth-Error — and profiles HTTP Message Signatures ( ) for request authentication, with keying material conveyed via the Signature-Key header ( ). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. AAuth-Error conveys structured error information. Both headers use extensible registries for their values. 
+       This document defines two HTTP response headers — AAuth-Requirement and Signature-Error — and profiles HTTP Message Signatures ( ) for request authentication, with keying material conveyed via the Signature-Key header ( ). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. Signature-Error conveys structured error information. Both headers use extensible registries for their values. 
     " name="description">
 <meta content="xml2rfc 3.32.0" name="generator">
 <meta content="agent" name="keyword">
@@ -1052,7 +1052,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Hardt</td>
-<td class="center">Expires 4 October 2026</td>
+<td class="center">Expires 7 October 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1065,12 +1065,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-hardt-aauth-headers-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-04-02" class="published">2 April 2026</time>
+<time datetime="2026-04-05" class="published">5 April 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-04">4 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-10-07">7 October 2026</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1083,7 +1083,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <h1 id="title">HTTP AAuth Headers</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This document defines two HTTP response headers — AAuth-Requirement and AAuth-Error — and profiles HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) for request authentication, with keying material conveyed via the Signature-Key header (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. AAuth-Error conveys structured error information. Both headers use extensible registries for their values.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document defines two HTTP response headers — AAuth-Requirement and Signature-Error — and profiles HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) for request authentication, with keying material conveyed via the Signature-Key header (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. Signature-Error conveys structured error information. Both headers use extensible registries for their values.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note" id="section-note.1">
       <h2 id="name-discussion-venues">
@@ -1111,7 +1111,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 4 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 7 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1198,7 +1198,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-aauth-error-http-response-h" class="internal xref">AAuth-Error HTTP Response Header</a></p>
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-signature-error-http-respon" class="internal xref">Signature-Error HTTP Response Header</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
                 <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-header-structure-2" class="internal xref">Header Structure</a></p>
@@ -1275,40 +1275,40 @@ svg :is([fill="white"], [fill^="#fff"]) {
                 <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-aauth-requirement-level-reg" class="internal xref">AAuth Requirement Level Registry</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3">
-                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-aauth-error-code-registry" class="internal xref">AAuth Error Code Registry</a></p>
+                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-signature-error-code-regist" class="internal xref">Signature Error Code Registry</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
-            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-design-rationale" class="internal xref">Design Rationale</a></p>
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-document-history" class="internal xref">Document History</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-references" class="internal xref">References</a></p>
 <ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
-                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-why-not-extend-www-authenti" class="internal xref">Why Not Extend WWW-Authenticate?</a></p>
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.1">
+                <p id="section-toc.1-1.13.2.1.1"><a href="#section-13.1" class="auto internal xref">13.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.2">
+                <p id="section-toc.1-1.13.2.2.1"><a href="#section-13.2" class="auto internal xref">13.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
 </li>
             </ul>
 </li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
-            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
-            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-document-history" class="internal xref">Document History</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
-            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
-</li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
-            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-references" class="internal xref">References</a></p>
+            <p id="section-toc.1-1.14.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-design-rationale" class="internal xref">Design Rationale</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.1">
-                <p id="section-toc.1-1.14.2.1.1"><a href="#section-14.1" class="auto internal xref">14.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.2">
-                <p id="section-toc.1-1.14.2.2.1"><a href="#section-14.2" class="auto internal xref">14.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+                <p id="section-toc.1-1.14.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-why-not-extend-www-authenti" class="internal xref">Why Not Extend WWW-Authenticate?</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
-            <p id="section-toc.1-1.15.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+            <p id="section-toc.1-1.15.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
 </li>
         </ul>
 </nav>
@@ -1328,7 +1328,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </li>
         <li class="compact" id="section-1-3.3">A profile of HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) for request authentication, specifying required covered components, signature parameters, and keying material via the <code>Signature-Key</code> header (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)<a href="#section-1-3.3" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-1-3.4">The <code>AAuth-Error</code> HTTP response header with an extensible error code registry<a href="#section-1-3.4" class="pilcrow">¶</a>
+        <li class="compact" id="section-1-3.4">The <code>Signature-Error</code> HTTP response header with an extensible error code registry<a href="#section-1-3.4" class="pilcrow">¶</a>
 </li>
       </ul>
 </section>
@@ -1705,13 +1705,13 @@ Retry-After: 30
         <h3 id="name-verification-server">
 <a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-verification-server" class="section-name selfRef">Verification (Server)</a>
         </h3>
-<p id="section-5.4-1">When a server receives a signed request, it MUST perform the following steps. Any failure MUST result in a <code>401</code> response with the appropriate <code>AAuth-Error</code> header ({{error-codes}}).<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<p id="section-5.4-1">When a server receives a signed request, it MUST perform the following steps. Any failure MUST result in a <code>401</code> response with the appropriate <code>Signature-Error</code> header ({{error-codes}}).<a href="#section-5.4-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-5.4-2">
 <li id="section-5.4-2.1">Extract the <code>Signature</code>, <code>Signature-Input</code>, and <code>Signature-Key</code> headers. If any are missing, return <code>invalid_request</code>.<a href="#section-5.4-2.1" class="pilcrow">¶</a>
 </li>
           <li id="section-5.4-2.2">Verify that the <code>Signature-Input</code> covers the required components defined in {{covered-components}}. If the server requires additional components, verify those are covered as well. If not, return <code>invalid_input</code> with <code>required_input</code>.<a href="#section-5.4-2.2" class="pilcrow">¶</a>
 </li>
-          <li id="section-5.4-2.3">Verify the <code>created</code> parameter is present and within 60 seconds of the server's current time. Reject with <code>invalid_signature</code> if outside this window. Servers and agents SHOULD synchronize their clocks using NTP (<span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span>).<a href="#section-5.4-2.3" class="pilcrow">¶</a>
+          <li id="section-5.4-2.3">Verify the <code>created</code> parameter is present and within the server's signature validity window of the server's current time. The default window is 60 seconds. Servers MAY advertise a different window via their metadata (e.g., <code>signature_window</code> in resource metadata). Reject with <code>invalid_signature</code> if outside this window. Servers and agents SHOULD synchronize their clocks using NTP (<span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span>).<a href="#section-5.4-2.3" class="pilcrow">¶</a>
 </li>
           <li id="section-5.4-2.4">Determine the signature algorithm from the <code>alg</code> parameter in the key. If the algorithm is not supported, return <code>unsupported_algorithm</code>.<a href="#section-5.4-2.4" class="pilcrow">¶</a>
 </li>
@@ -1724,18 +1724,18 @@ Retry-After: 30
 </div>
 </section>
 </div>
-<div id="aauth-error-http-response-header">
+<div id="signature-error-http-response-header">
 <section id="section-6">
-      <h2 id="name-aauth-error-http-response-h">
-<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-aauth-error-http-response-h" class="section-name selfRef">AAuth-Error HTTP Response Header</a>
+      <h2 id="name-signature-error-http-respon">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-signature-error-http-respon" class="section-name selfRef">Signature-Error HTTP Response Header</a>
       </h2>
-<p id="section-6-1">When a server rejects a request that includes AAuth signature headers (<code>Signature</code>, <code>Signature-Input</code>, and <code>Signature-Key</code>), the <code>401</code> response MUST include the <code>AAuth-Error</code> header.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-1">When a server rejects a request that includes AAuth signature headers (<code>Signature</code>, <code>Signature-Input</code>, and <code>Signature-Key</code>), the <code>401</code> response MUST include the <code>Signature-Error</code> header.<a href="#section-6-1" class="pilcrow">¶</a></p>
 <div id="header-structure-1">
 <section id="section-6.1">
         <h3 id="name-header-structure-2">
 <a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-header-structure-2" class="section-name selfRef">Header Structure</a>
         </h3>
-<p id="section-6.1-1">The <code>AAuth-Error</code> header field is a Dictionary (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.2). It MUST contain the following member:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-1">The <code>Signature-Error</code> header field is a Dictionary (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.2). It MUST contain the following member:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-6.1-2.1">
             <code>error</code>: A Token (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.3.4) indicating the error code.<a href="#section-6.1-2.1" class="pilcrow">¶</a>
@@ -1743,7 +1743,7 @@ Retry-After: 30
         </ul>
 <p id="section-6.1-3">Additional members are defined per error code. Recipients MUST ignore unknown members.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.1-4">
-<pre>AAuth-Error: error=unsupported_algorithm,
+<pre>Signature-Error: error=unsupported_algorithm,
     supported_algorithms=("EdDSA" "ES256")
 
 </pre><a href="#section-6.1-4" class="pilcrow">¶</a>
@@ -1763,7 +1763,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.1-1">The request is malformed or missing required information unrelated to signature verification — such as missing query parameters or an unsupported content type.<a href="#section-6.2.1-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.1-2">
-<pre>AAuth-Error: error=invalid_request
+<pre>Signature-Error: error=invalid_request
 
 </pre><a href="#section-6.2.1-2" class="pilcrow">¶</a>
 </div>
@@ -1776,7 +1776,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.2-1">The Signature-Input is missing required covered components. The response SHOULD include a <code>required_input</code> member listing the components the server requires (see {{covered-components}} for the base set):<a href="#section-6.2.2-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.2-2">
-<pre>AAuth-Error: error=invalid_input,
+<pre>Signature-Error: error=invalid_input,
     required_input=("@method" "@authority" "@path"
     "signature-key" "content-digest")
 
@@ -1791,7 +1791,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.3-1">The HTTP Message Signature is missing, malformed, or cryptographic verification failed. This includes missing <code>Signature</code>, <code>Signature-Input</code>, or <code>Signature-Key</code> headers, an expired <code>created</code> timestamp, or a signature that does not verify.<a href="#section-6.2.3-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.3-2">
-<pre>AAuth-Error: error=invalid_signature
+<pre>Signature-Error: error=invalid_signature
 
 </pre><a href="#section-6.2.3-2" class="pilcrow">¶</a>
 </div>
@@ -1804,7 +1804,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.4-1">The signing algorithm used by the agent is not supported by the server. The response MUST include a <code>supported_algorithms</code> member:<a href="#section-6.2.4-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.4-2">
-<pre>AAuth-Error: error=unsupported_algorithm,
+<pre>Signature-Error: error=unsupported_algorithm,
     supported_algorithms=("EdDSA" "ES256")
 
 </pre><a href="#section-6.2.4-2" class="pilcrow">¶</a>
@@ -1818,7 +1818,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.5-1">The public key in <code>Signature-Key</code> could not be parsed, is expired, or does not meet the server's trust requirements.<a href="#section-6.2.5-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.5-2">
-<pre>AAuth-Error: error=invalid_key
+<pre>Signature-Error: error=invalid_key
 
 </pre><a href="#section-6.2.5-2" class="pilcrow">¶</a>
 </div>
@@ -1831,7 +1831,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.6-1">The public key from <code>Signature-Key</code> does not match any key at the agent's <code>jwks_uri</code> (applicable when the agent uses <code>scheme=jwks_uri</code> for verified identity; see {{keying-material}}). The server SHOULD re-fetch the JWKS once before returning this error, to handle key rotation.<a href="#section-6.2.6-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.6-2">
-<pre>AAuth-Error: error=unknown_key
+<pre>Signature-Error: error=unknown_key
 
 </pre><a href="#section-6.2.6-2" class="pilcrow">¶</a>
 </div>
@@ -1844,7 +1844,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.7-1">The JWT in the <code>Signature-Key</code> header (when using <code>scheme=jwt</code> or <code>scheme=jkt-jwt</code>) is malformed or its signature verification failed.<a href="#section-6.2.7-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.7-2">
-<pre>AAuth-Error: error=invalid_jwt
+<pre>Signature-Error: error=invalid_jwt
 
 </pre><a href="#section-6.2.7-2" class="pilcrow">¶</a>
 </div>
@@ -1857,7 +1857,7 @@ Retry-After: 30
           </h4>
 <p id="section-6.2.8-1">The JWT in the <code>Signature-Key</code> header (when using <code>scheme=jwt</code> or <code>scheme=jkt-jwt</code>) has expired (<code>exp</code> claim is in the past).<a href="#section-6.2.8-1" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-6.2.8-2">
-<pre>AAuth-Error: error=expired_jwt
+<pre>Signature-Error: error=expired_jwt
 
 </pre><a href="#section-6.2.8-2" class="pilcrow">¶</a>
 </div>
@@ -1870,7 +1870,7 @@ Retry-After: 30
         <h3 id="name-access-denied">
 <a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-access-denied" class="section-name selfRef">Access Denied</a>
         </h3>
-<p id="section-6.3-1">When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns <code>403 Forbidden</code>. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an <code>AAuth-Requirement</code> or <code>AAuth-Error</code> header.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-1">When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns <code>403 Forbidden</code>. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an <code>AAuth-Requirement</code> or <code>Signature-Error</code> header.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1935,8 +1935,8 @@ Retry-After: 30
         <h3 id="name-replay-protection">
 <a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-replay-protection" class="section-name selfRef">Replay Protection</a>
         </h3>
-<p id="section-8.2-1">The 60-second validity window on the <code>created</code> timestamp (see {{verification-resource}}) limits the useful lifetime of a captured signature. The 60-second value balances clock-skew tolerance (NTP-synchronized hosts typically drift less than 10 seconds) against replay exposure — a shorter window would reject legitimate requests from hosts with modest clock drift, while a longer window would widen the replay attack surface.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
-<p id="section-8.2-2">Within that window, resources MUST maintain a cache of recently seen (key thumbprint, <code>created</code>) pairs and reject duplicate combinations. Without this cache, an attacker who captures a signed request can replay it within the validity window.<a href="#section-8.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.2-1">The default 60-second validity window on the <code>created</code> timestamp (see {{verification-resource}}) limits the useful lifetime of a captured signature. Servers MAY configure a different window via metadata — a shorter window (e.g., 30 seconds) for high-security environments, or a longer window (e.g., 300 seconds) for agents with poor clock synchronization (mobile devices, IoT). The default value balances clock-skew tolerance (NTP-synchronized hosts typically drift less than 10 seconds) against replay exposure.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.2-2">Within that window, resources SHOULD maintain a cache of recently seen (key thumbprint, <code>created</code>) pairs and reject duplicate combinations. Because AAuth signatures are proof-of-possession (an attacker cannot forge a new signature without the private key) and TLS protects the transport, replay within the validity window requires both a compromised TLS endpoint and access to a captured signed request — a narrow threat model. Resources with higher security requirements MAY enforce strict replay detection.<a href="#section-8.2-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="jwks-caching">
@@ -1972,7 +1972,7 @@ Retry-After: 30
             <p id="section-9.1-2.4.1">Reference: This document<a href="#section-9.1-2.4.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-9.1-2.5">
-            <p id="section-9.1-2.5.1">Header Field Name: <code>AAuth-Error</code><a href="#section-9.1-2.5.1" class="pilcrow">¶</a></p>
+            <p id="section-9.1-2.5.1">Header Field Name: <code>Signature-Error</code><a href="#section-9.1-2.5.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-9.1-2.6">
             <p id="section-9.1-2.6.1">Status: permanent<a href="#section-9.1-2.6.1" class="pilcrow">¶</a></p>
@@ -2030,12 +2030,12 @@ Retry-After: 30
 <p id="section-9.2-3">New values may be registered following the Specification Required policy (<span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-9.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="aauth-error-code-registry">
+<div id="signature-error-code-registry">
 <section id="section-9.3">
-        <h3 id="name-aauth-error-code-registry">
-<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-aauth-error-code-registry" class="section-name selfRef">AAuth Error Code Registry</a>
+        <h3 id="name-signature-error-code-regist">
+<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-signature-error-code-regist" class="section-name selfRef">Signature Error Code Registry</a>
         </h3>
-<p id="section-9.3-1">This specification establishes the AAuth Error Code Registry. The initial contents are:<a href="#section-9.3-1" class="pilcrow">¶</a></p>
+<p id="section-9.3-1">This specification establishes the Signature Error Code Registry. The initial contents are:<a href="#section-9.3-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-3">
           <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
 <thead>
@@ -2100,75 +2100,43 @@ Retry-After: 30
 </div>
 </section>
 </div>
-<div id="design-rationale">
-<section id="section-10">
-      <h2 id="name-design-rationale">
-<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-design-rationale" class="section-name selfRef">Design Rationale</a>
-      </h2>
-<div id="why-not-extend-www-authenticate">
-<section id="section-10.1">
-        <h3 id="name-why-not-extend-www-authenti">
-<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-why-not-extend-www-authenti" class="section-name selfRef">Why Not Extend WWW-Authenticate?</a>
-        </h3>
-<p id="section-10.1-1"><code>WWW-Authenticate</code> (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 11.6.1) tells the client which authentication scheme to use. Its challenge model is "present credentials" — it cannot express progressive requirements, authorization, or deferred approval, and it cannot appear in a <code>202 Accepted</code> response.<a href="#section-10.1-1" class="pilcrow">¶</a></p>
-<p id="section-10.1-2">AAuth-Requirement coexists with <code>WWW-Authenticate</code>. A <code>401</code> response MAY include both headers, and the client uses whichever it understands:<a href="#section-10.1-2" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-10.1-3">
-<pre>HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer realm="api"
-AAuth-Requirement: requirement=identity
-
-</pre><a href="#section-10.1-3" class="pilcrow">¶</a>
-</div>
-<p id="section-10.1-4">A <code>402</code> response MAY include <code>WWW-Authenticate</code> for payment (e.g., the Payment scheme defined by the Micropayment Protocol (<span>[<a href="#I-D.ryan-httpauth-payment" class="cite xref">I-D.ryan-httpauth-payment</a>]</span>)) alongside <code>AAuth-Requirement</code> for authentication or authorization:<a href="#section-10.1-4" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-10.1-5">
-<pre>HTTP/1.1 402 Payment Required
-WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
-    request="eyJhbW91bnQiOiIxMDAw..."
-AAuth-Requirement: requirement=pseudonym
-
-</pre><a href="#section-10.1-5" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-</section>
-</div>
 <div id="implementation-status">
-<section id="section-11">
+<section id="section-10">
       <h2 id="name-implementation-status">
-<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
       </h2>
-<p id="section-11-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-11-1" class="pilcrow">¶</a></p>
-<p id="section-11-2">This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in <span>[<a href="#RFC7942" class="cite xref">RFC7942</a>]</span>. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.<a href="#section-11-2" class="pilcrow">¶</a></p>
-<p id="section-11-3">The following implementations are known at the time of writing:<a href="#section-11-3" class="pilcrow">¶</a></p>
+<p id="section-10-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-10-1" class="pilcrow">¶</a></p>
+<p id="section-10-2">This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in <span>[<a href="#RFC7942" class="cite xref">RFC7942</a>]</span>. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.<a href="#section-10-2" class="pilcrow">¶</a></p>
+<p id="section-10-3">The following implementations are known at the time of writing:<a href="#section-10-3" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-11-4.1">
-          <p id="section-11-4.1.1"><strong>@aauth npm packages</strong> (<a href="https://www.npmjs.com/org/aauth):">https://www.npmjs.com/org/aauth):</a> JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Requirement processing for agents and servers.<a href="#section-11-4.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-10-4.1">
+          <p id="section-10-4.1.1"><strong>@aauth npm packages</strong> (<a href="https://www.npmjs.com/org/aauth):">https://www.npmjs.com/org/aauth):</a> JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Requirement processing for agents and servers.<a href="#section-10-4.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="section-11-4.2">
-          <p id="section-11-4.2.1"><strong>aauth-implementation</strong> (<a href="https://github.com/christian-posta/aauth-implementation):">https://github.com/christian-posta/aauth-implementation):</a> Python library implementing HTTP Message Signatures (RFC 9421), AAuth request signing/verification, and Signature-Key header support. Author: Christian Posta.<a href="#section-11-4.2.1" class="pilcrow">¶</a></p>
+        <li class="normal" id="section-10-4.2">
+          <p id="section-10-4.2.1"><strong>aauth-implementation</strong> (<a href="https://github.com/christian-posta/aauth-implementation):">https://github.com/christian-posta/aauth-implementation):</a> Python library implementing HTTP Message Signatures (RFC 9421), AAuth request signing/verification, and Signature-Key header support. Author: Christian Posta.<a href="#section-10-4.2.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>
 </div>
 <div id="document-history">
-<section id="section-12">
+<section id="section-11">
       <h2 id="name-document-history">
-<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
       </h2>
-<p id="section-12-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-12-1" class="pilcrow">¶</a></p>
+<p id="section-11-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-11-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-12-2.1">
-          <p id="section-12-2.1.1">draft-hardt-aauth-headers-00<a href="#section-12-2.1.1" class="pilcrow">¶</a></p>
+<li class="compact" id="section-11-2.1">
+          <p id="section-11-2.1.1">draft-hardt-aauth-headers-00<a href="#section-11-2.1.1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-12-2.1.2.1">Initial submission, renamed from draft-hardt-aauth-header<a href="#section-12-2.1.2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-11-2.1.2.1">Initial submission, renamed from draft-hardt-aauth-header<a href="#section-11-2.1.2.1" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-12-2.1.2.2">Added AAuth-Error header with extensible error code registry<a href="#section-12-2.1.2.2" class="pilcrow">¶</a>
+            <li class="compact" id="section-11-2.1.2.2">Added Signature-Error header with extensible error code registry<a href="#section-11-2.1.2.2" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-12-2.1.2.3">Added <code>interaction</code> and <code>approval</code> requirement levels<a href="#section-12-2.1.2.3" class="pilcrow">¶</a>
+            <li class="compact" id="section-11-2.1.2.3">Added <code>interaction</code> and <code>approval</code> requirement levels<a href="#section-11-2.1.2.3" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-12-2.1.2.4">Added <code>url</code> parameter to interaction for self-contained challenge<a href="#section-12-2.1.2.4" class="pilcrow">¶</a>
+            <li class="compact" id="section-11-2.1.2.4">Added <code>url</code> parameter to interaction for self-contained challenge<a href="#section-11-2.1.2.4" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-12-2.1.2.5">Renamed terminology from "resource" to "server"<a href="#section-12-2.1.2.5" class="pilcrow">¶</a>
+            <li class="compact" id="section-11-2.1.2.5">Renamed terminology from "resource" to "server"<a href="#section-11-2.1.2.5" class="pilcrow">¶</a>
 </li>
           </ul>
 </li>
@@ -2176,20 +2144,20 @@ AAuth-Requirement: requirement=pseudonym
 </section>
 </div>
 <div id="acknowledgments">
-<section id="section-13">
+<section id="section-12">
       <h2 id="name-acknowledgments">
-<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
       </h2>
-<p id="section-13-1">TBD<a href="#section-13-1" class="pilcrow">¶</a></p>
+<p id="section-12-1">TBD<a href="#section-12-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<section id="section-14">
+<section id="section-13">
       <h2 id="name-references">
-<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-references" class="section-name selfRef">References</a>
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-references" class="section-name selfRef">References</a>
       </h2>
-<section id="section-14.1">
+<section id="section-13.1">
         <h3 id="name-normative-references">
-<a href="#section-14.1" class="section-number selfRef">14.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+<a href="#section-13.1" class="section-number selfRef">13.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
         </h3>
 <dl class="references">
 <dt id="I-D.hardt-httpbis-signature-key">[I-D.hardt-httpbis-signature-key]</dt>
@@ -2238,9 +2206,9 @@ AAuth-Requirement: requirement=pseudonym
 <dd class="break"></dd>
 </dl>
 </section>
-<section id="section-14.2">
+<section id="section-13.2">
         <h3 id="name-informative-references">
-<a href="#section-14.2" class="section-number selfRef">14.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+<a href="#section-13.2" class="section-number selfRef">13.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
         </h3>
 <dl class="references">
 <dt id="RFC5905">[RFC5905]</dt>
@@ -2270,8 +2238,40 @@ AAuth-Requirement: requirement=pseudonym
 </dl>
 </section>
 </section>
-<div id="authors-addresses">
+<div id="design-rationale">
 <section id="appendix-A">
+      <h2 id="name-design-rationale">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-design-rationale" class="section-name selfRef">Design Rationale</a>
+      </h2>
+<div id="why-not-extend-www-authenticate">
+<section id="appendix-A.1">
+        <h3 id="name-why-not-extend-www-authenti">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-why-not-extend-www-authenti" class="section-name selfRef">Why Not Extend WWW-Authenticate?</a>
+        </h3>
+<p id="appendix-A.1-1"><code>WWW-Authenticate</code> (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 11.6.1) tells the client which authentication scheme to use. Its challenge model is "present credentials" — it cannot express progressive requirements, authorization, or deferred approval, and it cannot appear in a <code>202 Accepted</code> response.<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-2">AAuth-Requirement coexists with <code>WWW-Authenticate</code>. A <code>401</code> response MAY include both headers, and the client uses whichever it understands:<a href="#appendix-A.1-2" class="pilcrow">¶</a></p>
+<div class="lang-http sourcecode" id="appendix-A.1-3">
+<pre>HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="api"
+AAuth-Requirement: requirement=identity
+
+</pre><a href="#appendix-A.1-3" class="pilcrow">¶</a>
+</div>
+<p id="appendix-A.1-4">A <code>402</code> response MAY include <code>WWW-Authenticate</code> for payment (e.g., the Payment scheme defined by the Micropayment Protocol (<span>[<a href="#I-D.ryan-httpauth-payment" class="cite xref">I-D.ryan-httpauth-payment</a>]</span>)) alongside <code>AAuth-Requirement</code> for authentication or authorization:<a href="#appendix-A.1-4" class="pilcrow">¶</a></p>
+<div class="lang-http sourcecode" id="appendix-A.1-5">
+<pre>HTTP/1.1 402 Payment Required
+WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
+    request="eyJhbW91bnQiOiIxMDAw..."
+AAuth-Requirement: requirement=pseudonym
+
+</pre><a href="#appendix-A.1-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
       <h2 id="name-authors-address">
 <a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
       </h2>

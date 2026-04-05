@@ -4,8 +4,8 @@
 
 TBD                                                             D. Hardt
 Internet-Draft                                                     Hellō
-Intended status: Standards Track                            2 April 2026
-Expires: 4 October 2026
+Intended status: Standards Track                            5 April 2026
+Expires: 7 October 2026
 
 
                    AAuth Rich Resource Requests (R3)
@@ -48,7 +48,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 4 October 2026.
+   This Internet-Draft will expire on 7 October 2026.
 
 Copyright Notice
 
@@ -86,16 +86,18 @@ Table of Contents
      6.1.  Fields
      6.2.  Content Addressing
      6.3.  Resource Token Extensions
-   7.  AS Processing
-     7.1.  Caching
+   7.  R3 Processing
+     7.1.  AS Processing
+     7.2.  Caching
    8.  Auth Token Extensions
      8.1.  Resource Enforcement
    9.  Security Considerations
      9.1.  R3 Document Access Restriction
-     9.2.  Hash Verification
-     9.3.  Audit Log Integrity
-     9.4.  Operation Validation
-     9.5.  Grant Enforcement
+     9.2.  R3 Endpoint Access Control
+     9.3.  Hash Verification
+     9.4.  Audit Log Integrity
+     9.5.  Operation Validation
+     9.6.  Grant Enforcement
    10. IANA Considerations
      10.1.  JWT Claims Registration
      10.2.  R3 Vocabulary Registry
@@ -157,7 +159,9 @@ Table of Contents
    *  *R3 Document*: A JSON document published by a resource, describing
       the operations it provides and the consequences of granting
       access.  Identified by the SHA-256 hash of its content.  Fetched
-      by the AS; not accessible to agents.
+      by both the MM (for user consent using display fields) and the AS
+      (for policy evaluation using operations); not accessible to
+      agents.
    *  *R3 URI (r3_uri)*: A URI identifying an R3 document.  Included in
       a resource token.
    *  *R3 Hash (r3_s256)*: A SHA-256 hash of the R3 document, base64url-
@@ -509,7 +513,24 @@ Table of Contents
    ([I-D.hardt-aauth-protocol])) and R3 claims.  When both are present,
    the AS MUST enforce both independently.
 
-7.  AS Processing
+7.  R3 Processing
+
+   Both the MM and the AS fetch R3 documents, but for different
+   purposes:
+
+   *  *The MM* fetches R3 to present the display section to the user
+      during consent — summary, implications, data accessed,
+      irreversibility.  The MM uses this information to determine
+      whether the request fits the mission scope and to obtain informed
+      user consent.
+   *  *The AS* fetches R3 to evaluate operations for policy decisions
+      and to populate r3_granted and r3_conditional in the auth token.
+
+   Both independently verify r3_s256 against the fetched document.
+   Because R3 documents are content-addressed, both can cache
+   aggressively by hash.
+
+7.1.  AS Processing
 
    When the AS receives a resource token containing r3_uri and r3_s256,
    it MUST:
@@ -523,18 +544,18 @@ Table of Contents
        hashes do not match, the AS MUST reject the resource token.
    4.  Record r3_uri and r3_s256 in its audit log alongside the token
        issuance event, the agent identifier, and the timestamp.
-   5.  Use the display section when presenting the authorization request
-       to a human approver or auth agent, and the operations section for
-       policy evaluation.
+   5.  Use the operations section for policy evaluation.
    6.  Include r3_uri, r3_s256, r3_granted, and (if applicable)
        r3_conditional in the issued auth token.
 
-7.1.  Caching
+7.2.  Caching
 
-   Because R3 documents are content-addressed, the AS SHOULD cache them
-   indefinitely once verified.  The cache key is r3_s256.  A cache hit
-   on r3_s256 MUST still verify that the stored document produces the
-   same hash.  The URI need not be re-fetched.
+   Because R3 documents are content-addressed, the AS MAY cache them by
+   r3_s256 to avoid redundant fetches.  When serving a cached entry, the
+   AS MUST verify that the stored document produces the expected hash.
+   The AS is not required to retain R3 documents beyond their immediate
+   use in token issuance — the AS's audit log records r3_uri and
+   r3_s256, which is sufficient for later verification by re-fetching.
 
 8.  Auth Token Extensions
 
@@ -647,27 +668,39 @@ Table of Contents
    that AS.  The agent opacity property (agents carry the hash of a
    document they cannot read) depends on this restriction.
 
-9.2.  Hash Verification
+9.2.  R3 Endpoint Access Control
+
+   The agent opacity property — agents carry the hash of a document they
+   cannot read — depends entirely on the resource correctly restricting
+   access to R3 document endpoints.  If the resource fails to require a
+   valid HTTP Message Signature from its AS on R3 document requests, or
+   accepts signatures from keys other than its AS's, agents can fetch
+   and read R3 documents, breaking the opacity guarantee.
+   Implementations MUST treat R3 endpoint access control as a critical
+   security requirement and SHOULD verify this restriction during
+   deployment testing.
+
+9.3.  Hash Verification
 
    The AS MUST verify r3_s256 against the fetched document before using
    it.  Failure to verify allows a resource to serve different content
    than what was hashed in the resource token.
 
-9.3.  Audit Log Integrity
+9.4.  Audit Log Integrity
 
    The AS MUST write audit log entries atomically with token issuance.
    An auth token issued without a corresponding audit log entry creates
    an undetectable gap in the observability record.  Implementations
    SHOULD use transactional writes or equivalent mechanisms.
 
-9.4.  Operation Validation
+9.5.  Operation Validation
 
    For all vocabularies, the resource MUST validate declared operations
    against its authoritative definition (MCP tool list, OpenAPI spec,
    .proto file, GraphQL schema, AsyncAPI spec, WSDL document, or OData
    $metadata) before issuing a resource token.
 
-9.5.  Grant Enforcement
+9.6.  Grant Enforcement
 
    Resources MUST enforce r3_granted and r3_conditional claims in auth
    tokens.  Operations in r3_granted define fully authorized access.
