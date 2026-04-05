@@ -81,7 +81,7 @@ R3 addresses these by introducing:
 # Terminology
 
 - **Vocabulary**: A defined scheme for expressing resource operations. Each vocabulary corresponds to an API description format (MCP, OpenAPI, gRPC, GraphQL, AsyncAPI, WSDL, OData). Resources advertise which vocabularies they support; agents use them to request access.
-- **R3 Document**: A JSON document published by a resource, describing the operations it provides and the consequences of granting access. Identified by the SHA-256 hash of its content. Fetched by the AS; not accessible to agents.
+- **R3 Document**: A JSON document published by a resource, describing the operations it provides and the consequences of granting access. Identified by the SHA-256 hash of its content. Fetched by both the MM (for user consent using `display` fields) and the AS (for policy evaluation using `operations`); not accessible to agents.
 - **R3 URI (`r3_uri`)**: A URI identifying an R3 document. Included in a resource token.
 - **R3 Hash (`r3_s256`)**: A SHA-256 hash of the R3 document, base64url-encoded without padding. Included alongside `r3_uri` in the resource token and the auth token.
 
@@ -377,7 +377,16 @@ R3 extension claims:
 
 Resource tokens MAY include both `scope` (as defined in AAuth Protocol ([@!I-D.hardt-aauth-protocol])) and R3 claims. When both are present, the AS MUST enforce both independently.
 
-# AS Processing
+# R3 Processing
+
+Both the MM and the AS fetch R3 documents, but for different purposes:
+
+- **The MM** fetches R3 to present the `display` section to the user during consent — summary, implications, data accessed, irreversibility. The MM uses this information to determine whether the request fits the mission scope and to obtain informed user consent.
+- **The AS** fetches R3 to evaluate `operations` for policy decisions and to populate `r3_granted` and `r3_conditional` in the auth token.
+
+Both independently verify `r3_s256` against the fetched document. Because R3 documents are content-addressed, both can cache aggressively by hash.
+
+## AS Processing
 
 When the AS receives a resource token containing `r3_uri` and `r3_s256`, it MUST:
 
@@ -385,12 +394,12 @@ When the AS receives a resource token containing `r3_uri` and `r3_s256`, it MUST
 2. Fetch the R3 document at `r3_uri`. The AS MAY use a cached copy if the cache entry was stored with the same `r3_s256` value.
 3. Compute the SHA-256 hash of the fetched document using canonical JSON serialization ([@!RFC8785]) and compare it to `r3_s256`. If the hashes do not match, the AS MUST reject the resource token.
 4. Record `r3_uri` and `r3_s256` in its audit log alongside the token issuance event, the agent identifier, and the timestamp.
-5. Use the `display` section when presenting the authorization request to a human approver or auth agent, and the `operations` section for policy evaluation.
+5. Use the `operations` section for policy evaluation.
 6. Include `r3_uri`, `r3_s256`, `r3_granted`, and (if applicable) `r3_conditional` in the issued auth token.
 
 ## Caching
 
-Because R3 documents are content-addressed, the AS SHOULD cache them indefinitely once verified. The cache key is `r3_s256`. A cache hit on `r3_s256` MUST still verify that the stored document produces the same hash. The URI need not be re-fetched.
+Because R3 documents are content-addressed, the AS MAY cache them by `r3_s256` to avoid redundant fetches. When serving a cached entry, the AS MUST verify that the stored document produces the expected hash. The AS is not required to retain R3 documents beyond their immediate use in token issuance — the AS's audit log records `r3_uri` and `r3_s256`, which is sufficient for later verification by re-fetching.
 
 
 # Auth Token Extensions
@@ -480,6 +489,10 @@ When `r3_operations` was not used (the agent received the resource token via a 4
 The AS MUST authenticate itself when fetching `r3_uri` using an HTTP Message Signature as defined in AAuth Headers ([@!I-D.hardt-aauth-headers]). The resource MUST reject requests not signed by its AS.
 
 This prevents agents from fetching R3 documents by following the `r3_uri` they carry in the resource token. Since a resource has exactly one AS, the resource only needs to recognize signatures from that AS. The agent opacity property (agents carry the hash of a document they cannot read) depends on this restriction.
+
+## R3 Endpoint Access Control
+
+The agent opacity property — agents carry the hash of a document they cannot read — depends entirely on the resource correctly restricting access to R3 document endpoints. If the resource fails to require a valid HTTP Message Signature from its AS on R3 document requests, or accepts signatures from keys other than its AS's, agents can fetch and read R3 documents, breaking the opacity guarantee. Implementations MUST treat R3 endpoint access control as a critical security requirement and SHOULD verify this restriction during deployment testing.
 
 ## Hash Verification
 

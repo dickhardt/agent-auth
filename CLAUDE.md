@@ -1,12 +1,22 @@
 # AAuth Project Instructions
 
-## Historical Reference
+## Archive
 
-`aauth-monolith.archive.md` is the original monolithic AAuth specification. `appendixes.archive.md` contains orphaned appendix content. Do NOT modify these archived files. All new work happens in the split-out documents:
+The `archive/` folder contains historical and superseded documents. Do NOT modify archived files. Contents:
 
-- `draft-hardt-aauth-headers.md` — AAuth Headers specification (AAuth-Requirement and AAuth-Error)
-- `draft-hardt-aauth-protocol.md` — AAuth Protocol specification
-- `draft-hardt-aauth-mission.md` — AAuth Mission specification (mission-scoped authorization, mission control, centralized audit)
+- `aauth-monolith.md` — original monolithic AAuth specification
+- `appendixes.md` — orphaned appendix content
+- `draft-hardt-aauth-mission.md` — superseded; mission content merged into protocol spec
+- `aauth-explainer.md` — superseded; content moving to aauth.ai website
+- `comparison-klrc-aauth.md` — comparison document
+- `mission-centric-architecture.md` — architectural design notes (superseded; implemented in protocol spec)
+
+## Specifications
+
+All new work happens in these documents:
+
+- `draft-hardt-aauth-headers.md` — AAuth Headers specification (AAuth-Requirement, Signature-Error, HTTP Message Signatures profile)
+- `draft-hardt-aauth-protocol.md` — AAuth Protocol specification (four-party protocol: Agent, Resource, MM, AS; includes missions, authorization endpoint, MM-AS federation)
 - `draft-hardt-aauth-r3.md` — R3 (Rich Resource Requests) specification
 
 ## Building

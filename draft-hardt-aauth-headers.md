@@ -36,7 +36,7 @@ organization = "Hellō"
 
 .# Abstract
 
-This document defines two HTTP response headers — AAuth-Requirement and AAuth-Error — and profiles HTTP Message Signatures ([@!RFC9421]) for request authentication, with keying material conveyed via the Signature-Key header ([@!I-D.hardt-httpbis-signature-key]). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. AAuth-Error conveys structured error information. Both headers use extensible registries for their values.
+This document defines two HTTP response headers — AAuth-Requirement and Signature-Error — and profiles HTTP Message Signatures ([@!RFC9421]) for request authentication, with keying material conveyed via the Signature-Key header ([@!I-D.hardt-httpbis-signature-key]). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. Signature-Error conveys structured error information. Both headers use extensible registries for their values.
 
 .# Discussion Venues
 
@@ -57,7 +57,7 @@ This specification defines:
 - The `AAuth-Requirement` HTTP response header with an extensible requirement level registry
 - Four requirement levels: `pseudonym`, `identity`, `interaction`, and `approval`
 - A profile of HTTP Message Signatures ([@!RFC9421]) for request authentication, specifying required covered components, signature parameters, and keying material via the `Signature-Key` header ([@!I-D.hardt-httpbis-signature-key])
-- The `AAuth-Error` HTTP response header with an extensible error code registry
+- The `Signature-Error` HTTP response header with an extensible error code registry
 
 # Conventions and Definitions
 
@@ -296,29 +296,29 @@ The `Signature-Input` header ([@!RFC9421], Section 4.1) MUST include the followi
 
 ## Verification (Server) {#verification-resource}
 
-When a server receives a signed request, it MUST perform the following steps. Any failure MUST result in a `401` response with the appropriate `AAuth-Error` header ({{error-codes}}).
+When a server receives a signed request, it MUST perform the following steps. Any failure MUST result in a `401` response with the appropriate `Signature-Error` header ({{error-codes}}).
 
 1. Extract the `Signature`, `Signature-Input`, and `Signature-Key` headers. If any are missing, return `invalid_request`.
 2. Verify that the `Signature-Input` covers the required components defined in {{covered-components}}. If the server requires additional components, verify those are covered as well. If not, return `invalid_input` with `required_input`.
-3. Verify the `created` parameter is present and within 60 seconds of the server's current time. Reject with `invalid_signature` if outside this window. Servers and agents SHOULD synchronize their clocks using NTP ([@RFC5905]).
+3. Verify the `created` parameter is present and within the server's signature validity window of the server's current time. The default window is 60 seconds. Servers MAY advertise a different window via their metadata (e.g., `signature_window` in resource metadata). Reject with `invalid_signature` if outside this window. Servers and agents SHOULD synchronize their clocks using NTP ([@RFC5905]).
 4. Determine the signature algorithm from the `alg` parameter in the key. If the algorithm is not supported, return `unsupported_algorithm`.
 5. Obtain the public key from the `Signature-Key` header according to the scheme, as specified in ([@!I-D.hardt-httpbis-signature-key]). Return `invalid_key` if the key cannot be parsed, `unknown_key` if the key is not found at the `jwks_uri`, `invalid_jwt` if a JWT scheme fails verification, or `expired_jwt` if the JWT has expired.
 6. Verify the HTTP Message Signature ([@!RFC9421]) using the obtained public key and determined algorithm. Return `invalid_signature` if verification fails.
 
-# AAuth-Error HTTP Response Header
+# Signature-Error HTTP Response Header
 
-When a server rejects a request that includes AAuth signature headers (`Signature`, `Signature-Input`, and `Signature-Key`), the `401` response MUST include the `AAuth-Error` header.
+When a server rejects a request that includes AAuth signature headers (`Signature`, `Signature-Input`, and `Signature-Key`), the `401` response MUST include the `Signature-Error` header.
 
 ## Header Structure
 
-The `AAuth-Error` header field is a Dictionary ([@!RFC8941], Section 3.2). It MUST contain the following member:
+The `Signature-Error` header field is a Dictionary ([@!RFC8941], Section 3.2). It MUST contain the following member:
 
 - `error`: A Token ([@!RFC8941], Section 3.3.4) indicating the error code.
 
 Additional members are defined per error code. Recipients MUST ignore unknown members.
 
 ```http
-AAuth-Error: error=unsupported_algorithm,
+Signature-Error: error=unsupported_algorithm,
     supported_algorithms=("EdDSA" "ES256")
 ```
 
@@ -331,7 +331,7 @@ The response body is OPTIONAL and MAY contain a human-readable description in an
 The request is malformed or missing required information unrelated to signature verification — such as missing query parameters or an unsupported content type.
 
 ```http
-AAuth-Error: error=invalid_request
+Signature-Error: error=invalid_request
 ```
 
 ### invalid_input
@@ -339,7 +339,7 @@ AAuth-Error: error=invalid_request
 The Signature-Input is missing required covered components. The response SHOULD include a `required_input` member listing the components the server requires (see {{covered-components}} for the base set):
 
 ```http
-AAuth-Error: error=invalid_input,
+Signature-Error: error=invalid_input,
     required_input=("@method" "@authority" "@path"
     "signature-key" "content-digest")
 ```
@@ -349,7 +349,7 @@ AAuth-Error: error=invalid_input,
 The HTTP Message Signature is missing, malformed, or cryptographic verification failed. This includes missing `Signature`, `Signature-Input`, or `Signature-Key` headers, an expired `created` timestamp, or a signature that does not verify.
 
 ```http
-AAuth-Error: error=invalid_signature
+Signature-Error: error=invalid_signature
 ```
 
 ### unsupported_algorithm
@@ -357,7 +357,7 @@ AAuth-Error: error=invalid_signature
 The signing algorithm used by the agent is not supported by the server. The response MUST include a `supported_algorithms` member:
 
 ```http
-AAuth-Error: error=unsupported_algorithm,
+Signature-Error: error=unsupported_algorithm,
     supported_algorithms=("EdDSA" "ES256")
 ```
 
@@ -366,7 +366,7 @@ AAuth-Error: error=unsupported_algorithm,
 The public key in `Signature-Key` could not be parsed, is expired, or does not meet the server's trust requirements.
 
 ```http
-AAuth-Error: error=invalid_key
+Signature-Error: error=invalid_key
 ```
 
 ### unknown_key
@@ -374,7 +374,7 @@ AAuth-Error: error=invalid_key
 The public key from `Signature-Key` does not match any key at the agent's `jwks_uri` (applicable when the agent uses `scheme=jwks_uri` for verified identity; see {{keying-material}}). The server SHOULD re-fetch the JWKS once before returning this error, to handle key rotation.
 
 ```http
-AAuth-Error: error=unknown_key
+Signature-Error: error=unknown_key
 ```
 
 ### invalid_jwt
@@ -382,7 +382,7 @@ AAuth-Error: error=unknown_key
 The JWT in the `Signature-Key` header (when using `scheme=jwt` or `scheme=jkt-jwt`) is malformed or its signature verification failed.
 
 ```http
-AAuth-Error: error=invalid_jwt
+Signature-Error: error=invalid_jwt
 ```
 
 ### expired_jwt
@@ -390,12 +390,12 @@ AAuth-Error: error=invalid_jwt
 The JWT in the `Signature-Key` header (when using `scheme=jwt` or `scheme=jkt-jwt`) has expired (`exp` claim is in the past).
 
 ```http
-AAuth-Error: error=expired_jwt
+Signature-Error: error=expired_jwt
 ```
 
 ## Access Denied
 
-When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns `403 Forbidden`. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an `AAuth-Requirement` or `AAuth-Error` header.
+When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns `403 Forbidden`. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an `AAuth-Requirement` or `Signature-Error` header.
 
 # Privacy Considerations
 
@@ -423,9 +423,9 @@ HTTP Message Signatures provide:
 
 ## Replay Protection {#replay-protection}
 
-The 60-second validity window on the `created` timestamp (see {{verification-resource}}) limits the useful lifetime of a captured signature. The 60-second value balances clock-skew tolerance (NTP-synchronized hosts typically drift less than 10 seconds) against replay exposure — a shorter window would reject legitimate requests from hosts with modest clock drift, while a longer window would widen the replay attack surface.
+The default 60-second validity window on the `created` timestamp (see {{verification-resource}}) limits the useful lifetime of a captured signature. Servers MAY configure a different window via metadata — a shorter window (e.g., 30 seconds) for high-security environments, or a longer window (e.g., 300 seconds) for agents with poor clock synchronization (mobile devices, IoT). The default value balances clock-skew tolerance (NTP-synchronized hosts typically drift less than 10 seconds) against replay exposure.
 
-Within that window, resources MUST maintain a cache of recently seen (key thumbprint, `created`) pairs and reject duplicate combinations. Without this cache, an attacker who captures a signed request can replay it within the validity window.
+Within that window, resources SHOULD maintain a cache of recently seen (key thumbprint, `created`) pairs and reject duplicate combinations. Because AAuth signatures are proof-of-possession (an attacker cannot forge a new signature without the private key) and TLS protects the transport, replay within the validity window requires both a compromised TLS endpoint and access to a captured signed request — a narrow threat model. Resources with higher security requirements MAY enforce strict replay detection.
 
 ## JWKS Caching
 
@@ -444,7 +444,7 @@ This specification registers the following entry in the "Hypertext Transfer Prot
 - Structured Type: Dictionary
 - Reference: This document
 
-- Header Field Name: `AAuth-Error`
+- Header Field Name: `Signature-Error`
 - Status: permanent
 - Structured Type: Dictionary
 - Reference: This document
@@ -462,9 +462,9 @@ This specification establishes the AAuth Requirement Level Registry. The initial
 
 New values may be registered following the Specification Required policy ([@!RFC8126]).
 
-## AAuth Error Code Registry
+## Signature Error Code Registry
 
-This specification establishes the AAuth Error Code Registry. The initial contents are:
+This specification establishes the Signature Error Code Registry. The initial contents are:
 
 | Value | Reference |
 |-------|-----------|
@@ -478,6 +478,35 @@ This specification establishes the AAuth Error Code Registry. The initial conten
 | `expired_jwt` | This document |
 
 New values may be registered following the Specification Required policy ([@!RFC8126]).
+
+# Implementation Status
+
+*Note: This section is to be removed before publishing as an RFC.*
+
+This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in [@RFC7942]. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.
+
+The following implementations are known at the time of writing:
+
+- **@aauth npm packages** (https://www.npmjs.com/org/aauth): JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Requirement processing for agents and servers.
+
+- **aauth-implementation** (https://github.com/christian-posta/aauth-implementation): Python library implementing HTTP Message Signatures (RFC 9421), AAuth request signing/verification, and Signature-Key header support. Author: Christian Posta.
+
+# Document History
+
+*Note: This section is to be removed before publishing as an RFC.*
+
+- draft-hardt-aauth-headers-00
+  - Initial submission, renamed from draft-hardt-aauth-header
+  - Added Signature-Error header with extensible error code registry
+  - Added `interaction` and `approval` requirement levels
+  - Added `url` parameter to interaction for self-contained challenge
+  - Renamed terminology from "resource" to "server"
+
+# Acknowledgments
+
+TBD
+
+{backmatter}
 
 # Design Rationale
 
@@ -501,32 +530,3 @@ WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
     request="eyJhbW91bnQiOiIxMDAw..."
 AAuth-Requirement: requirement=pseudonym
 ```
-
-# Implementation Status
-
-*Note: This section is to be removed before publishing as an RFC.*
-
-This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in [@RFC7942]. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.
-
-The following implementations are known at the time of writing:
-
-- **@aauth npm packages** (https://www.npmjs.com/org/aauth): JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Requirement processing for agents and servers.
-
-- **aauth-implementation** (https://github.com/christian-posta/aauth-implementation): Python library implementing HTTP Message Signatures (RFC 9421), AAuth request signing/verification, and Signature-Key header support. Author: Christian Posta.
-
-# Document History
-
-*Note: This section is to be removed before publishing as an RFC.*
-
-- draft-hardt-aauth-headers-00
-  - Initial submission, renamed from draft-hardt-aauth-header
-  - Added AAuth-Error header with extensible error code registry
-  - Added `interaction` and `approval` requirement levels
-  - Added `url` parameter to interaction for self-contained challenge
-  - Renamed terminology from "resource" to "server"
-
-# Acknowledgments
-
-TBD
-
-{backmatter}
