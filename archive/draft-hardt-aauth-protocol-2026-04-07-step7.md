@@ -229,7 +229,7 @@ The agent requests access at the resource's authorization endpoint, including th
 Agent                                       Resource
   |                                            |
   |  POST authorization_endpoint               |
-  |  AAuth-Mission: approver=...; s256=...      |
+  |  AAuth-Mission: ps=...; s256=...      |
   |------------------------------------------->|
   |                                            |
   |  resource_token (with mission object)      |
@@ -645,15 +645,15 @@ This section defines how agents request access to resources and how resources is
 The `AAuth-Mission` header is a request header sent by the agent on initial requests to a resource when operating in a mission context. It signals to the resource that the agent has a person server and is operating within a mission.
 
 ```http
-AAuth-Mission: approver="https://ps.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+AAuth-Mission: ps="https://ps.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
 ```
 
 Parameters:
 
-- `approver`: The HTTPS URL of the entity that approved the mission
-- `s256`: The base64url-encoded SHA-256 hash of the approved mission JSON
+- `ps`: The person server's HTTPS URL
+- `s256`: The base64url-encoded SHA-256 hash of the approved mission text
 
-When a mission-aware resource receives a request with the `AAuth-Mission` header, it includes the mission object (`approver` and `s256`) in the resource token it issues. When a resource does not support missions, it ignores the header.
+When a mission-aware resource receives a request with the `AAuth-Mission` header, it includes the mission object (`ps` and `s256`) in the resource token it issues. When a resource does not support missions, it ignores the header.
 
 Agents operating in a mission context MUST include the `AAuth-Mission` header on all requests to resources.
 
@@ -682,7 +682,7 @@ When the agent is operating in a mission context, it includes the `AAuth-Mission
 POST /authorize HTTP/1.1
 Host: resource.example
 Content-Type: application/json
-AAuth-Mission: approver="https://ps.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+AAuth-Mission: ps="https://ps.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key" "aauth-mission");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
@@ -699,7 +699,7 @@ When the agent token contains a `ps` claim and the resource issues resource toke
 - If the resource has its own AS: `aud` = AS URL (Level 4)
 - If the resource has no AS: `aud` = PS URL from the agent token's `ps` claim (Level 3)
 
-When the `AAuth-Mission` header is present, the resource includes the mission object (`approver` and `s256`) in the resource token.
+When the `AAuth-Mission` header is present, the resource includes the mission object (`ps` and `s256`) in the resource token.
 
 ```json
 {
@@ -804,7 +804,7 @@ Payload:
 - `exp`: Expiration timestamp
 - `scope`: Requested scopes (optional), as a space-separated string of scope values
 - `mission`: Mission object (optional, present when the resource is mission-aware and the agent sent an `AAuth-Mission` header). Contains:
-  - `approver`: HTTPS URL of the entity that approved the mission
+  - `ps`: person server URL
   - `s256`: SHA-256 hash of the approved mission text (base64url)
 
 Resource tokens SHOULD NOT have a lifetime exceeding 5 minutes. The `jti` claim provides an audit trail for token requests; ASes are not required to enforce replay detection on resource tokens. If a resource token expires before the PS presents it to the AS (e.g., because user interaction was required), the agent MUST obtain a fresh resource token from the resource and submit a new token request to the PS. The PS SHOULD remember prior consent decisions within a mission so the user is not re-prompted when the agent resubmits a request for the same resource and scope.
@@ -819,7 +819,7 @@ Verify the resource token per [@!RFC7515] and [@!RFC7519]:
 4. Verify `aud` matches the recipient's own identifier (the PS at Level 3, or the AS at Level 4).
 5. Verify `agent` matches the requesting agent's identifier.
 6. Verify `agent_jkt` matches the JWK Thumbprint of the key used to sign the HTTP request.
-7. If `mission` is present, verify `mission.approver` matches the PS that sent the token request.
+7. If `mission` is present, verify `mission.ps` matches the PS that sent the token request.
 
 ## Resource Challenge Verification
 
@@ -1030,13 +1030,117 @@ PSes SHOULD enforce limits on clarification rounds (recommended: 5 rounds maximu
 
 ## Permission Endpoint {#permission-endpoint}
 
-**TODO:** This section is a placeholder. The permission endpoint enables agents to request permission from the PS for actions not governed by a remote resource — for example, executing tool calls, writing files, or sending messages on behalf of the user. This enables agents to work with a PS before any resources support AAuth.
+When an agent needs to perform an action not governed by a remote resource — for example, executing a tool call, writing a file, or sending a message on behalf of the user — it requests permission from the PS's `permission_endpoint`. This enables agents to work with a PS before any resources support AAuth.
 
-The mission approval MAY include a list of pre-approved tools. The agent calls the permission endpoint only for tools not on the approved list. The permission endpoint uses the same deferred response pattern (#deferred-responses) and requirement responses (#requirement-responses) as other AAuth endpoints.
+The agent sends a signed POST with a proposed action in the context of a mission:
+
+```http
+POST /permission HTTP/1.1
+Host: ps.example
+Content-Type: application/json
+Signature-Input: sig=("@method" "@authority" "@path" \
+    "content-type" "content-digest" "signature-key");\
+    created=1730217600
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=jwt;jwt="eyJhbGc..."
+
+{
+  "mission_s256": "sha-256-hash-of-mission",
+  "action": "send_email",
+  "parameters": {
+    "to": "alice@example.com",
+    "subject": "Meeting notes",
+    "body": "..."
+  }
+}
+```
+
+The request body MUST include:
+
+- `action`: A string identifying the action the agent wants to perform.
+- `parameters`: An object containing action-specific details.
+
+The request body MAY include:
+
+- `mission_s256`: The `s256` identifier of the mission this action is part of. Present when the agent is operating within a mission.
+
+### Permission Response
+
+If the action falls within the mission's pre-approved scope, the PS returns `200 OK`:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "permitted": true,
+  "permission_id": "perm-abc123"
+}
+```
+
+The response MUST include:
+
+- `permitted`: Boolean indicating whether the action is approved.
+- `permission_id`: A unique identifier for this permission decision, for audit correlation.
+
+If user consent is needed, the PS returns a deferred response (#deferred-responses) using the standard requirement patterns — `interaction`, `approval`, or `clarification` (#requirement-responses). The agent polls the pending URL until the user approves, denies, or the request times out.
+
+If the action is denied, the PS returns `200 OK` with `"permitted": false` and a `reason` field.
+
+### Mission Scope and Pre-Approved Actions
+
+When a mission is approved, the PS MAY include a `permissions` field in the mission response indicating which action categories are pre-approved within the mission scope. Actions matching pre-approved categories do not require a call to the `permission_endpoint`.
+
+The `permissions` field is an array of action category strings. The PS defines the action categories it recognizes. For example:
+
+```json
+{
+  "mission_s256": "...",
+  "text": "Book a flight to NYC under $500",
+  "permissions": ["search", "read_file", "compare"]
+}
+```
+
+Actions outside the pre-approved categories — or actions that cross a threshold defined by the PS (e.g., spending money, sending messages, deleting data) — require an explicit permission request.
 
 ## Audit Endpoint {#audit-endpoint}
 
-**TODO:** This section is a placeholder. The audit endpoint enables agents to log actions they have performed, providing the PS with a complete record for governance and monitoring. The agent sends a signed POST to the PS's `audit_endpoint` after performing an action. The PS returns `201 Created`. The audit endpoint is fire-and-forget — the agent MUST NOT block on the response. The PS MAY use audit records to detect anomalous behavior, alert the user, or revoke the mission.
+The PS's `audit_endpoint` is published in its metadata (#ps-metadata). The agent sends a signed POST to log actions it has performed:
+
+```http
+POST /audit HTTP/1.1
+Host: ps.example
+Content-Type: application/json
+Signature-Input: sig=("@method" "@authority" "@path" \
+    "content-type" "content-digest" "signature-key");\
+    created=1730217600
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=jwt;jwt="eyJhbGc..."
+
+{
+  "mission_s256": "sha-256-hash-of-mission",
+  "action": "search_flights",
+  "parameters": {
+    "destination": "NYC",
+    "date": "2026-05-01"
+  },
+  "permission_id": "perm-abc123",
+  "result": "found 3 flights under $500"
+}
+```
+
+The request body MUST include:
+
+- `action`: The action performed.
+- `parameters`: Action-specific details.
+
+The request body MAY include:
+
+- `mission_s256`: The mission this action was part of. Present when the agent is operating within a mission.
+- `permission_id`: The permission decision that authorized this action, if any.
+- `result`: A summary of the action's outcome.
+
+The PS returns `201 Created`. The audit endpoint is fire-and-forget — the agent MUST NOT block on the response. The PS MAY use audit records to detect anomalous behavior, alert the user, or revoke the mission.
 
 ## Re-authorization
 
@@ -1253,7 +1357,7 @@ At least one of `sub` or `scope` MUST be present.
 
 Optional payload claims:
 - `mission`: Mission object. Present when the auth token was issued in the context of a mission. Contains:
-  - `approver`: HTTPS URL of the entity that approved the mission
+  - `ps`: person server URL
   - `s256`: SHA-256 hash of the approved mission text (base64url)
 
 The auth token MAY include additional claims registered in the IANA JSON Web Token Claims Registry [@!RFC7519] or defined in OpenID Connect Core 1.0 [@!OpenID.Core] Section 5.1.
@@ -1775,7 +1879,7 @@ This specification registers the following claims in the IANA "JSON Web Token Cl
 | `ps` | Person Server URL | IETF | This document |
 | `agent` | Agent identifier | IETF | This document |
 | `agent_jkt` | JWK Thumbprint of the agent's signing key | IETF | This document |
-| `mission` | Mission object (approver, s256) in resource tokens and auth tokens | IETF | This document |
+| `mission` | Mission object (ps, s256) in resource tokens and auth tokens | IETF | This document |
 
 ## AAuth Requirement Value Registry
 
