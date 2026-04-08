@@ -597,8 +597,8 @@ When the MM approves the mission, it returns the approved mission text and its `
 ```json
 {
   "mission": {
-    "s256": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-    "approved": "# Research Competitors\n\nResearch our top 3 competitors (Acme Corp, Globex, Initech) pricing pages and write a summary report.\n\n## Context\n- Our current pricing is at https://docs.internal/pricing-v3\n- Focus on enterprise tier comparisons\n- Report goes in the Q2 competitive analysis folder"
+    "s256": "oUEjOlvsqW0f71jcfih2CLmq5LS7bIpRumoL24g2ThI",
+    "approved": "# Research Competitors\n\nResearch our top 3 competitors (Acme Corp, Globex, Initech) pricing pages and write a summary report.\n\n## Context\n- Our current pricing is at https://docs.internal/pricing-v3\n- Focus on enterprise tier comparisons\n- Report goes in the Q2 competitive analysis folder\n\n## Approval\n- Approved at: 2026-04-07T14:32:00Z"
   }
 }
 ```
@@ -644,7 +644,7 @@ This section defines how agents request access to resources and how resources is
 The `AAuth-Mission` header is a request header sent by the agent on initial requests to a resource when operating in a mission context. It signals to the resource that the agent has a mission manager and is operating within a mission.
 
 ```http
-AAuth-Mission: manager="https://mm.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+AAuth-Mission: manager="https://mm.example"; s256="oUEjOlvsqW0f71jcfih2CLmq5LS7bIpRumoL24g2ThI"
 ```
 
 Parameters:
@@ -670,7 +670,7 @@ When the agent includes the `AAuth-Mission` header and the resource is mission-a
 POST /authorize HTTP/1.1
 Host: resource.example
 Content-Type: application/json
-AAuth-Mission: manager="https://mm.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+AAuth-Mission: manager="https://mm.example"; s256="oUEjOlvsqW0f71jcfih2CLmq5LS7bIpRumoL24g2ThI"
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key" "aauth-mission");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
