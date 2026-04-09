@@ -485,22 +485,46 @@ The `mission_proposal` is a Markdown string — a natural language description o
 
 The PS MAY return a `202 Accepted` deferred response (#deferred-responses) if human review, clarification, or approval is needed before the mission can be approved.
 
-### Mission Approval
+### Mission Approval {#mission-approval}
 
-When the PS approves the mission, it returns the approved mission text and its `s256` identifier:
+When the PS approves the mission, the response body is a JSON object — the **mission blob** — containing the approved mission and session-specific information. The PS returns the `AAuth-Mission` header with the `approver` and `s256` values:
 
-```json
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+AAuth-Mission: approver="https://ps.example";
+    s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+
 {
-  "mission": {
-    "s256": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-    "approved": "# Research Competitors\n\nResearch our top 3 competitors (Acme Corp, Globex, Initech) pricing pages and write a summary report.\n\n## Context\n- Our current pricing is at https://docs.internal/pricing-v3\n- Focus on enterprise tier comparisons\n- Report goes in the Q2 competitive analysis folder"
-  }
+  "approver": "https://ps.example",
+  "agent": "aauth:assistant@agent.example",
+  "approved_at": "2026-04-07T14:30:00Z",
+  "description": "# Research Competitors\n\nResearch our top 3 competitors (Acme Corp, Globex, Initech) pricing pages and write a summary report.\n\n## Context\n- Our current pricing is at https://docs.internal/pricing-v3\n- Focus on enterprise tier comparisons\n- Report goes in the Q2 competitive analysis folder",
+  "approved_tools": [
+    {"name": "WebSearch", "description": "Search the web"},
+    {"name": "Read", "description": "Read files and web pages"}
+  ],
+  "capabilities": ["interaction", "payment"],
+  "interaction_endpoint": "https://ps.example/interaction"
 }
 ```
 
-The `s256` field is the base64url-encoded SHA-256 hash of the `approved` text. This hash serves as the mission's permanent identifier and integrity proof. The PS MUST include the date and time of approval in the approved mission text to ensure the `s256` is globally unique — even if two agents propose identical mission text, each approval produces a distinct hash.
+The mission blob MUST include:
 
-The approved text MAY differ from the proposal — the PS or user may refine, constrain, or expand the mission during review. The agent MUST use the `s256` from the approved mission in all subsequent `AAuth-Mission` headers.
+- `approver`: HTTPS URL of the entity that approved the mission. Currently this is always the PS.
+- `agent`: The agent identifier (`aauth:local@domain`).
+- `approved_at`: ISO 8601 timestamp of when the mission was approved. Ensures the `s256` is globally unique.
+- `description`: Markdown string describing the approved mission scope.
+
+The mission blob MAY include:
+
+- `approved_tools`: Array of tool objects (each with `name` and `description`) that the agent may use without per-call permission at the PS's permission endpoint (#permission-endpoint).
+- `capabilities`: Array of capability tokens (e.g., `interaction`, `payment`) that the PS can handle on behalf of the user for this session. The PS determines these capabilities based on whether it can reach the specific user — for example, via push notification, email, or an active session. The agent unions these with its own capabilities when constructing the `AAuth-Capabilities` request header (#aauth-capabilities).
+- `interaction_endpoint`: HTTPS URL of the PS's interaction endpoint. Present when the PS can relay interactions to the user. The agent uses this endpoint to forward interaction requirements it cannot handle directly, to ask the user questions, or to relay payment approvals.
+
+The `s256` in the `AAuth-Mission` header is the base64url-encoded SHA-256 hash of the response body bytes. The agent verifies the hash by computing SHA-256 over the exact response body bytes. The agent MUST store the mission body bytes exactly as received — no re-serialization.
+
+The approved description MAY differ from the proposal — the PS or user may refine, constrain, or expand the mission during review. The approved tools MAY be a subset of the proposed tools. The agent MUST use the `approver` and `s256` from the `AAuth-Mission` header in all subsequent `AAuth-Mission` request headers.
 
 ## Mission Management
 
@@ -534,7 +558,7 @@ The mission control endpoint is advertised in the PS's metadata (#ps-metadata).
 
 This section defines how agents request access to resources and how resources issue resource tokens. The agent requests access at the resource's authorization endpoint. If the agent has a PS (declared via the `ps` claim in the agent token), the resource responds with a resource token — a signed JWT that cryptographically binds the resource's identity, the agent's identity, and the requested scope. The agent presents this resource token to its PS to obtain an auth token. If the agent has no PS, the resource handles authorization itself and MAY return an `AAuth-Access` header (#aauth-access). A resource MAY also challenge an agent with a resource token via the `AAuth-Requirement` response header.
 
-## AAuth-Mission Request Header
+## AAuth-Mission Request Header {#aauth-mission-request-header}
 
 The `AAuth-Mission` header is a request header sent by the agent on initial requests to a resource when operating in a mission context. It signals to the resource that the agent has a person server and is operating within a mission.
 
@@ -551,7 +575,7 @@ When a mission-aware resource receives a request with the `AAuth-Mission` header
 
 Agents operating in a mission context MUST include the `AAuth-Mission` header on all requests to resources.
 
-## Authorization Endpoint
+## Authorization Endpoint {#authorization-endpoint}
 
 A resource publishes an `authorization_endpoint` in its metadata. The agent sends a signed POST with the requested scope. The resource reads the agent token from the `Signature-Key` header and checks for the `ps` claim to determine how to respond.
 
@@ -561,6 +585,7 @@ A resource publishes an `authorization_endpoint` in its metadata. The agent send
 POST /authorize HTTP/1.1
 Host: resource.example
 Content-Type: application/json
+AAuth-Capabilities: clarification
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1730217600
 Signature: sig=:...signature bytes...:
 Signature-Key: sig=jwt;jwt="eyJhbGc..."
@@ -576,6 +601,7 @@ When the agent is operating in a mission context, it includes the `AAuth-Mission
 POST /authorize HTTP/1.1
 Host: resource.example
 Content-Type: application/json
+AAuth-Capabilities: interaction, clarification, payment
 AAuth-Mission: approver="https://ps.example"; s256="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key" "aauth-mission");created=1730217600
 Signature: sig=:...signature bytes...:
@@ -678,7 +704,7 @@ The agent MUST extract the `resource-token` parameter, verify the resource token
 
 A resource MAY return `requirement=auth-token` with a new resource token to a request that already includes an auth token — for example, when the request requires a higher level of authorization than the current token provides. Agents MUST be prepared for this step-up authorization at any time.
 
-## Resource Token Structure
+## Resource Token Structure {#resource-token-structure}
 
 A resource token is a JWT with `typ: aa-resource+jwt` containing:
 
@@ -1589,7 +1615,7 @@ The `jwks_uri`, `tos_uri`, `policy_uri`, `logo_uri`, and `logo_dark_uri` values 
 
 Participants publish metadata at well-known URLs ([@!RFC8615]) to enable discovery.
 
-## Agent Server Metadata
+## Agent Server Metadata {#agent-server-metadata}
 
 Published at `/.well-known/aauth-agent.json`:
 
@@ -1663,7 +1689,7 @@ Fields:
 - `token_endpoint` (REQUIRED): URL where PSes send token requests
 - `jwks_uri` (REQUIRED): URL to the AS's JSON Web Key Set
 
-## Resource Metadata
+## Resource Metadata {#resource-metadata}
 
 Published at `/.well-known/aauth-resource.json`:
 
