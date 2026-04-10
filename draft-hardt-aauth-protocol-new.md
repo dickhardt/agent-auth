@@ -764,30 +764,13 @@ The approved description MAY differ from the proposal — the PS or user may ref
 
 Mission management is a control plane separate from the authorization protocol. This specification defines mission creation and approval as protocol operations; mission lifecycle management is an administrative concern that MAY be standardized in a companion specification.
 
-**Mission States.** A PS implementation SHOULD support the following mission states:
+Potential mission states include: `proposed`, `active`, `suspended`, `resumed`, `completed`, `revoked`, and `expired`. How the PS manages state transitions, who is allowed to trigger them, and how they affect outstanding token requests are implementation decisions.
 
-- **proposed**: Agent has submitted a mission proposal. The PS is evaluating.
-- **active**: PS has approved the mission. The agent is authorized to operate within the mission scope.
-- **suspended**: Mission temporarily halted. The PS rejects token requests referencing this mission's `s256`. The PS may suspend a mission if the agent's behavior raises concerns or if the user requests a pause.
-- **resumed**: Mission reactivated after suspension. Token requests are accepted again.
-- **completed**: Mission objective achieved. Terminal state. No further token requests are accepted.
-- **revoked**: Mission withdrawn by user or administrator. Terminal state. No further token requests are accepted.
-- **expired**: Mission time limit reached. Terminal state. No further token requests are accepted.
-
-When a mission enters a terminal state (`completed`, `revoked`, or `expired`), the PS MUST reject all subsequent token requests referencing that mission's `s256`. Existing auth tokens remain valid until they expire — revocation of individual auth tokens is handled via the token revocation mechanism (#token-revocation).
-
-**Resource Access.** The agent includes the mission context in all resource interactions via the `AAuth-Mission` header. When the agent sends a resource token to its PS, the PS evaluates the request against the mission context before federating with the resource's AS.
+The agent includes the mission context in all resource interactions via the `AAuth-Mission` header. When the agent sends a resource token to its PS, the PS evaluates the request against the mission context before federating with the resource's AS.
 
 ## Mission Control {#mission-control}
 
-The PS MAY provide a mission control interface for managing mission lifecycle. This is an administrative interface — not part of the authorization protocol flow — that allows users, administrators, and external systems to:
-
-- List and inspect missions
-- Suspend, resume, revoke, and complete missions
-- View delegation trees showing the full chain of agent→resource→AS authorizations
-- Integrate with external business systems (ticketing, CRM, procurement)
-
-The mission control interface is implementation-specific and MAY be standardized in a companion specification. The mission control endpoint is advertised in the PS's metadata (#ps-metadata).
+The PS MAY provide a mission control interface for managing mission lifecycle — listing missions, suspending or revoking them, viewing delegation trees, and integrating with external business systems. The mission control interface is implementation-specific and MAY be standardized in a companion specification.
 
 ## AAuth-Mission Request Header
 
@@ -2724,6 +2707,8 @@ Missions are intentionally not a machine-evaluable policy language. AAuth separa
 This context can be presented to humans or to agents acting as decision-makers. The PS does not need to evaluate missions deterministically — it presents the mission context, the justification, and the resource request to whatever decision-maker is appropriate: a human reviewing a consent screen, an AI agent evaluating policy on behalf of an organization, or an automated system applying heuristics. This is no different from any bespoke system that puts a human in the loop for decisions that cannot be reduced to deterministic rules. AAuth standardizes the protocol for conveying context to the decision-maker; it does not prescribe how the decision is made.
 
 The mission's `description` is Markdown because it represents human intent, not machine policy. The `approved_tools` array provides structured machine-evaluable elements where appropriate. The protocol is designed so that additional structured fields can be added to the mission blob as the ecosystem develops — a companion specification could define a structured authority model using a policy language, carried as additional fields in the mission blob. The protocol does not mandate a single representation because different deployments will need different levels of formalization.
+
+## Why Downstream Scope Is Not Constrained by Upstream Scope
 
 In multi-hop scenarios, downstream authorization is intentionally not required to be a subset of upstream scopes. A flight booking API that calls a payment processor needs the payment processor to charge a card — an operation orthogonal to the upstream scope. Formal subset rules would prevent legitimate delegation chains. Instead, the PS evaluates each hop against the mission context, providing governance-based constraints that are more flexible than algebraic attenuation rules while maintaining a complete audit trail.
 
