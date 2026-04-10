@@ -155,7 +155,7 @@ Because agent identity is independent and self-contained, AAuth is designed for 
 - **Agent Server**: A server that manages agent identity and issues agent tokens to agents. Trusted by the legal person to issue agent tokens only to authorized agents. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-agent.json`.
 - **Agent Token**: A JWT issued by an agent server to an agent, binding the agent's signing key to the agent's identity (#agent-tokens).
 - **Mission**: A scoped authorization context for agent governance. Required when the agent needs PS governance (permissions, audit, consent-managed resource access), not required for simple PS authorization (obtaining auth tokens). A mission is a JSON object containing structured fields (approver, agent, timestamp, approved tools) and a Markdown description. Identified by the SHA-256 hash of the mission JSON (`s256`). Missions are proposed by agents and approved by the PS.
-- **Person Server (PS)**: A server that represents the legal person to the rest of the protocol. The legal person — user or organization — chooses their PS; it is not imposed by any other party. The PS is trusted by the legal person to manage missions, handle consent, assert user identity, and broker all authorization on behalf of agents. The PS is the only entity that calls access server token endpoints. Internally, the PS MAY delegate authentication to an external identity provider and MAY delegate policy evaluation to external services — to the rest of the protocol, the PS is the single interface. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-person.json`.
+- **Person Server (PS)**: A server that represents the legal person to the rest of the protocol. The legal person — user or organization — chooses their PS; it is not imposed by any other party. The PS is trusted by the legal person to manage missions, handle consent, assert user identity, and broker all authorization on behalf of agents. The PS ensures that each agent is associated with exactly one legal person — this invariant is what makes the delegation chain trustworthy (#agent-person-binding). The PS is the only entity that calls access server token endpoints. Internally, the PS MAY delegate authentication to an external identity provider and MAY delegate policy evaluation to external services — to the rest of the protocol, the PS is the single interface. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-person.json`.
 - **Access Server (AS)**: A policy engine for a resource. Trusted by the resource to evaluate token requests from PSes, apply resource policy, and issue auth tokens. Only called by PSes. The AS may require interaction or approval during trust establishment or policy evaluation. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-access.json`.
 - **Auth Token**: A JWT issued by an AS that grants an agent access to a resource, containing user identity and/or authorized scopes (#auth-tokens).
 - **Resource**: A server that requires authentication and/or authorization to protect access to its APIs and data. A resource trusts its access server to enforce access policy. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-resource.json`. A mission-aware resource has exactly one AS that it accepts auth tokens from.
@@ -1346,6 +1346,21 @@ The agent determines its capabilities by combining what it can do directly with 
 
 Agents SHOULD include the `AAuth-Capabilities` header on all signed requests. Recipients MUST ignore unrecognized capability values. When the header is absent, recipients MUST NOT assume any capabilities — the agent may not support interaction, clarification, or payment flows.
 
+## Scopes {#scopes}
+
+Scopes define what an agent is authorized to do at a resource. AAuth uses two categories of scope values:
+
+- **Resource scopes**: Resource-specific authorization grants (e.g., `data.read`, `data.write`, `data.delete`). Each resource defines its own scope values and publishes human-readable descriptions in its metadata (`scope_descriptions`). Resources that already define OAuth scopes SHOULD use the same scope values in AAuth.
+- **Identity scopes**: Requests for user identity claims following [@!OpenID.Core] (e.g., `openid`, `profile`, `email`, `address`, `phone`). When identity scopes are present, the auth token includes the corresponding identity claims. Enterprise identity extensions (e.g., `org`, `groups`, `roles`) follow [@OpenID.Enterprise].
+
+Scopes appear in three places in the protocol:
+
+1. **Resource token** (`scope`): The scope the resource is willing to grant, as determined by the resource based on the agent's request at the authorization endpoint.
+2. **Auth token** (`scope`): The scope actually granted. The auth token's scope MUST NOT be broader than the resource token's scope.
+3. **Authorization endpoint request** (`scope`): The scope the agent is requesting from the resource.
+
+The PS evaluates requested scopes against mission context (if present) and user consent. The AS evaluates scopes against resource policy. Either party may narrow the granted scope.
+
 ## Requirement Responses {#requirement-responses}
 
 Servers use the `AAuth-Requirement` response header to indicate protocol-level requirements to agents. The header MAY be sent with `401 Unauthorized` or `202 Accepted` responses. A `401` response indicates that authorization is required. A `202` response indicates that the request is pending and additional action is required — either user interaction (`requirement=interaction`) or third-party approval (`requirement=approval`).
@@ -1871,6 +1886,19 @@ An attacker could attempt to trick a user into approving an authorization reques
 ## AS Discovery
 
 The resource's AS is identified by the `aud` claim in the resource token. Federation mechanics are described in (#ps-as-federation).
+
+## Agent-Person Binding {#agent-person-binding}
+
+The PS MUST ensure that each agent is associated with exactly one legal person (user or organization). This one-to-one binding is a trust invariant — it ensures that every action an agent takes is attributable to a single accountable party.
+
+The binding is typically established when the person first authorizes the agent at the PS via the interaction flow. An organization administrator may pre-authorize agents for the organization. Once established, the PS MUST NOT allow a different person to claim the same agent. If an agent's association needs to change (e.g., an employee leaves an organization), the existing binding MUST be revoked and a new binding established.
+
+This invariant enables:
+
+- **Accountability**: Every authorization decision traces to a single person.
+- **Consent integrity**: Consent granted by one person cannot be exercised by a different person through the same agent.
+- **Audit**: The PS can provide a complete record of an agent's actions on behalf of its person.
+- **Revocation**: Revoking an agent's association with its person immediately prevents the agent from obtaining new auth tokens.
 
 ## PS as High-Value Target
 
