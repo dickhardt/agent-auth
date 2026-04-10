@@ -193,49 +193,47 @@ AAuth supports four resource access modes, each adding parties and capabilities.
 
 | Mode | Parties | Description |
 |------|---------|-------------|
-| Identity-based access | Agent, Resource | Resource verifies agent's signed identity and applies its own access control |
-| Resource-managed access (two-party) | Agent, Resource | Resource manages authorization with interaction, consent, or existing auth infrastructure |
-| PS-managed access (three-party) | Agent, Resource, PS | Resource issues resource token to PS; PS issues auth token |
-| Federated access (four-party) | Agent, Resource, PS, AS | Resource has its own access server; PS federates with AS |
+| Identity-based access | Agent <br/> Resource | Resource verifies agent's signed identity and applies its own access control |
+| Resource-managed access <br/>(two-party) | Agent <br/> Resource | Resource manages authorization with interaction, consent, or existing auth infrastructure |
+| PS-managed access <br/>(three-party) | Agent <br/> Resource <br/> PS | Resource issues resource token to PS; <br/> PS issues auth token |
+| Federated access <br/>(four-party) | Agent <br/> Resource <br/> PS <br/> AS | Resource has its own access server; <br/> PS federates with AS |
 
 The following diagram shows all parties and their relationships. Not all parties or relationships are present in every mode — each mode uses a subset.
 
 ~~~ ascii-art
-       Agent Trust Domain                   |       Resource Trust Domain
+          Agent Trust Domain                  |      Resource Trust Domain
 
-                  +--------------+
-                  |    Legal     |
-                  |    Person    |
-                  +--------------+
-                        |
-                     consent
-                        |
-                        v
-                  +--------------+     federation     +--------------+
-                  |              |------------------->|              |
-                  | Person Server|                    | Access Server|
-                  |              |<-------------------|              |
-                  +--------------+     auth token     +--------------+
-                 ^    ^       |
-       mission   |    |       |
-     (govern.)   |    |       |
-                 | resource   | auth
-                 |  token     | token
-                 |    |       v
-+-----------+  +--------------+    signed request    +--------------+
-|   Agent   |->|              |--------------------->|              |
-|   Server  |  |    Agent     |                      |   Resource   |
-+-----------+  |              |<---------------------|              |
- agent token   +--------------+    resource token    +--------------+
+                     +--------------+
+                     |    Legal     |
+                     |    Person    |
+                     +--------------+
+                      ^           ^
+              mission |           | consent
+                      v           v
+                     +--------------+    federation    +--------------+
+                     |              |----------------->|              |
+                     | Person       |                  | Access       |
+                     |   Server     |<-----------------|    Server    |
+                     |              |    auth token    |              |
+                     +--------------+                  +--------------+
+                      ^          ^ |
+            mission   | resource | | auth
+                      |    token | | token
+                      |          | v
+              agent  +--------------+  signed request  +--------------+
++-----------+ token  |              |----------------->|              |
+|   Agent   |------->|    Agent     |                  |   Resource   |
+|   Server  |        |              |<-----------------|              |
++-----------+        +--------------+     resource     +--------------+
+
 ~~~
 Figure: Protocol Parties and Relationships {#fig-parties}
 
-- **Agent Server → Agent**: Issues an agent token binding the agent's signing key to its identity
-- **Agent → Resource**: Signed requests. The resource verifies the agent's identity. In PS-managed and federated modes, the resource returns a resource token.
-- **Agent → PS**: Sends the resource token to obtain an auth token. With governance, also creates missions and requests permissions.
+- **Agent Server → Agent**: Issues an agent token binding the agent's signing key to its identity.
+- **Agent ↔ Resource**: Agent sends signed requests; resource returns responses. In PS-managed and federated modes, the resource also returns resource tokens at its authorization endpoint.
+- **Agent ↔ PS**: Agent sends resource tokens to obtain auth tokens. With governance, agent also creates missions and requests permissions.
 - **PS ↔ AS**: Federation (four-party only). The PS sends the resource token to the AS; the AS returns an auth token.
-- **PS → Agent**: Returns auth tokens. With governance, returns mission approvals with capabilities.
-- **Legal Person → PS**: Provides consent for resource access and mission approval.
+- **Legal Person ↔ PS**: Mission approval and consent for resource access.
 
 Detailed end-to-end flows are in (#detailed-flows). The following subsections describe each mode.
 
@@ -294,7 +292,7 @@ The resource discovers the agent's PS from the `ps` claim in the agent token. Th
 ~~~ ascii-art
 Agent                     Resource                    PS
   |                          |                         |
-  |  POST authorization_ep   |                         |
+  |  POST /authorize   |                         |
   |------------------------->|                         |
   |                          |                         |
   |  resource_token          |                         |
@@ -324,7 +322,7 @@ The resource has its own access server. The resource issues a resource token wit
 ~~~ ascii-art
 Agent                     Resource              PS              AS
   |                          |                   |               |
-  |  POST authorization_ep   |                   |               |
+  |  POST /authorize   |                   |               |
   |------------------------->|                   |               |
   |                          |                   |               |
   |  resource_token          |                   |               |
@@ -764,31 +762,32 @@ The approved description MAY differ from the proposal — the PS or user may ref
 
 ## Mission Management
 
-Missions have a lifecycle beyond creation. The following aspects of mission management are described here for completeness; normative requirements for mission management are TBD.
+Mission management is a control plane separate from the authorization protocol. This specification defines mission creation and approval as protocol operations; mission lifecycle management is an administrative concern that MAY be standardized in a companion specification.
 
-**Mission States.** Missions transition through the following states:
+**Mission States.** A PS implementation SHOULD support the following mission states:
 
 - **proposed**: Agent has submitted a mission proposal. The PS is evaluating.
 - **active**: PS has approved the mission. The agent is authorized to operate within the mission scope.
-- **suspended**: Mission temporarily halted. Token requests return an error. The PS may suspend a mission if the agent's behavior raises concerns.
-- **completed**: Mission objective achieved. Terminal state.
-- **revoked**: Mission withdrawn by user or administrator. Terminal state.
-- **expired**: Mission time limit reached. Terminal state.
+- **suspended**: Mission temporarily halted. The PS rejects token requests referencing this mission's `s256`. The PS may suspend a mission if the agent's behavior raises concerns or if the user requests a pause.
+- **resumed**: Mission reactivated after suspension. Token requests are accepted again.
+- **completed**: Mission objective achieved. Terminal state. No further token requests are accepted.
+- **revoked**: Mission withdrawn by user or administrator. Terminal state. No further token requests are accepted.
+- **expired**: Mission time limit reached. Terminal state. No further token requests are accepted.
+
+When a mission enters a terminal state (`completed`, `revoked`, or `expired`), the PS MUST reject all subsequent token requests referencing that mission's `s256`. Existing auth tokens remain valid until they expire — revocation of individual auth tokens is handled via the token revocation mechanism (#token-revocation).
 
 **Resource Access.** The agent includes the mission context in all resource interactions via the `AAuth-Mission` header. When the agent sends a resource token to its PS, the PS evaluates the request against the mission context before federating with the resource's AS.
 
-**Completion.** Missions end through the mission control interface — they may be completed (objective achieved), revoked (withdrawn), or expired (time limit reached).
-
 ## Mission Control {#mission-control}
 
-The PS MAY provide a mission control interface for managing mission lifecycle. This is an administrative interface — not part of the protocol flow — that allows users, administrators, and external systems to:
+The PS MAY provide a mission control interface for managing mission lifecycle. This is an administrative interface — not part of the authorization protocol flow — that allows users, administrators, and external systems to:
 
 - List and inspect missions
 - Suspend, resume, revoke, and complete missions
 - View delegation trees showing the full chain of agent→resource→AS authorizations
 - Integrate with external business systems (ticketing, CRM, procurement)
 
-The mission control endpoint is advertised in the PS's metadata (#ps-metadata).
+The mission control interface is implementation-specific and MAY be standardized in a companion specification. The mission control endpoint is advertised in the PS's metadata (#ps-metadata).
 
 ## AAuth-Mission Request Header
 
@@ -1677,11 +1676,12 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
 **Response:** `200 OK` if the token was revoked or was already invalid. `404` if the `jti` is not recognized.
 
-The following revocation scenarios are supported:
+Either the PS or the AS can revoke tokens they have issued or provided. The following revocation scenarios are supported:
 
 - **Agent server revokes an agent token**: The agent server refuses to serve the agent's JWKS `kid`, causing signature verification to fail for any party that refreshes the JWKS. Takes effect within the JWKS cache window (maximum 24 hours per (#jwks-discovery), but typically much faster).
-- **PS revokes an auth token**: The PS notifies the resource's AS (or the resource directly in three-party mode) by calling its revocation endpoint with the auth token's `jti`. The resource MAY also expose a revocation endpoint.
-- **AS revokes an auth token**: The AS notifies the resource by calling its revocation endpoint with the auth token's `jti`.
+- **PS revokes an auth token it issued** (three-party): The PS calls the resource's revocation endpoint with the auth token's `jti`.
+- **PS revokes an auth token it provided** (four-party): The PS calls the AS's revocation endpoint with the auth token's `jti`. The AS MAY propagate revocation to the resource.
+- **AS revokes an auth token it issued**: The AS calls the resource's revocation endpoint with the auth token's `jti`.
 - **PS revokes a mission**: The PS marks the mission as revoked. All subsequent token requests referencing that mission's `s256` are denied. Existing auth tokens remain valid until expiry, but cannot be renewed.
 
 Revocation endpoints are advertised in server metadata as `revocation_endpoint`. Resources and ASes that accept revocation requests MUST verify the caller's identity via HTTP Message Signatures and MUST only accept revocation from the issuer of the token being revoked or from a trusted PS.
@@ -2307,7 +2307,7 @@ The resource discovers the agent's PS from the `ps` claim in the agent token, is
 ~~~ ascii-art
 Agent                       Resource                        PS
   |                            |                            |
-  |  POST authorization_ep     |                            |
+  |  POST /authorize     |                            |
   |  (Signature-Key: agent     |                            |
   |   token with ps claim)     |                            |
   |--------------------------->|                            |
@@ -2709,6 +2709,18 @@ WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
     request="eyJhbW91bnQiOiIxMDAw..."
 Accept-Signature: sig=("@method" "@authority" "@path");sigkey=jkt
 ```
+
+## Why Missions Are Not a Policy Language
+
+Missions are intentionally not a machine-evaluable policy language. AAuth separates two kinds of authorization decisions:
+
+- **Deterministic policy** is handled by scopes, resource tokens, and AS policy evaluation. These are mechanically evaluable — "does this agent have `data.read` scope for this resource?" A policy engine (Cedar, OPA/Rego, or any other) can answer this question consistently and automatically.
+
+- **Contextual governance** is handled by missions and the PS. These are the vague, contextual, human-judgment decisions that policy engines cannot answer — "is booking a $10,000 flight reasonable for planning a weekend trip?" or "should this agent access the HR database given what it's trying to accomplish?" The mission provides the PS (and the human behind it) with the context to make these decisions.
+
+The mission's `description` is Markdown because it represents human intent, not machine policy. The `approved_tools` array provides structured machine-evaluable elements where appropriate. The protocol is designed so that additional structured fields can be added to the mission blob as the ecosystem develops — a companion specification could define a structured authority model using a policy language, carried as additional fields in the mission blob. The protocol does not mandate a single representation because different deployments will need different levels of formalization.
+
+In multi-hop scenarios, downstream authorization is intentionally not required to be a subset of upstream scopes. A flight booking API that calls a payment processor needs the payment processor to charge a card — an operation orthogonal to the upstream scope. Formal subset rules would prevent legitimate delegation chains. Instead, the PS evaluates each hop against the mission context, providing governance-based constraints that are more flexible than algebraic attenuation rules while maintaining a complete audit trail.
 
 ## Why a Separate Person Server
 
