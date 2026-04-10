@@ -183,7 +183,7 @@ AAuth supports four resource access modes, each adding parties and capabilities.
 | PS-managed access (three-party) | Agent, Resource, PS | Resource issues resource token to PS; PS issues auth token |
 | Federated access (four-party) | Agent, Resource, PS, AS | Resource has its own access server; PS federates with AS |
 
-The following diagram shows all parties in the full model (four-party):
+The following diagram shows all parties in the full model (four-party) with governance:
 
 ~~~ ascii-art
               Agent Trust Domain   |  Resource Trust Domain
@@ -192,28 +192,31 @@ The following diagram shows all parties in the full model (four-party):
                     |  Legal    |
                     |  Person   |
                     +-----------+
-                          |
-                         (4)
-                          |
+                      |   |
+                     (3) (5)
+                      |   |
                     +-----------+       +-----------+
                     |  Person   |       |  Access   |
-                    |  Server   |--(4)--|  Server   |
+                    |  Server   |--(6)--|  Server   |
                     +-----------+       +-----------+
-                          |
-                         (3)
-                          |
+                      |   |   |
+                     (2) (4) (5)
+                      |   |   |
 +-----------+       +-----------+       +-----------+
-|   Agent   |       |           |--(3)--|           |
-|   Server  |--(1)--|   Agent   |--(2)--|  Resource |
+|   Agent   |       |           |--(5)--|           |
+|   Server  |--(1)--|   Agent   |--(4)--|  Resource |
 +-----------+       +-----------+       +-----------+
 ~~~
+{: #fig-parties title="Protocol Parties and Relationships (Four-Party with Governance)"}
 
 - (1) agent server provisions the agent with an agent token
-- (2) agent requests access at the resource's authorization endpoint; resource returns a resource token
-- (3) agent sends resource token to PS; PS obtains user authorization and an auth token (directly in three-party, or via AS federation in four-party); agent calls resource with auth token
-- (4) PS federates with the resource's AS to obtain the auth token (four-party only)
+- (2) agent creates a mission at its PS (governance)
+- (3) PS obtains user approval for mission and consent for resource access
+- (4) agent requests access at the resource's authorization endpoint; resource returns a resource token
+- (5) agent sends resource token to PS; PS obtains user authorization and an auth token; agent calls resource with auth token
+- (6) PS federates with the resource's AS to obtain the auth token (four-party only)
 
-Detailed end-to-end flows are in (#detailed-flows). The following subsections describe each mode.
+Not all steps are required in every mode. Identity-based access uses only (1) and a direct request. Resource-managed access uses (1) and (4). PS-managed and federated access add (5) and (6). Governance (2, 3) is orthogonal — see (#agent-governance). Detailed end-to-end flows are in (#detailed-flows). The following subsections describe each mode.
 
 ### Identity-Based Access
 
@@ -229,6 +232,7 @@ Agent                                       Resource
   |  200 OK                                    |
   |<-------------------------------------------|
 ~~~
+{: #fig-identity-access title="Identity-Based Access"}
 
 ### Resource-Managed Access (Two-Party)
 
@@ -260,6 +264,7 @@ Agent                                       Resource
   |  200 OK                                    |
   |<-------------------------------------------|
 ~~~
+{: #fig-resource-managed title="Resource-Managed Access (Two-Party)"}
 
 ### PS-Managed Access (Three-Party)
 
@@ -289,6 +294,7 @@ Agent                     Resource                    PS
   |  200 OK                  |                         |
   |<-------------------------|                         |
 ~~~
+{: #fig-ps-managed title="PS-Managed Access (Three-Party)"}
 
 ### Federated Access (Four-Party)
 
@@ -324,8 +330,9 @@ Agent                     Resource              PS              AS
   |  200 OK                  |                   |               |
   |<-------------------------|                   |               |
 ~~~
+{: #fig-federated title="Federated Access (Four-Party)"}
 
-## Agent Governance
+## Agent Governance {#agent-governance}
 
 Agent governance is orthogonal to resource access modes. Any agent with a person server (`ps` claim in agent token) can use the PS for authorization and governance, regardless of which access modes the resources it accesses support.
 
@@ -362,6 +369,7 @@ Agent                        PS                         User
   |  {capabilities, interaction_endpoint, ...}            |
   |<-------------------------|                            |
 ~~~
+{: #fig-mission title="Mission Creation and Approval"}
 
 ### Governance Endpoints
 
@@ -1311,6 +1319,7 @@ User         Third Party     Agent/Resource                  PS
   |  redirect to start_path       |                           |
   |<------------------------------|                           |
 ~~~
+{: #fig-third-party-login title="Third-Party Login Flow"}
 
 The third party does not need to be the PS. Any party that knows the agent's or resource's `login_endpoint` (from metadata) can initiate the flow. The agent or resource treats the redirect as untrusted input — it verifies the PS through metadata discovery and initiates a signed flow.
 
@@ -1452,6 +1461,7 @@ Agent                        User                         Server
   |  200 OK                                                  |
   |<---------------------------------------------------------|
 ~~~
+{: #fig-interaction title="Interaction Required Flow"}
 
 **Use cases:** User login, consent, payment confirmation, document review, CAPTCHA, any workflow requiring human action.
 
