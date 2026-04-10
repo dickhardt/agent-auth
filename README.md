@@ -75,5 +75,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to participate. Discussion happen
 
 ---
 
-> Founding sponsor: [Greffen Posner](https://www.linkedin.com/in/geffenpo/)
+> Founding sponsor: [Geffen Posner](https://www.linkedin.com/in/geffenpo/)
 
