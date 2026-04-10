@@ -66,7 +66,12 @@ Rich Resource Requests. Vocabulary-based authorization using formats agents alre
 make
 ```
 
+
 Each `draft-*.md` file produces a corresponding HTML file.
+
+---
+
+> Founding sponsor: [Greffen Posner](https://www.linkedin.com/in/geffenpo/)
 
 ## Contributing
 
