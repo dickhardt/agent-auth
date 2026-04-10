@@ -34,15 +34,6 @@ organization = "Hellō"
   </front>
 </reference>
 
-<reference anchor="I-D.hardt-aauth-headers" target="https://github.com/dickhardt/AAuth">
-  <front>
-    <title>HTTP AAuth Headers</title>
-    <author initials="D." surname="Hardt" fullname="Dick Hardt">
-      <organization>Hellō</organization>
-    </author>
-    <date year="2026"/>
-  </front>
-</reference>
 
 .# Abstract
 
@@ -486,7 +477,7 @@ When `r3_operations` was not used (the agent received the resource token via a 4
 
 ## R3 Document Access Restriction
 
-The AS MUST authenticate itself when fetching `r3_uri` using an HTTP Message Signature as defined in AAuth Headers ([@!I-D.hardt-aauth-headers]). The resource MUST reject requests not signed by its AS.
+The AS MUST authenticate itself when fetching `r3_uri` using an HTTP Message Signature as defined in the AAuth Protocol ([@!I-D.hardt-aauth-protocol]). The resource MUST reject requests not signed by its AS.
 
 This prevents agents from fetching R3 documents by following the `r3_uri` they carry in the resource token. Since a resource has exactly one AS, the resource only needs to recognize signatures from that AS. The agent opacity property (agents carry the hash of a document they cannot read) depends on this restriction.
 

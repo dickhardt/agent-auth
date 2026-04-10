@@ -7,16 +7,16 @@ The `archive/` folder contains historical and superseded documents. Do NOT modif
 - `aauth-monolith.md` — original monolithic AAuth specification
 - `appendixes.md` — orphaned appendix content
 - `draft-hardt-aauth-mission.md` — superseded; mission content merged into protocol spec
-- `aauth-explainer.md` — superseded; content moving to aauth.ai website
+- `aauth-explainer.md` — superseded; content moving to aauth.dev website
 - `comparison-klrc-aauth.md` — comparison document
 - `mission-centric-architecture.md` — architectural design notes (superseded; implemented in protocol spec)
+- `draft-hardt-aauth-headers.md` — obsolete; content split between HTTP Signature Keys spec and AAuth Protocol spec
 
 ## Specifications
 
 All new work happens in these documents:
 
-- `draft-hardt-aauth-headers.md` — AAuth Headers specification (AAuth-Requirement, Signature-Error, HTTP Message Signatures profile)
-- `draft-hardt-aauth-protocol.md` — AAuth Protocol specification (four-party protocol: Agent, Resource, MM, AS; includes missions, authorization endpoint, MM-AS federation)
+- `draft-hardt-aauth-protocol.md` — AAuth Protocol specification (four-party protocol: Agent, Resource, PS, AS; includes missions, authorization endpoint, PS-AS federation)
 - `draft-hardt-aauth-r3.md` — R3 (Rich Resource Requests) specification
 
 ## Building
