@@ -1917,7 +1917,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
         <h3 id="name-r3-document-access-restrict">
 <a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-r3-document-access-restrict" class="section-name selfRef">R3 Document Access Restriction</a>
         </h3>
-<p id="section-9.1-1">The AS MUST authenticate itself when fetching <code>r3_uri</code> using an HTTP Message Signature as defined in AAuth Headers (<span>[<a href="#I-D.hardt-aauth-headers" class="cite xref">I-D.hardt-aauth-headers</a>]</span>). The resource MUST reject requests not signed by its AS.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.1-1">The AS MUST authenticate itself when fetching <code>r3_uri</code> using an HTTP Message Signature as defined in the AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>). The resource MUST reject requests not signed by its AS.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
 <p id="section-9.1-2">This prevents agents from fetching R3 documents by following the <code>r3_uri</code> they carry in the resource token. Since a resource has exactly one AS, the resource only needs to recognize signatures from that AS. The agent opacity property (agents carry the hash of a document they cannot read) depends on this restriction.<a href="#section-9.1-2" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -2132,10 +2132,6 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <a href="#section-14.1" class="section-number selfRef">14.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
         </h3>
 <dl class="references">
-<dt id="I-D.hardt-aauth-headers">[I-D.hardt-aauth-headers]</dt>
-        <dd>
-<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"HTTP AAuth Headers"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>&gt;</span>. </dd>
-<dd class="break"></dd>
 <dt id="I-D.hardt-aauth-protocol">[I-D.hardt-aauth-protocol]</dt>
         <dd>
 <span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"AAuth Protocol"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>&gt;</span>. </dd>

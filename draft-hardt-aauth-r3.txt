@@ -658,8 +658,8 @@ Table of Contents
 9.1.  R3 Document Access Restriction
 
    The AS MUST authenticate itself when fetching r3_uri using an HTTP
-   Message Signature as defined in AAuth Headers
-   ([I-D.hardt-aauth-headers]).  The resource MUST reject requests not
+   Message Signature as defined in the AAuth Protocol
+   ([I-D.hardt-aauth-protocol]).  The resource MUST reject requests not
    signed by its AS.
 
    This prevents agents from fetching R3 documents by following the
@@ -788,10 +788,6 @@ Table of Contents
 14.  References
 
 14.1.  Normative References
-
-   [I-D.hardt-aauth-headers]
-              Hardt, D., "HTTP AAuth Headers", 2026,
-              <https://github.com/dickhardt/AAuth>.
 
    [I-D.hardt-aauth-protocol]
               Hardt, D., "AAuth Protocol", 2026,

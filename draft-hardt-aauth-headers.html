@@ -7,7 +7,13 @@
 <title>HTTP AAuth Headers</title>
 <meta content="Dick Hardt" name="author">
 <meta content="
-       This document defines two HTTP response headers — AAuth-Requirement and Signature-Error — and profiles HTTP Message Signatures ( ) for request authentication, with keying material conveyed via the Signature-Key header ( ). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. Signature-Error conveys structured error information. Both headers use extensible registries for their values. 
+       This document is obsolete. The content previously defined here has been incorporated into other specifications: 
+       
+         The  Signature-Error  response header and its error code registry have moved to the HTTP Signature Keys specification ( ). 
+         The  AAuth-Requirement  response header, the  interaction  and  approval  requirement values, and the HTTP Message Signatures profile (algorithms, keying material, signing, and verification) have moved to the AAuth Protocol specification ( ). 
+         The  pseudonym  and  identity  requirement values have been replaced by the  Accept-Signature  response header defined in the HTTP Signature Keys specification ( ). 
+       
+       This document is retained for historical reference only. Implementers MUST use the specifications listed above. 
     " name="description">
 <meta content="xml2rfc 3.32.0" name="generator">
 <meta content="agent" name="keyword">
@@ -1083,14 +1089,16 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <h1 id="title">HTTP AAuth Headers</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This document defines two HTTP response headers — AAuth-Requirement and Signature-Error — and profiles HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) for request authentication, with keying material conveyed via the Signature-Key header (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). A server uses AAuth-Requirement to require pseudonymous or verified agent identity, to request user interaction, or to signal that approval is pending. Signature-Error conveys structured error information. Both headers use extensible registries for their values.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
-</section>
-<section class="note" id="section-note.1">
-      <h2 id="name-discussion-venues">
-<a href="#name-discussion-venues" class="section-name selfRef">Discussion Venues</a>
-      </h2>
-<p id="section-note.1-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-note.1-1" class="pilcrow">¶</a></p>
-<p id="section-note.1-2">This document is part of the AAuth specification family. Source for this draft and an issue tracker can be found at <a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document is obsolete. The content previously defined here has been incorporated into other specifications:<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-abstract-2.1">The <code>Signature-Error</code> response header and its error code registry have moved to the HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>).<a href="#section-abstract-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-abstract-2.2">The <code>AAuth-Requirement</code> response header, the <code>interaction</code> and <code>approval</code> requirement values, and the HTTP Message Signatures profile (algorithms, keying material, signing, and verification) have moved to the AAuth Protocol specification (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>).<a href="#section-abstract-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-abstract-2.3">The <code>pseudonym</code> and <code>identity</code> requirement values have been replaced by the <code>Accept-Signature</code> response header defined in the HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>).<a href="#section-abstract-2.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-abstract-3">This document is retained for historical reference only. Implementers MUST use the specifications listed above.<a href="#section-abstract-3" class="pilcrow">¶</a></p>
 </section>
 <div id="status-of-memo">
 <section id="section-boilerplate.1">
@@ -1142,173 +1150,29 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <nav class="toc"><ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
             <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-content-migration-summary" class="internal xref">Content Migration Summary</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
-            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
-            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
-            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-aauth-requirement-http-resp" class="internal xref">AAuth-Requirement HTTP Response Header</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
-                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-header-structure" class="internal xref">Header Structure</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
-                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-requirement-levels" class="internal xref">Requirement Levels</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
-                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-pseudonym-required" class="internal xref">Pseudonym Required</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
-                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-identity-required" class="internal xref">Identity Required</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
-                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-interaction-required" class="internal xref">Interaction Required</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
-                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-approval-pending" class="internal xref">Approval Pending</a></p>
-</li>
-            </ul>
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-document-history" class="internal xref">Document History</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-http-message-signatures-pro" class="internal xref">HTTP Message Signatures Profile</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
-                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-signature-algorithms" class="internal xref">Signature Algorithms</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
-                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-keying-material" class="internal xref">Keying Material</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
-                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-signing-agent" class="internal xref">Signing (Agent)</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.1">
-                    <p id="section-toc.1-1.5.2.3.2.1.1"><a href="#section-5.3.1" class="auto internal xref">5.3.1</a>.  <a href="#name-covered-components" class="internal xref">Covered Components</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.2">
-                    <p id="section-toc.1-1.5.2.3.2.2.1"><a href="#section-5.3.2" class="auto internal xref">5.3.2</a>.  <a href="#name-signature-parameters" class="internal xref">Signature Parameters</a></p>
-</li>
-                </ul>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
-                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-verification-server" class="internal xref">Verification (Server)</a></p>
-</li>
-            </ul>
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-signature-error-http-respon" class="internal xref">Signature-Error HTTP Response Header</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
-                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-header-structure-2" class="internal xref">Header Structure</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
-                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-error-codes" class="internal xref">Error Codes</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.1">
-                    <p id="section-toc.1-1.6.2.2.2.1.1"><a href="#section-6.2.1" class="auto internal xref">6.2.1</a>.  <a href="#name-invalid_request" class="internal xref">invalid_request</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.2">
-                    <p id="section-toc.1-1.6.2.2.2.2.1"><a href="#section-6.2.2" class="auto internal xref">6.2.2</a>.  <a href="#name-invalid_input" class="internal xref">invalid_input</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.3">
-                    <p id="section-toc.1-1.6.2.2.2.3.1"><a href="#section-6.2.3" class="auto internal xref">6.2.3</a>.  <a href="#name-invalid_signature" class="internal xref">invalid_signature</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.4">
-                    <p id="section-toc.1-1.6.2.2.2.4.1"><a href="#section-6.2.4" class="auto internal xref">6.2.4</a>.  <a href="#name-unsupported_algorithm" class="internal xref">unsupported_algorithm</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.5">
-                    <p id="section-toc.1-1.6.2.2.2.5.1"><a href="#section-6.2.5" class="auto internal xref">6.2.5</a>.  <a href="#name-invalid_key" class="internal xref">invalid_key</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.6">
-                    <p id="section-toc.1-1.6.2.2.2.6.1"><a href="#section-6.2.6" class="auto internal xref">6.2.6</a>.  <a href="#name-unknown_key" class="internal xref">unknown_key</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.7">
-                    <p id="section-toc.1-1.6.2.2.2.7.1"><a href="#section-6.2.7" class="auto internal xref">6.2.7</a>.  <a href="#name-invalid_jwt" class="internal xref">invalid_jwt</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2.2.8">
-                    <p id="section-toc.1-1.6.2.2.2.8.1"><a href="#section-6.2.8" class="auto internal xref">6.2.8</a>.  <a href="#name-expired_jwt" class="internal xref">expired_jwt</a></p>
-</li>
-                </ul>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
-                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-access-denied" class="internal xref">Access Denied</a></p>
-</li>
-            </ul>
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
-                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-key-thumbprint-tracking" class="internal xref">Key Thumbprint Tracking</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
-                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-agent-identity-disclosure" class="internal xref">Agent Identity Disclosure</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
-                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-jwks-fetch-side-channel" class="internal xref">JWKS Fetch Side Channel</a></p>
-</li>
-            </ul>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
-            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
-                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-http-message-signature-secu" class="internal xref">HTTP Message Signature Security</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
-                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-replay-protection" class="internal xref">Replay Protection</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
-                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-jwks-caching" class="internal xref">JWKS Caching</a></p>
-</li>
-            </ul>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
-            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
-                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-http-header-field-registrat" class="internal xref">HTTP Header Field Registration</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
-                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-aauth-requirement-level-reg" class="internal xref">AAuth Requirement Level Registry</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3">
-                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-signature-error-code-regist" class="internal xref">Signature Error Code Registry</a></p>
-</li>
-            </ul>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
-            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
-            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-document-history" class="internal xref">Document History</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
-            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
-            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-references" class="internal xref">References</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.1">
-                <p id="section-toc.1-1.13.2.1.1"><a href="#section-13.1" class="auto internal xref">13.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.2">
-                <p id="section-toc.1-1.13.2.2.1"><a href="#section-13.2" class="auto internal xref">13.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
-</li>
-            </ul>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
-            <p id="section-toc.1-1.14.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-design-rationale" class="internal xref">Design Rationale</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.1">
-                <p id="section-toc.1-1.14.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-why-not-extend-www-authenti" class="internal xref">Why Not Extend WWW-Authenticate?</a></p>
-</li>
-            </ul>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
-            <p id="section-toc.1-1.15.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
 </li>
         </ul>
 </nav>
@@ -1319,824 +1183,108 @@ svg :is([fill="white"], [fill^="#fff"]) {
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">Modern distributed systems need a standard way for servers to communicate requirements to agents and for agents to present cryptographic identity. The existing HTTP <code>WWW-Authenticate</code> header (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 11.6.1) is limited to a fixed set of authentication schemes, cannot express progressive requirements, and cannot appear in <code>202 Accepted</code> responses. The AAuth-Requirement header provides an extensible mechanism for progressive requirements — from pseudonymous access and verified identity to user interaction and deferred approval.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">This specification defines:<a href="#section-1-2" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-1-3.1">The <code>AAuth-Requirement</code> HTTP response header with an extensible requirement level registry<a href="#section-1-3.1" class="pilcrow">¶</a>
-</li>
-        <li class="compact" id="section-1-3.2">Four requirement levels: <code>pseudonym</code>, <code>identity</code>, <code>interaction</code>, and <code>approval</code><a href="#section-1-3.2" class="pilcrow">¶</a>
-</li>
-        <li class="compact" id="section-1-3.3">A profile of HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) for request authentication, specifying required covered components, signature parameters, and keying material via the <code>Signature-Key</code> header (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)<a href="#section-1-3.3" class="pilcrow">¶</a>
-</li>
-        <li class="compact" id="section-1-3.4">The <code>Signature-Error</code> HTTP response header with an extensible error code registry<a href="#section-1-3.4" class="pilcrow">¶</a>
-</li>
-      </ul>
-</section>
-</div>
-<div id="conventions-and-definitions">
-<section id="section-2">
-      <h2 id="name-conventions-and-definitions">
-<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
-      </h2>
-<p id="section-2-1">{::boilerplate bcp14-tagged}<a href="#section-2-1" class="pilcrow">¶</a></p>
-<p id="section-2-2">All HTTP requests and responses in AAuth MUST use HTTPS (HTTP over TLS (<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>)). Any reference to "HTTP" in this document implies HTTPS unless explicitly noted otherwise.<a href="#section-2-2" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="terminology">
-<section id="section-3">
-      <h2 id="name-terminology">
-<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
-      </h2>
-<ul class="compact">
-<li class="compact" id="section-3-1.1">
-          <strong>Agent</strong>: An HTTP client (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 3.5) that signs its requests. In AAuth, agents have cryptographic identity.<a href="#section-3-1.1" class="pilcrow">¶</a>
-</li>
-        <li class="compact" id="section-3-1.2">
-          <strong>Server</strong>: An HTTP origin server (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 3.6) that communicates requirements via the <code>AAuth-Requirement</code> header.<a href="#section-3-1.2" class="pilcrow">¶</a>
-</li>
-      </ul>
-</section>
-</div>
-<div id="aauth-requirement-http-response-header">
-<section id="section-4">
-      <h2 id="name-aauth-requirement-http-resp">
-<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-aauth-requirement-http-resp" class="section-name selfRef">AAuth-Requirement HTTP Response Header</a>
-      </h2>
-<p id="section-4-1">Servers use the <code>AAuth-Requirement</code> response header to indicate requirements to agents. The header MAY be sent with <code>401 Unauthorized</code> or <code>202 Accepted</code> responses. A <code>401</code> response indicates that authentication or authorization is required. A <code>202</code> response indicates that the request is pending and additional action is required — either user interaction (<code>requirement=interaction</code>) or third-party approval (<code>requirement=approval</code>).<a href="#section-4-1" class="pilcrow">¶</a></p>
-<p id="section-4-2"><code>AAuth-Requirement</code> and <code>WWW-Authenticate</code> are independent header fields; a response MAY include both. A client that understands AAuth processes <code>AAuth-Requirement</code>; a legacy client processes <code>WWW-Authenticate</code>. Neither header's presence invalidates the other.<a href="#section-4-2" class="pilcrow">¶</a></p>
-<p id="section-4-3">The header MAY also be sent with <code>402 Payment Required</code> when a server requires both authentication and payment. The <code>AAuth-Requirement</code> conveys the authentication requirement; the payment requirement is conveyed by a separate mechanism such as x402 <span>[<a href="#x402" class="cite xref">x402</a>]</span> or the Micropayment Protocol (MPP) (<span>[<a href="#I-D.ryan-httpauth-payment" class="cite xref">I-D.ryan-httpauth-payment</a>]</span>).<a href="#section-4-3" class="pilcrow">¶</a></p>
-<div id="header-structure">
-<section id="section-4.1">
-        <h3 id="name-header-structure">
-<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-header-structure" class="section-name selfRef">Header Structure</a>
+<p id="section-1-1">This document previously defined the <code>AAuth-Requirement</code> and <code>Signature-Error</code> HTTP response headers and profiled HTTP Message Signatures for request authentication. That content has been split across two successor specifications as described in the abstract.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This document will not be updated further.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<div id="content-migration-summary">
+<section id="section-1.1">
+        <h3 id="name-content-migration-summary">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-content-migration-summary" class="section-name selfRef">Content Migration Summary</a>
         </h3>
-<p id="section-4.1-1">The <code>AAuth-Requirement</code> header field is a Dictionary (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.2). It MUST contain the following member:<a href="#section-4.1-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-4.1-2.1">
-            <code>requirement</code>: A Token (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.3.4) indicating the requirement level.<a href="#section-4.1-2.1" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-4.1-3">Additional members are defined per requirement level by the specification that registers the level. Recipients MUST ignore unknown members.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
-<p id="section-4.1-4">Example:<a href="#section-4.1-4" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-4.1-5">
-<pre>AAuth-Requirement: requirement=pseudonym
-
-</pre><a href="#section-4.1-5" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="requirement-levels">
-<section id="section-4.2">
-        <h3 id="name-requirement-levels">
-<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-requirement-levels" class="section-name selfRef">Requirement Levels</a>
-        </h3>
-<p id="section-4.2-1">The <code>requirement</code> value is an extension point. This document defines four levels:<a href="#section-4.2-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-1">
           <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
 <thead>
             <tr>
-              <th class="text-left" rowspan="1" colspan="1">Level</th>
-              <th class="text-left" rowspan="1" colspan="1">Status Code</th>
-              <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+              <th class="text-left" rowspan="1" colspan="1">Content</th>
+              <th class="text-left" rowspan="1" colspan="1">Moved To</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
-                <code>pseudonym</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>401</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">Signed request proving key possession</td>
+                <code>Signature-Error</code> header and error codes</td>
+              <td class="text-left" rowspan="1" colspan="1">HTTP Signature Keys (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
-                <code>identity</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>401</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">Verified agent identity</td>
+                <code>AAuth-Requirement</code> header</td>
+              <td class="text-left" rowspan="1" colspan="1">AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
-                <code>interaction</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>202</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">User action required at an interaction endpoint</td>
+                <code>interaction</code> requirement value</td>
+              <td class="text-left" rowspan="1" colspan="1">AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
-                <code>approval</code>
-</td>
+                <code>approval</code> requirement value</td>
+              <td class="text-left" rowspan="1" colspan="1">AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</td>
+            </tr>
+            <tr>
               <td class="text-left" rowspan="1" colspan="1">
-                <code>202</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">Approval pending, poll for result</td>
+                <code>pseudonym</code> requirement value</td>
+              <td class="text-left" rowspan="1" colspan="1">Replaced by <code>Accept-Signature</code> in HTTP Signature Keys (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>identity</code> requirement value</td>
+              <td class="text-left" rowspan="1" colspan="1">Replaced by <code>Accept-Signature</code> in HTTP Signature Keys (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">HTTP Message Signatures profile</td>
+              <td class="text-left" rowspan="1" colspan="1">AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Keying material (Signature-Key schemes)</td>
+              <td class="text-left" rowspan="1" colspan="1">HTTP Signature Keys (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)</td>
             </tr>
           </tbody>
         </table>
-<p id="section-4.2-3">The AAuth Protocol specification (draft-hardt-aauth-protocol) registers additional levels (e.g., <code>auth-token</code>).<a href="#section-4.2-3" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="pseudonym-required">
-<section id="section-4.3">
-        <h3 id="name-pseudonym-required">
-<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-pseudonym-required" class="section-name selfRef">Pseudonym Required</a>
-        </h3>
-<p id="section-4.3-1">When a server requires a signed request:<a href="#section-4.3-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-4.3-2">
-<pre>HTTP/1.1 401 Unauthorized
-AAuth-Requirement: requirement=pseudonym
-
-</pre><a href="#section-4.3-2" class="pilcrow">¶</a>
-</div>
-<p id="section-4.3-3">The agent retries with an HTTP Message Signature using a pseudonymous Signature-Key scheme ({{keying-material}}). The server can track the agent by JWK Thumbprint (<span>[<a href="#RFC7638" class="cite xref">RFC7638</a>]</span>) without knowing its identity.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
-<div class="lang-ascii-art sourcecode" id="section-4.3-4">
-<pre>Agent                                          Server
-  |                                               |
-  |  unsigned request                             |
-  |----------------------------------------------&gt;|
-  |                                               |
-  |  401 Unauthorized                             |
-  |  AAuth-Requirement: requirement=pseudonym           |
-  |&lt;----------------------------------------------|
-  |                                               |
-  |  HTTPSig request                              |
-  |  (pseudonymous key)                           |
-  |----------------------------------------------&gt;|
-  |                                               |  verify signature,
-  |                                               |  track by key
-  |                                               |  thumbprint
-  |                                               |
-  |  200 OK                                       |
-  |&lt;----------------------------------------------|
-  |                                               |
-
-</pre><a href="#section-4.3-4" class="pilcrow">¶</a>
-</div>
-<p id="section-4.3-5">If the agent already knows the server requires pseudonymous access (from a previous interaction or metadata), it MAY sign the initial request directly without waiting for a <code>401</code> challenge.<a href="#section-4.3-5" class="pilcrow">¶</a></p>
-<p id="section-4.3-6"><strong>Use cases:</strong> Rate limiting anonymous requests, tracking repeat visitors by key thumbprint, spam prevention without requiring verified identity, hardware-backed pseudonymous identity.<a href="#section-4.3-6" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="identity-required">
-<section id="section-4.4">
-        <h3 id="name-identity-required">
-<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-identity-required" class="section-name selfRef">Identity Required</a>
-        </h3>
-<p id="section-4.4-1">When a server requires verified agent identity:<a href="#section-4.4-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-4.4-2">
-<pre>HTTP/1.1 401 Unauthorized
-AAuth-Requirement: requirement=identity
-
-</pre><a href="#section-4.4-2" class="pilcrow">¶</a>
-</div>
-<p id="section-4.4-3">The agent retries with a signed request using an identity Signature-Key scheme ({{keying-material}}).<a href="#section-4.4-3" class="pilcrow">¶</a></p>
-<div class="lang-ascii-art sourcecode" id="section-4.4-4">
-<pre>Agent                                          Server
-  |                                               |
-  |  HTTPSig request                              |
-  |----------------------------------------------&gt;|
-  |                                               |
-  |  401 Unauthorized                             |
-  |  AAuth-Requirement: requirement=identity            |
-  |&lt;----------------------------------------------|
-  |                                               |
-  |  HTTPSig request                              |
-  |  (verifiable identity)                        |
-  |----------------------------------------------&gt;|
-  |                                               |  verify agent
-  |                                               |  identity,
-  |                                               |  apply policy
-  |                                               |
-  |  200 OK                                       |
-  |&lt;----------------------------------------------|
-  |                                               |
-
-</pre><a href="#section-4.4-4" class="pilcrow">¶</a>
-</div>
-<p id="section-4.4-5">If the agent already knows the server requires agent identity, it MAY present its identity on the initial request without waiting for a <code>401</code> challenge.<a href="#section-4.4-5" class="pilcrow">¶</a></p>
-<p id="section-4.4-6"><strong>Use cases:</strong> API access policies based on known agents, webhook signature verification, allowlisting trusted agents for elevated rate limits.<a href="#section-4.4-6" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="interaction-required">
-<section id="section-4.5">
-        <h3 id="name-interaction-required">
-<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-interaction-required" class="section-name selfRef">Interaction Required</a>
-        </h3>
-<p id="section-4.5-1">When a server requires user action — such as authentication, consent, payment approval, or any decision requiring a human in the loop — it returns a <code>202 Accepted</code> response:<a href="#section-4.5-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-4.5-2">
-<pre>HTTP/1.1 202 Accepted
-AAuth-Requirement: requirement=interaction; url="https://example.com/interact";
-    code="A1B2-C3D4"
-Location: /pending/f7a3b9c
-Retry-After: 0
-
-</pre><a href="#section-4.5-2" class="pilcrow">¶</a>
-</div>
-<p id="section-4.5-3">The <code>AAuth-Requirement</code> header MUST include the following parameters:<a href="#section-4.5-3" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-4.5-4.1">
-            <code>url</code> (String): The interaction URL where the user completes the required action. MUST use the <code>https</code> scheme and MUST NOT contain query or fragment components.<a href="#section-4.5-4.1" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-4.5-4.2">
-            <code>code</code> (String): An interaction code that links the agent's pending request to the user's session at the interaction URL.<a href="#section-4.5-4.2" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-4.5-5">The response MUST also include:<a href="#section-4.5-5" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-4.5-6.1">
-            <code>Location</code>: A URL the agent polls (with GET) for a terminal response.<a href="#section-4.5-6.1" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-4.5-6.2">
-            <code>Retry-After</code>: Recommended polling interval in seconds.<a href="#section-4.5-6.2" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-4.5-7">The agent constructs a user-facing URL by appending the code as a query parameter: <code>{url}?code={code}</code>. The agent then directs the user to this URL using one of:<a href="#section-4.5-7" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-4.5-8.1">
-            <strong>Browser redirect</strong>: The agent opens the URL in the user's browser.<a href="#section-4.5-8.1" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-4.5-8.2">
-            <strong>Display code</strong>: The agent displays the <code>url</code> and <code>code</code> for the user to enter manually. The agent MAY also render the constructed URL as a QR code for the user to scan with their phone.<a href="#section-4.5-8.2" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-4.5-9">After directing the user, the agent polls the <code>Location</code> URL with GET requests, respecting the <code>Retry-After</code> interval. A <code>202</code> response means the request is still pending. A non-<code>202</code> response is terminal — <code>200</code> indicates success, <code>403</code> indicates denial, and <code>408</code> indicates timeout.<a href="#section-4.5-9" class="pilcrow">¶</a></p>
-<div class="lang-ascii-art sourcecode" id="section-4.5-10">
-<pre>Agent                        User                         Server
-  |                            |                             |
-  |  202 Accepted                                            |
-  |  AAuth-Requirement:                                        |
-  |    requirement=interaction;                                  |
-  |    url="..."; code="..."                                 |
-  |  Location: /pending/...                                  |
-  |&lt;---------------------------------------------------------|
-  |                            |                             |
-  |  open {url}?code={code}    |                             |
-  |  (or display code / QR)    |                             |
-  |---------------------------&gt;|                             |
-  |                            |                             |
-  |                            |  {url}?code={code}          |
-  |                            |----------------------------&gt;|
-  |                            |                             |
-  |                            |  user completes action      |
-  |                            |&lt;----------------------------|
-  |                            |                             |
-  |  GET /pending/...                                        |
-  |---------------------------------------------------------&gt;|
-  |                            |                             |
-  |  200 OK                                                  |
-  |&lt;---------------------------------------------------------|
-
-</pre><a href="#section-4.5-10" class="pilcrow">¶</a>
-</div>
-<p id="section-4.5-11"><strong>Use cases:</strong> User login, consent, payment confirmation, document review, CAPTCHA, any workflow requiring human action.<a href="#section-4.5-11" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="approval-pending">
-<section id="section-4.6">
-        <h3 id="name-approval-pending">
-<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-approval-pending" class="section-name selfRef">Approval Pending</a>
-        </h3>
-<p id="section-4.6-1">When a server is obtaining approval from another party without requiring the agent to direct a user — for example, via push notification, email, or administrator review:<a href="#section-4.6-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-4.6-2">
-<pre>HTTP/1.1 202 Accepted
-AAuth-Requirement: requirement=approval
-Location: /pending/f7a3b9c
-Retry-After: 30
-
-</pre><a href="#section-4.6-2" class="pilcrow">¶</a>
-</div>
-<p id="section-4.6-3">The response MUST include <code>Location</code> and <code>Retry-After</code>. The agent polls the <code>Location</code> URL with GET requests until a terminal response is received. No user action is required at the agent side. The same terminal response codes apply as for <code>interaction</code>.<a href="#section-4.6-3" class="pilcrow">¶</a></p>
-<p id="section-4.6-4"><strong>Use cases:</strong> Administrator approval, resource owner consent, compliance review, direct user authorization via established communication channel.<a href="#section-4.6-4" class="pilcrow">¶</a></p>
-</section>
-</div>
-</section>
-</div>
-<div id="http-message-signatures-profile">
-<section id="section-5">
-      <h2 id="name-http-message-signatures-pro">
-<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-http-message-signatures-pro" class="section-name selfRef">HTTP Message Signatures Profile</a>
-      </h2>
-<p id="section-5-1">This section profiles HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) for use with AAuth. Signing requirements (what the agent does) and verification requirements (what the server does) are specified separately.<a href="#section-5-1" class="pilcrow">¶</a></p>
-<div id="signature-algorithms">
-<section id="section-5.1">
-        <h3 id="name-signature-algorithms">
-<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-signature-algorithms" class="section-name selfRef">Signature Algorithms</a>
-        </h3>
-<p id="section-5.1-1">Agents and resources MUST support EdDSA using Ed25519 (<span>[<a href="#RFC8032" class="cite xref">RFC8032</a>]</span>). Agents and resources SHOULD support ECDSA using P-256 with deterministic signatures (<span>[<a href="#RFC6979" class="cite xref">RFC6979</a>]</span>). The <code>alg</code> parameter in the JWK (<span>[<a href="#RFC7517" class="cite xref">RFC7517</a>]</span>) key representation identifies the algorithm. See the IANA JSON Web Signature and Encryption Algorithms registry (<span>[<a href="#RFC7518" class="cite xref">RFC7518</a>]</span>, Section 7.1) for the full list of algorithm identifiers.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="keying-material">
-<section id="section-5.2">
-        <h3 id="name-keying-material">
-<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-keying-material" class="section-name selfRef">Keying Material</a>
-        </h3>
-<p id="section-5.2-1">The signing key is conveyed in the <code>Signature-Key</code> header (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). The Signature-Key scheme determines how the server obtains the public key:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-5.2-2.1">For <code>pseudonym</code>: the agent uses <code>scheme=hwk</code> (inline public key) or <code>scheme=jkt-jwt</code> (delegation from a hardware-backed key).<a href="#section-5.2-2.1" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-5.2-2.2">For <code>identity</code>: the agent uses <code>scheme=jwks_uri</code> (JWKS endpoint) or <code>scheme=jwt</code> (JWT with public key in <code>cnf</code> claim).<a href="#section-5.2-2.2" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-5.2-3">See the Signature-Key specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) for scheme definitions, key discovery, and verification procedures.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="signing-agent">
-<section id="section-5.3">
-        <h3 id="name-signing-agent">
-<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-signing-agent" class="section-name selfRef">Signing (Agent)</a>
-        </h3>
-<p id="section-5.3-1">The agent creates an HTTP Message Signature (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) on each request, including the following headers:<a href="#section-5.3-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-5.3-2.1">
-            <code>Signature-Key</code>: Public key or key reference for signature verification<a href="#section-5.3-2.1" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-5.3-2.2">
-            <code>Signature-Input</code>: Signature metadata including covered components<a href="#section-5.3-2.2" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-5.3-2.3">
-            <code>Signature</code>: The HTTP message signature<a href="#section-5.3-2.3" class="pilcrow">¶</a>
-</li>
-        </ul>
-<div id="covered-components">
-<section id="section-5.3.1">
-          <h4 id="name-covered-components">
-<a href="#section-5.3.1" class="section-number selfRef">5.3.1. </a><a href="#name-covered-components" class="section-name selfRef">Covered Components</a>
-          </h4>
-<p id="section-5.3.1-1">The signature MUST cover the following derived components and header fields:<a href="#section-5.3.1-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-5.3.1-2.1">
-              <code>@method</code>: The HTTP request method (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>, Section 2.2.1)<a href="#section-5.3.1-2.1" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-5.3.1-2.2">
-              <code>@authority</code>: The target host (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>, Section 2.2.3)<a href="#section-5.3.1-2.2" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-5.3.1-2.3">
-              <code>@path</code>: The request path (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>, Section 2.2.6)<a href="#section-5.3.1-2.3" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-5.3.1-2.4">
-              <code>signature-key</code>: The Signature-Key header value<a href="#section-5.3.1-2.4" class="pilcrow">¶</a>
-</li>
-          </ul>
-<p id="section-5.3.1-3">Servers MAY require additional covered components (e.g., <code>content-digest</code> (<span>[<a href="#RFC9530" class="cite xref">RFC9530</a>]</span>) for request body integrity). The agent learns about additional requirements from server metadata or from an <code>invalid_input</code> error response that includes <code>required_input</code> ({{error-codes}}).<a href="#section-5.3.1-3" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="signature-parameters">
-<section id="section-5.3.2">
-          <h4 id="name-signature-parameters">
-<a href="#section-5.3.2" class="section-number selfRef">5.3.2. </a><a href="#name-signature-parameters" class="section-name selfRef">Signature Parameters</a>
-          </h4>
-<p id="section-5.3.2-1">The <code>Signature-Input</code> header (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>, Section 4.1) MUST include the following parameters:<a href="#section-5.3.2-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-5.3.2-2.1">
-              <code>created</code>: Signature creation timestamp as an Integer (Unix time). The agent MUST set this to the current time.<a href="#section-5.3.2-2.1" class="pilcrow">¶</a>
-</li>
-          </ul>
-</section>
-</div>
-</section>
-</div>
-<div id="verification-resource">
-<section id="section-5.4">
-        <h3 id="name-verification-server">
-<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-verification-server" class="section-name selfRef">Verification (Server)</a>
-        </h3>
-<p id="section-5.4-1">When a server receives a signed request, it MUST perform the following steps. Any failure MUST result in a <code>401</code> response with the appropriate <code>Signature-Error</code> header ({{error-codes}}).<a href="#section-5.4-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="compact type-1" id="section-5.4-2">
-<li id="section-5.4-2.1">Extract the <code>Signature</code>, <code>Signature-Input</code>, and <code>Signature-Key</code> headers. If any are missing, return <code>invalid_request</code>.<a href="#section-5.4-2.1" class="pilcrow">¶</a>
-</li>
-          <li id="section-5.4-2.2">Verify that the <code>Signature-Input</code> covers the required components defined in {{covered-components}}. If the server requires additional components, verify those are covered as well. If not, return <code>invalid_input</code> with <code>required_input</code>.<a href="#section-5.4-2.2" class="pilcrow">¶</a>
-</li>
-          <li id="section-5.4-2.3">Verify the <code>created</code> parameter is present and within the server's signature validity window of the server's current time. The default window is 60 seconds. Servers MAY advertise a different window via their metadata (e.g., <code>signature_window</code> in resource metadata). Reject with <code>invalid_signature</code> if outside this window. Servers and agents SHOULD synchronize their clocks using NTP (<span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span>).<a href="#section-5.4-2.3" class="pilcrow">¶</a>
-</li>
-          <li id="section-5.4-2.4">Determine the signature algorithm from the <code>alg</code> parameter in the key. If the algorithm is not supported, return <code>unsupported_algorithm</code>.<a href="#section-5.4-2.4" class="pilcrow">¶</a>
-</li>
-          <li id="section-5.4-2.5">Obtain the public key from the <code>Signature-Key</code> header according to the scheme, as specified in (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). Return <code>invalid_key</code> if the key cannot be parsed, <code>unknown_key</code> if the key is not found at the <code>jwks_uri</code>, <code>invalid_jwt</code> if a JWT scheme fails verification, or <code>expired_jwt</code> if the JWT has expired.<a href="#section-5.4-2.5" class="pilcrow">¶</a>
-</li>
-          <li id="section-5.4-2.6">Verify the HTTP Message Signature (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) using the obtained public key and determined algorithm. Return <code>invalid_signature</code> if verification fails.<a href="#section-5.4-2.6" class="pilcrow">¶</a>
-</li>
-        </ol>
-</section>
-</div>
-</section>
-</div>
-<div id="signature-error-http-response-header">
-<section id="section-6">
-      <h2 id="name-signature-error-http-respon">
-<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-signature-error-http-respon" class="section-name selfRef">Signature-Error HTTP Response Header</a>
-      </h2>
-<p id="section-6-1">When a server rejects a request that includes AAuth signature headers (<code>Signature</code>, <code>Signature-Input</code>, and <code>Signature-Key</code>), the <code>401</code> response MUST include the <code>Signature-Error</code> header.<a href="#section-6-1" class="pilcrow">¶</a></p>
-<div id="header-structure-1">
-<section id="section-6.1">
-        <h3 id="name-header-structure-2">
-<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-header-structure-2" class="section-name selfRef">Header Structure</a>
-        </h3>
-<p id="section-6.1-1">The <code>Signature-Error</code> header field is a Dictionary (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.2). It MUST contain the following member:<a href="#section-6.1-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-6.1-2.1">
-            <code>error</code>: A Token (<span>[<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>, Section 3.3.4) indicating the error code.<a href="#section-6.1-2.1" class="pilcrow">¶</a>
-</li>
-        </ul>
-<p id="section-6.1-3">Additional members are defined per error code. Recipients MUST ignore unknown members.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.1-4">
-<pre>Signature-Error: error=unsupported_algorithm,
-    supported_algorithms=("EdDSA" "ES256")
-
-</pre><a href="#section-6.1-4" class="pilcrow">¶</a>
-</div>
-<p id="section-6.1-5">The response body is OPTIONAL and MAY contain a human-readable description in any content type. The agent MUST NOT depend on the response body for error handling — all machine-readable error information is in the header.<a href="#section-6.1-5" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="error-codes">
-<section id="section-6.2">
-        <h3 id="name-error-codes">
-<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-error-codes" class="section-name selfRef">Error Codes</a>
-        </h3>
-<div id="invalid-request">
-<section id="section-6.2.1">
-          <h4 id="name-invalid_request">
-<a href="#section-6.2.1" class="section-number selfRef">6.2.1. </a><a href="#name-invalid_request" class="section-name selfRef">invalid_request</a>
-          </h4>
-<p id="section-6.2.1-1">The request is malformed or missing required information unrelated to signature verification — such as missing query parameters or an unsupported content type.<a href="#section-6.2.1-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.1-2">
-<pre>Signature-Error: error=invalid_request
-
-</pre><a href="#section-6.2.1-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="invalid-input">
-<section id="section-6.2.2">
-          <h4 id="name-invalid_input">
-<a href="#section-6.2.2" class="section-number selfRef">6.2.2. </a><a href="#name-invalid_input" class="section-name selfRef">invalid_input</a>
-          </h4>
-<p id="section-6.2.2-1">The Signature-Input is missing required covered components. The response SHOULD include a <code>required_input</code> member listing the components the server requires (see {{covered-components}} for the base set):<a href="#section-6.2.2-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.2-2">
-<pre>Signature-Error: error=invalid_input,
-    required_input=("@method" "@authority" "@path"
-    "signature-key" "content-digest")
-
-</pre><a href="#section-6.2.2-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="invalid-signature">
-<section id="section-6.2.3">
-          <h4 id="name-invalid_signature">
-<a href="#section-6.2.3" class="section-number selfRef">6.2.3. </a><a href="#name-invalid_signature" class="section-name selfRef">invalid_signature</a>
-          </h4>
-<p id="section-6.2.3-1">The HTTP Message Signature is missing, malformed, or cryptographic verification failed. This includes missing <code>Signature</code>, <code>Signature-Input</code>, or <code>Signature-Key</code> headers, an expired <code>created</code> timestamp, or a signature that does not verify.<a href="#section-6.2.3-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.3-2">
-<pre>Signature-Error: error=invalid_signature
-
-</pre><a href="#section-6.2.3-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="unsupported-algorithm">
-<section id="section-6.2.4">
-          <h4 id="name-unsupported_algorithm">
-<a href="#section-6.2.4" class="section-number selfRef">6.2.4. </a><a href="#name-unsupported_algorithm" class="section-name selfRef">unsupported_algorithm</a>
-          </h4>
-<p id="section-6.2.4-1">The signing algorithm used by the agent is not supported by the server. The response MUST include a <code>supported_algorithms</code> member:<a href="#section-6.2.4-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.4-2">
-<pre>Signature-Error: error=unsupported_algorithm,
-    supported_algorithms=("EdDSA" "ES256")
-
-</pre><a href="#section-6.2.4-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="invalid-key">
-<section id="section-6.2.5">
-          <h4 id="name-invalid_key">
-<a href="#section-6.2.5" class="section-number selfRef">6.2.5. </a><a href="#name-invalid_key" class="section-name selfRef">invalid_key</a>
-          </h4>
-<p id="section-6.2.5-1">The public key in <code>Signature-Key</code> could not be parsed, is expired, or does not meet the server's trust requirements.<a href="#section-6.2.5-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.5-2">
-<pre>Signature-Error: error=invalid_key
-
-</pre><a href="#section-6.2.5-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="unknown-key">
-<section id="section-6.2.6">
-          <h4 id="name-unknown_key">
-<a href="#section-6.2.6" class="section-number selfRef">6.2.6. </a><a href="#name-unknown_key" class="section-name selfRef">unknown_key</a>
-          </h4>
-<p id="section-6.2.6-1">The public key from <code>Signature-Key</code> does not match any key at the agent's <code>jwks_uri</code> (applicable when the agent uses <code>scheme=jwks_uri</code> for verified identity; see {{keying-material}}). The server SHOULD re-fetch the JWKS once before returning this error, to handle key rotation.<a href="#section-6.2.6-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.6-2">
-<pre>Signature-Error: error=unknown_key
-
-</pre><a href="#section-6.2.6-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="invalid-jwt">
-<section id="section-6.2.7">
-          <h4 id="name-invalid_jwt">
-<a href="#section-6.2.7" class="section-number selfRef">6.2.7. </a><a href="#name-invalid_jwt" class="section-name selfRef">invalid_jwt</a>
-          </h4>
-<p id="section-6.2.7-1">The JWT in the <code>Signature-Key</code> header (when using <code>scheme=jwt</code> or <code>scheme=jkt-jwt</code>) is malformed or its signature verification failed.<a href="#section-6.2.7-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.7-2">
-<pre>Signature-Error: error=invalid_jwt
-
-</pre><a href="#section-6.2.7-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-<div id="expired-jwt">
-<section id="section-6.2.8">
-          <h4 id="name-expired_jwt">
-<a href="#section-6.2.8" class="section-number selfRef">6.2.8. </a><a href="#name-expired_jwt" class="section-name selfRef">expired_jwt</a>
-          </h4>
-<p id="section-6.2.8-1">The JWT in the <code>Signature-Key</code> header (when using <code>scheme=jwt</code> or <code>scheme=jkt-jwt</code>) has expired (<code>exp</code> claim is in the past).<a href="#section-6.2.8-1" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="section-6.2.8-2">
-<pre>Signature-Error: error=expired_jwt
-
-</pre><a href="#section-6.2.8-2" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-</section>
-</div>
-<div id="access-denied">
-<section id="section-6.3">
-        <h3 id="name-access-denied">
-<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-access-denied" class="section-name selfRef">Access Denied</a>
-        </h3>
-<p id="section-6.3-1">When the server successfully verifies the agent's signature and identity but denies access based on policy (e.g., the agent is not authorized for this resource), the server returns <code>403 Forbidden</code>. This is not an AAuth error — the authentication succeeded but authorization was denied. The response MUST NOT include an <code>AAuth-Requirement</code> or <code>Signature-Error</code> header.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
-</section>
-</div>
-</section>
-</div>
-<div id="privacy-considerations">
-<section id="section-7">
-      <h2 id="name-privacy-considerations">
-<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
-      </h2>
-<div id="key-thumbprint-tracking">
-<section id="section-7.1">
-        <h3 id="name-key-thumbprint-tracking">
-<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-key-thumbprint-tracking" class="section-name selfRef">Key Thumbprint Tracking</a>
-        </h3>
-<p id="section-7.1-1">When an agent uses <code>scheme=hwk</code> (pseudonymous access), the server can track the agent across requests by JWK Thumbprint (<span>[<a href="#RFC7638" class="cite xref">RFC7638</a>]</span>). If the agent uses the same key across multiple servers, those servers could correlate the agent's activity. Agents MUST use distinct keys for distinct servers to prevent cross-server correlation of pseudonymous identity.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="agent-identity-disclosure">
-<section id="section-7.2">
-        <h3 id="name-agent-identity-disclosure">
-<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-agent-identity-disclosure" class="section-name selfRef">Agent Identity Disclosure</a>
-        </h3>
-<p id="section-7.2-1">When an agent presents its identity via <code>scheme=jwks_uri</code> or <code>scheme=jwt</code>, the server learns the agent's HTTPS URL. This reveals which software is making the request. Servers SHOULD NOT disclose agent identity information to third parties without the agent operator's consent.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="jwks-fetch-side-channel">
-<section id="section-7.3">
-        <h3 id="name-jwks-fetch-side-channel">
-<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-jwks-fetch-side-channel" class="section-name selfRef">JWKS Fetch Side Channel</a>
-        </h3>
-<p id="section-7.3-1">When a server fetches an agent's JWKS from <code>jwks_uri</code> to verify a signature, the fetch itself reveals to the agent's JWKS host that someone is verifying signatures for that agent.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
 </div>
 <div id="security-considerations">
-<section id="section-8">
+<section id="section-2">
       <h2 id="name-security-considerations">
-<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
       </h2>
-<div id="http-message-signature-security">
-<section id="section-8.1">
-        <h3 id="name-http-message-signature-secu">
-<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-http-message-signature-secu" class="section-name selfRef">HTTP Message Signature Security</a>
-        </h3>
-<p id="section-8.1-1">HTTP Message Signatures provide:<a href="#section-8.1-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="compact type-1" id="section-8.1-2">
-<li id="section-8.1-2.1">
-            <strong>Request Integrity</strong>: The signature covers HTTP method, target URI, and headers<a href="#section-8.1-2.1" class="pilcrow">¶</a>
-</li>
-          <li id="section-8.1-2.2">
-            <strong>Replay Protection</strong>: The <code>created</code> timestamp limits signature validity<a href="#section-8.1-2.2" class="pilcrow">¶</a>
-</li>
-          <li id="section-8.1-2.3">
-            <strong>Key Binding</strong>: Signatures are bound to specific keys via <code>Signature-Key</code><a href="#section-8.1-2.3" class="pilcrow">¶</a>
-</li>
-        </ol>
-</section>
-</div>
-<div id="replay-protection">
-<section id="section-8.2">
-        <h3 id="name-replay-protection">
-<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-replay-protection" class="section-name selfRef">Replay Protection</a>
-        </h3>
-<p id="section-8.2-1">The default 60-second validity window on the <code>created</code> timestamp (see {{verification-resource}}) limits the useful lifetime of a captured signature. Servers MAY configure a different window via metadata — a shorter window (e.g., 30 seconds) for high-security environments, or a longer window (e.g., 300 seconds) for agents with poor clock synchronization (mobile devices, IoT). The default value balances clock-skew tolerance (NTP-synchronized hosts typically drift less than 10 seconds) against replay exposure.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
-<p id="section-8.2-2">Within that window, resources SHOULD maintain a cache of recently seen (key thumbprint, <code>created</code>) pairs and reject duplicate combinations. Because AAuth signatures are proof-of-possession (an attacker cannot forge a new signature without the private key) and TLS protects the transport, replay within the validity window requires both a compromised TLS endpoint and access to a captured signed request — a narrow threat model. Resources with higher security requirements MAY enforce strict replay detection.<a href="#section-8.2-2" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="jwks-caching">
-<section id="section-8.3">
-        <h3 id="name-jwks-caching">
-<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-jwks-caching" class="section-name selfRef">JWKS Caching</a>
-        </h3>
-<p id="section-8.3-1">Resources that fetch JWKS documents for signature verification SHOULD cache the results with a TTL appropriate to their risk tolerance (recommended: 5 minutes for auth servers, 60 minutes for resources). JWKS endpoints SHOULD support standard HTTP caching headers (<code>Cache-Control</code>, <code>Expires</code>) per (<span>[<a href="#RFC9111" class="cite xref">RFC9111</a>]</span>).<a href="#section-8.3-1" class="pilcrow">¶</a></p>
-<p id="section-8.3-2">When signature verification fails due to an unknown key, the server SHOULD re-fetch the JWKS once before returning an <code>unknown_key</code> error, to handle key rotation.<a href="#section-8.3-2" class="pilcrow">¶</a></p>
-</section>
-</div>
+<p id="section-2-1">This document defines no new protocol elements. See the security considerations of the successor specifications.<a href="#section-2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-considerations">
-<section id="section-9">
+<section id="section-3">
       <h2 id="name-iana-considerations">
-<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
-<div id="http-header-field-registration">
-<section id="section-9.1">
-        <h3 id="name-http-header-field-registrat">
-<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-http-header-field-registrat" class="section-name selfRef">HTTP Header Field Registration</a>
-        </h3>
-<p id="section-9.1-1">This specification registers the following entry in the "Hypertext Transfer Protocol (HTTP) Field Name Registry" (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 16.3.1):<a href="#section-9.1-1" class="pilcrow">¶</a></p>
-<ul class="normal">
-<li class="normal" id="section-9.1-2.1">Header Field Name: <code>AAuth-Requirement</code><a href="#section-9.1-2.1" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-9.1-2.2">Status: permanent<a href="#section-9.1-2.2" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-9.1-2.3">Structured Type: Dictionary<a href="#section-9.1-2.3" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-9.1-2.4">
-            <p id="section-9.1-2.4.1">Reference: This document<a href="#section-9.1-2.4.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-9.1-2.5">
-            <p id="section-9.1-2.5.1">Header Field Name: <code>Signature-Error</code><a href="#section-9.1-2.5.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-9.1-2.6">
-            <p id="section-9.1-2.6.1">Status: permanent<a href="#section-9.1-2.6.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-9.1-2.7">
-            <p id="section-9.1-2.7.1">Structured Type: Dictionary<a href="#section-9.1-2.7.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-9.1-2.8">
-            <p id="section-9.1-2.8.1">Reference: This document<a href="#section-9.1-2.8.1" class="pilcrow">¶</a></p>
-</li>
-        </ul>
-</section>
-</div>
-<div id="aauth-requirement-level-registry">
-<section id="section-9.2">
-        <h3 id="name-aauth-requirement-level-reg">
-<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-aauth-requirement-level-reg" class="section-name selfRef">AAuth Requirement Level Registry</a>
-        </h3>
-<p id="section-9.2-1">This specification establishes the AAuth Requirement Level Registry. The initial contents are:<a href="#section-9.2-1" class="pilcrow">¶</a></p>
-<table class="center" id="table-2">
-          <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
-<thead>
-            <tr>
-              <th class="text-left" rowspan="1" colspan="1">Value</th>
-              <th class="text-left" rowspan="1" colspan="1">Reference</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>pseudonym</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>identity</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>interaction</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>approval</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-          </tbody>
-        </table>
-<p id="section-9.2-3">New values may be registered following the Specification Required policy (<span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-9.2-3" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="signature-error-code-registry">
-<section id="section-9.3">
-        <h3 id="name-signature-error-code-regist">
-<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-signature-error-code-regist" class="section-name selfRef">Signature Error Code Registry</a>
-        </h3>
-<p id="section-9.3-1">This specification establishes the Signature Error Code Registry. The initial contents are:<a href="#section-9.3-1" class="pilcrow">¶</a></p>
-<table class="center" id="table-3">
-          <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
-<thead>
-            <tr>
-              <th class="text-left" rowspan="1" colspan="1">Value</th>
-              <th class="text-left" rowspan="1" colspan="1">Reference</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>invalid_request</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>invalid_input</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>invalid_signature</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>unsupported_algorithm</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>invalid_key</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>unknown_key</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>invalid_jwt</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-            <tr>
-              <td class="text-left" rowspan="1" colspan="1">
-                <code>expired_jwt</code>
-</td>
-              <td class="text-left" rowspan="1" colspan="1">This document</td>
-            </tr>
-          </tbody>
-        </table>
-<p id="section-9.3-3">New values may be registered following the Specification Required policy (<span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-9.3-3" class="pilcrow">¶</a></p>
-</section>
-</div>
-</section>
-</div>
-<div id="implementation-status">
-<section id="section-10">
-      <h2 id="name-implementation-status">
-<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
-      </h2>
-<p id="section-10-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-10-1" class="pilcrow">¶</a></p>
-<p id="section-10-2">This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in <span>[<a href="#RFC7942" class="cite xref">RFC7942</a>]</span>. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.<a href="#section-10-2" class="pilcrow">¶</a></p>
-<p id="section-10-3">The following implementations are known at the time of writing:<a href="#section-10-3" class="pilcrow">¶</a></p>
-<ul class="normal">
-<li class="normal" id="section-10-4.1">
-          <p id="section-10-4.1.1"><strong>@aauth npm packages</strong> (<a href="https://www.npmjs.com/org/aauth):">https://www.npmjs.com/org/aauth):</a> JavaScript/TypeScript libraries implementing HTTP Message Signatures and AAuth-Requirement processing for agents and servers.<a href="#section-10-4.1.1" class="pilcrow">¶</a></p>
-</li>
-        <li class="normal" id="section-10-4.2">
-          <p id="section-10-4.2.1"><strong>aauth-implementation</strong> (<a href="https://github.com/christian-posta/aauth-implementation):">https://github.com/christian-posta/aauth-implementation):</a> Python library implementing HTTP Message Signatures (RFC 9421), AAuth request signing/verification, and Signature-Key header support. Author: Christian Posta.<a href="#section-10-4.2.1" class="pilcrow">¶</a></p>
-</li>
-      </ul>
+<p id="section-3-1">This document has no IANA actions. The registries previously proposed here are now defined by the successor specifications.<a href="#section-3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="document-history">
-<section id="section-11">
+<section id="section-4">
       <h2 id="name-document-history">
-<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
       </h2>
-<p id="section-11-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-11-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-11-2.1">
-          <p id="section-11-2.1.1">draft-hardt-aauth-headers-00<a href="#section-11-2.1.1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-11-2.1.2.1">Initial submission, renamed from draft-hardt-aauth-header<a href="#section-11-2.1.2.1" class="pilcrow">¶</a>
+<p id="section-4-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1">
+          <p id="section-4-2.1.1">draft-hardt-aauth-headers-01<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
+<ul class="compact normal">
+<li class="compact normal" id="section-4-2.1.2.1">Marked as obsolete; all content migrated to HTTP Signature Keys and AAuth Protocol specifications<a href="#section-4-2.1.2.1" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-11-2.1.2.2">Added Signature-Error header with extensible error code registry<a href="#section-11-2.1.2.2" class="pilcrow">¶</a>
+          </ul>
 </li>
-            <li class="compact" id="section-11-2.1.2.3">Added <code>interaction</code> and <code>approval</code> requirement levels<a href="#section-11-2.1.2.3" class="pilcrow">¶</a>
+        <li class="normal" id="section-4-2.2">
+          <p id="section-4-2.2.1">draft-hardt-aauth-headers-00<a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
+<ul class="compact normal">
+<li class="compact normal" id="section-4-2.2.2.1">Initial submission, renamed from draft-hardt-aauth-header<a href="#section-4-2.2.2.1" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-11-2.1.2.4">Added <code>url</code> parameter to interaction for self-contained challenge<a href="#section-11-2.1.2.4" class="pilcrow">¶</a>
+            <li class="compact normal" id="section-4-2.2.2.2">Added Signature-Error header with extensible error code registry<a href="#section-4-2.2.2.2" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-11-2.1.2.5">Renamed terminology from "resource" to "server"<a href="#section-11-2.1.2.5" class="pilcrow">¶</a>
+            <li class="compact normal" id="section-4-2.2.2.3">Added <code>interaction</code> and <code>approval</code> requirement levels<a href="#section-4-2.2.2.3" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-4-2.2.2.4">Added <code>url</code> parameter to interaction for self-contained challenge<a href="#section-4-2.2.2.4" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-4-2.2.2.5">Renamed terminology from "resource" to "server"<a href="#section-4-2.2.2.5" class="pilcrow">¶</a>
 </li>
           </ul>
 </li>
@@ -2144,134 +1292,30 @@ Retry-After: 30
 </section>
 </div>
 <div id="acknowledgments">
-<section id="section-12">
+<section id="section-5">
       <h2 id="name-acknowledgments">
-<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
       </h2>
-<p id="section-12-1">TBD<a href="#section-12-1" class="pilcrow">¶</a></p>
+<p id="section-5-1">TBD<a href="#section-5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<section id="section-13">
-      <h2 id="name-references">
-<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-references" class="section-name selfRef">References</a>
+<section id="section-6">
+      <h2 id="name-normative-references">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
       </h2>
-<section id="section-13.1">
-        <h3 id="name-normative-references">
-<a href="#section-13.1" class="section-number selfRef">13.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
-        </h3>
 <dl class="references">
+<dt id="I-D.hardt-aauth-protocol">[I-D.hardt-aauth-protocol]</dt>
+      <dd>
+<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"AAuth Protocol"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-hardt-aauth-protocol-00</span>, <time datetime="2026-04-02" class="refDate">2 April 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-hardt-aauth-protocol-00">https://datatracker.ietf.org/doc/html/draft-hardt-aauth-protocol-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
 <dt id="I-D.hardt-httpbis-signature-key">[I-D.hardt-httpbis-signature-key]</dt>
-        <dd>
+    <dd>
 <span class="refAuthor">Hardt, D.</span> and <span class="refAuthor">T. Meunier</span>, <span class="refTitle">"HTTP Signature-Key Header"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-hardt-httpbis-signature-key-02</span>, <time datetime="2026-03-02" class="refDate">2 March 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-hardt-httpbis-signature-key-02">https://datatracker.ietf.org/doc/html/draft-hardt-httpbis-signature-key-02</a>&gt;</span>. </dd>
 <dd class="break"></dd>
-<dt id="I-D.ryan-httpauth-payment">[I-D.ryan-httpauth-payment]</dt>
-        <dd>
-<span class="refAuthor">Ryan, B.</span>, <span class="refAuthor">Moxey, J.</span>, <span class="refAuthor">Meagher, T.</span>, <span class="refAuthor">Weinstein, J.</span>, and <span class="refAuthor">S. Kaliski</span>, <span class="refTitle">"The "Payment" HTTP Authentication Scheme"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ryan-httpauth-payment-01</span>, <time datetime="2026-03-17" class="refDate">17 March 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ryan-httpauth-payment-01">https://datatracker.ietf.org/doc/html/draft-ryan-httpauth-payment-01</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC6979">[RFC6979]</dt>
-        <dd>
-<span class="refAuthor">Pornin, T.</span>, <span class="refTitle">"Deterministic Usage of the Digital Signature Algorithm (DSA) and Elliptic Curve Digital Signature Algorithm (ECDSA)"</span>, <span class="seriesInfo">RFC 6979</span>, <span class="seriesInfo">DOI 10.17487/RFC6979</span>, <time datetime="2013-08" class="refDate">August 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6979">https://www.rfc-editor.org/info/rfc6979</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC7517">[RFC7517]</dt>
-        <dd>
-<span class="refAuthor">Jones, M.</span>, <span class="refTitle">"JSON Web Key (JWK)"</span>, <span class="seriesInfo">RFC 7517</span>, <span class="seriesInfo">DOI 10.17487/RFC7517</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7517">https://www.rfc-editor.org/info/rfc7517</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC7638">[RFC7638]</dt>
-        <dd>
-<span class="refAuthor">Jones, M.</span> and <span class="refAuthor">N. Sakimura</span>, <span class="refTitle">"JSON Web Key (JWK) Thumbprint"</span>, <span class="seriesInfo">RFC 7638</span>, <span class="seriesInfo">DOI 10.17487/RFC7638</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7638">https://www.rfc-editor.org/info/rfc7638</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC8032">[RFC8032]</dt>
-        <dd>
-<span class="refAuthor">Josefsson, S.</span> and <span class="refAuthor">I. Liusvaara</span>, <span class="refTitle">"Edwards-Curve Digital Signature Algorithm (EdDSA)"</span>, <span class="seriesInfo">RFC 8032</span>, <span class="seriesInfo">DOI 10.17487/RFC8032</span>, <time datetime="2017-01" class="refDate">January 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8032">https://www.rfc-editor.org/info/rfc8032</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC8126">[RFC8126]</dt>
-        <dd>
-<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC8446">[RFC8446]</dt>
-        <dd>
-<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08" class="refDate">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC8941">[RFC8941]</dt>
-        <dd>
-<span class="refAuthor">Nottingham, M.</span> and <span class="refAuthor">P. Kamp</span>, <span class="refTitle">"Structured Field Values for HTTP"</span>, <span class="seriesInfo">RFC 8941</span>, <span class="seriesInfo">DOI 10.17487/RFC8941</span>, <time datetime="2021-02" class="refDate">February 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8941">https://www.rfc-editor.org/info/rfc8941</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC9110">[RFC9110]</dt>
-        <dd>
-<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="seriesInfo">STD 97</span>, <span class="seriesInfo">RFC 9110</span>, <span class="seriesInfo">DOI 10.17487/RFC9110</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9110">https://www.rfc-editor.org/info/rfc9110</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC9421">[RFC9421]</dt>
-      <dd>
-<span class="refAuthor">Backman, A., Ed.</span>, <span class="refAuthor">Richer, J., Ed.</span>, and <span class="refAuthor">M. Sporny</span>, <span class="refTitle">"HTTP Message Signatures"</span>, <span class="seriesInfo">RFC 9421</span>, <span class="seriesInfo">DOI 10.17487/RFC9421</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9421">https://www.rfc-editor.org/info/rfc9421</a>&gt;</span>. </dd>
-<dd class="break"></dd>
 </dl>
 </section>
-<section id="section-13.2">
-        <h3 id="name-informative-references">
-<a href="#section-13.2" class="section-number selfRef">13.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
-        </h3>
-<dl class="references">
-<dt id="RFC5905">[RFC5905]</dt>
-        <dd>
-<span class="refAuthor">Mills, D.</span>, <span class="refAuthor">Martin, J., Ed.</span>, <span class="refAuthor">Burbank, J.</span>, and <span class="refAuthor">W. Kasch</span>, <span class="refTitle">"Network Time Protocol Version 4: Protocol and Algorithms Specification"</span>, <span class="seriesInfo">RFC 5905</span>, <span class="seriesInfo">DOI 10.17487/RFC5905</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5905">https://www.rfc-editor.org/info/rfc5905</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC7518">[RFC7518]</dt>
-        <dd>
-<span class="refAuthor">Jones, M.</span>, <span class="refTitle">"JSON Web Algorithms (JWA)"</span>, <span class="seriesInfo">RFC 7518</span>, <span class="seriesInfo">DOI 10.17487/RFC7518</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7518">https://www.rfc-editor.org/info/rfc7518</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC7942">[RFC7942]</dt>
-        <dd>
-<span class="refAuthor">Sheffer, Y.</span> and <span class="refAuthor">A. Farrel</span>, <span class="refTitle">"Improving Awareness of Running Code: The Implementation Status Section"</span>, <span class="seriesInfo">BCP 205</span>, <span class="seriesInfo">RFC 7942</span>, <span class="seriesInfo">DOI 10.17487/RFC7942</span>, <time datetime="2016-07" class="refDate">July 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7942">https://www.rfc-editor.org/info/rfc7942</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC9111">[RFC9111]</dt>
-        <dd>
-<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Caching"</span>, <span class="seriesInfo">STD 98</span>, <span class="seriesInfo">RFC 9111</span>, <span class="seriesInfo">DOI 10.17487/RFC9111</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9111">https://www.rfc-editor.org/info/rfc9111</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC9530">[RFC9530]</dt>
-        <dd>
-<span class="refAuthor">Polli, R.</span> and <span class="refAuthor">L. Pardue</span>, <span class="refTitle">"Digest Fields"</span>, <span class="seriesInfo">RFC 9530</span>, <span class="seriesInfo">DOI 10.17487/RFC9530</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9530">https://www.rfc-editor.org/info/rfc9530</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="x402">[x402]</dt>
-      <dd>
-<span class="refAuthor">x402 Foundation</span>, <span class="refTitle">"x402: HTTP 402 Payment Protocol"</span>, <time datetime="2025" class="refDate">2025</time>, <span>&lt;<a href="https://docs.x402.org">https://docs.x402.org</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-</dl>
-</section>
-</section>
-<div id="design-rationale">
-<section id="appendix-A">
-      <h2 id="name-design-rationale">
-<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-design-rationale" class="section-name selfRef">Design Rationale</a>
-      </h2>
-<div id="why-not-extend-www-authenticate">
-<section id="appendix-A.1">
-        <h3 id="name-why-not-extend-www-authenti">
-<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-why-not-extend-www-authenti" class="section-name selfRef">Why Not Extend WWW-Authenticate?</a>
-        </h3>
-<p id="appendix-A.1-1"><code>WWW-Authenticate</code> (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 11.6.1) tells the client which authentication scheme to use. Its challenge model is "present credentials" — it cannot express progressive requirements, authorization, or deferred approval, and it cannot appear in a <code>202 Accepted</code> response.<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
-<p id="appendix-A.1-2">AAuth-Requirement coexists with <code>WWW-Authenticate</code>. A <code>401</code> response MAY include both headers, and the client uses whichever it understands:<a href="#appendix-A.1-2" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="appendix-A.1-3">
-<pre>HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer realm="api"
-AAuth-Requirement: requirement=identity
-
-</pre><a href="#appendix-A.1-3" class="pilcrow">¶</a>
-</div>
-<p id="appendix-A.1-4">A <code>402</code> response MAY include <code>WWW-Authenticate</code> for payment (e.g., the Payment scheme defined by the Micropayment Protocol (<span>[<a href="#I-D.ryan-httpauth-payment" class="cite xref">I-D.ryan-httpauth-payment</a>]</span>)) alongside <code>AAuth-Requirement</code> for authentication or authorization:<a href="#appendix-A.1-4" class="pilcrow">¶</a></p>
-<div class="lang-http sourcecode" id="appendix-A.1-5">
-<pre>HTTP/1.1 402 Payment Required
-WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
-    request="eyJhbW91bnQiOiIxMDAw..."
-AAuth-Requirement: requirement=pseudonym
-
-</pre><a href="#appendix-A.1-5" class="pilcrow">¶</a>
-</div>
-</section>
-</div>
-</section>
-</div>
 <div id="authors-addresses">
-<section id="appendix-B">
+<section id="appendix-A">
       <h2 id="name-authors-address">
 <a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
       </h2>
