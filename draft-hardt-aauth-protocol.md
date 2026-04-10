@@ -130,8 +130,7 @@ AAuth introduces the following features to address these use cases:
 
 AAuth also provides enhancements over OAuth:
 
-- **Agent identity replaces API keys**: In OAuth, clients authenticate with shared secrets (`client_secret`) or are public clients with no authentication at all. API keys extend this pattern — a shared secret copied to the client. AAuth agents have their own cryptographic identity, verified via HTTP Message Signatures. A resource can grant access based on the agent's verified identity alone — no tokens, no authorization flows, no pre-registration. This is the simplest AAuth adoption path and eliminates shared secrets entirely.
-- **Proof-of-possession by default**: In OAuth, client authentication typically relies on shared secrets, PKCE protects authorization code transactions, and access to protected resources uses bearer tokens that can be stolen and replayed. In AAuth, proof-of-possession via HTTP Message Signatures is required on every request.
+- **Agent identity and proof-of-possession replace shared secrets**: In OAuth, client identity is server-specific (`client_id`), authentication typically relies on shared secrets, and access tokens are bearer credentials. AAuth agents have their own cryptographic identity (`aauth:local@domain`), independent of any server. HTTP Message Signatures provide proof-of-possession on every request — a stolen token is useless without the private key. A resource can grant access based on the agent's verified identity alone, without authorization flows or pre-registration.
 - **Unified authentication and authorization**: OAuth and OIDC are separate protocols with separate flows and token types. AAuth uses a single auth token that can carry both identity claims and authorized scopes.
 - **No protocol artifacts in browser redirects**: Unlike OAuth, where browser redirects carry authorization codes that are vulnerable to interception, AAuth uses browser redirects only to transition the user between parties.
 
@@ -156,7 +155,7 @@ Because agent identity is independent and self-contained, AAuth is designed for 
 - **Agent Server**: A server that manages agent identity and issues agent tokens to agents. Trusted by the legal person to issue agent tokens only to authorized agents. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-agent.json`.
 - **Agent Token**: A JWT issued by an agent server to an agent, binding the agent's signing key to the agent's identity (#agent-tokens).
 - **Mission**: A scoped authorization context for agent governance. Required when the agent needs PS governance (permissions, audit, consent-managed resource access), not required for simple PS authorization (obtaining auth tokens). A mission is a JSON object containing structured fields (approver, agent, timestamp, approved tools) and a Markdown description. Identified by the SHA-256 hash of the mission JSON (`s256`). Missions are proposed by agents and approved by the PS.
-- **Person Server (PS)**: A server that represents the legal person to the rest of the protocol. Trusted by the legal person to manage missions, authenticate users, handle consent, assert user identity, and broker all authorization on behalf of agents. The PS is the only entity that calls access server token endpoints. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-person.json`.
+- **Person Server (PS)**: A server that represents the legal person to the rest of the protocol. The legal person — user or organization — chooses their PS; it is not imposed by any other party. The PS is trusted by the legal person to manage missions, handle consent, assert user identity, and broker all authorization on behalf of agents. The PS is the only entity that calls access server token endpoints. Internally, the PS MAY delegate authentication to an external identity provider and MAY delegate policy evaluation to external services — to the rest of the protocol, the PS is the single interface. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-person.json`.
 - **Access Server (AS)**: A policy engine for a resource. Trusted by the resource to evaluate token requests from PSes, apply resource policy, and issue auth tokens. Only called by PSes. The AS may require interaction or approval during trust establishment or policy evaluation. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-access.json`.
 - **Auth Token**: A JWT issued by an AS that grants an agent access to a resource, containing user identity and/or authorized scopes (#auth-tokens).
 - **Resource**: A server that requires authentication and/or authorization to protect access to its APIs and data. A resource trusts its access server to enforce access policy. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-resource.json`. A mission-aware resource has exactly one AS that it accepts auth tokens from.
@@ -974,14 +973,14 @@ This section defines auth tokens and the mechanisms by which they are issued. Th
 
 The AS's `token_endpoint` is called only by PSes. The AS evaluates resource policy and issues auth tokens. It accepts JSON POST requests.
 
-### PS-to-AS Token Request
+### Token Request
 
-The PS MUST make a signed POST to the AS's `token_endpoint`. The PS authenticates via an HTTP Sig (#http-message-signatures-profile).
+The caller MUST make a signed POST to the AS's `token_endpoint`. In normal operation, the caller is a PS. In multi-hop without a mission (#call-chaining), the caller may be a resource acting as an agent. The caller authenticates via an HTTP Sig (#http-message-signatures-profile).
 
 **Request parameters:**
 
 - `resource_token` (REQUIRED): The resource token issued by the resource.
-- `agent_token` (REQUIRED): The agent's agent token.
+- `agent_token` (REQUIRED): The agent's agent token. When the caller is a PS, this is the original agent's token. When the caller is a resource acting as an agent in multi-hop, this is the resource's own agent token.
 - `upstream_token` (OPTIONAL): An auth token from an upstream authorization, used in call chaining (#call-chaining).
 
 **Example request:**
@@ -1211,32 +1210,115 @@ When an agent receives an auth token:
 
 ## Upstream Token Verification {#upstream-token-verification}
 
-When the PS receives an `upstream_token` parameter in a call chaining request:
+When a PS or AS receives an `upstream_token` parameter in a call chaining request:
 
 1. Perform Auth Token Verification on the upstream token.
-2. Verify `iss` is a trusted AS (an AS whose auth token the PS previously brokered).
-3. Verify the `aud` in the upstream token matches the resource that is now acting as an agent (i.e., the upstream token was issued for the intermediary resource).
-4. The PS evaluates its own policy based on the upstream token's claims and mission context. The resulting downstream authorization is not required to be a subset of the upstream scopes.
+2. Verify the `aud` in the upstream token matches the resource that is now acting as an agent (i.e., the upstream token was issued for the intermediary resource).
+3. If the recipient is a PS, verify `iss` is a trusted AS (an AS whose auth token the PS previously brokered) or verify `iss` matches the PS itself (three-party upstream token).
+4. The recipient evaluates its own policy based on the upstream token's claims and mission context (if present). The resulting downstream authorization is not required to be a subset of the upstream scopes.
 
 # Multi-Hop {#multi-hop}
 
-This section defines how resources act as agents to access downstream resources on behalf of the original caller. In multi-hop scenarios, a resource that receives an authorized request needs to access another resource to fulfill that request. The resource acts as an agent — it has its own agent identity and signing key — and routes the downstream authorization through the PS, preserving a complete audit trail.
+This section defines how resources act as agents to access downstream resources on behalf of the original caller. In multi-hop scenarios, a resource that receives an authorized request needs to access another resource to fulfill that request. The resource acts as an agent — it has its own agent identity and signing key — and routes the downstream authorization to obtain an auth token for the downstream resource.
 
 ## Call Chaining {#call-chaining}
 
-When a resource needs to access a downstream resource on behalf of the caller, it acts as an agent. It sends the downstream resource token to the PS along with its own agent token and the auth token it received from the original caller as the `upstream_token`.
+When a resource needs to access a downstream resource on behalf of the caller, it acts as an agent. The resource determines where to send the downstream token request based on the upstream auth token it received:
 
-The PS evaluates the downstream request per (#upstream-token-verification) and sees the complete delegation chain for audit.
+- **Mission present** (`mission.approver` in the upstream auth token): The resource sends the downstream resource token to the PS identified by `mission.approver`, along with its own agent token and the upstream auth token as the `upstream_token`. The PS has mission context and evaluates the downstream request against the mission scope. This is the governed path — the PS sees the full delegation chain for audit.
+
+- **No mission, `iss` is a PS** (three-party upstream): The resource sends the downstream resource token to the PS identified by `iss`, along with its own agent token and the `upstream_token`. The PS evaluates the request without mission context.
+
+- **No mission, `iss` is an AS** (four-party upstream, no governance): The resource sends the downstream resource token to the AS identified by `iss`, along with its own agent token and the `upstream_token`. The AS evaluates the request based on resource policy. No PS is involved — no governance context is available.
+
+The recipient (PS or AS) evaluates the downstream request per (#upstream-token-verification).
 
 Because the resource acts as an agent, it MUST have its own agent identity — it MUST publish agent metadata at `/.well-known/aauth-agent.json` so that downstream resources and ASes can verify its identity.
 
 ## Interaction Chaining {#interaction-chaining}
 
-When the PS requires user interaction for the downstream access, it returns a `202` with `requirement=interaction`. Resource 1 chains the interaction back to the original agent by returning its own `202`.
+When the PS or AS requires user interaction for the downstream access, it returns a `202` with `requirement=interaction`. Resource 1 chains the interaction back to the original agent by returning its own `202`.
 
-When a resource acting as an agent receives a `202 Accepted` response with `AAuth-Requirement: requirement=interaction` from its PS, and the resource needs to propagate this interaction requirement to its caller, it MUST return a `202 Accepted` response to the original agent with its own `AAuth-Requirement` header containing `requirement=interaction` and its own interaction code. The resource MUST provide its own `Location` URL for the original agent to poll. When the user completes interaction and the resource obtains the downstream auth token, the resource completes the original request and returns the result at its pending URL.
+When a resource acting as an agent receives a `202 Accepted` response with `AAuth-Requirement: requirement=interaction`, and the resource needs to propagate this interaction requirement to its caller, it MUST return a `202 Accepted` response to the original agent with its own `AAuth-Requirement` header containing `requirement=interaction` and its own interaction code. The resource MUST provide its own `Location` URL for the original agent to poll. When the user completes interaction and the resource obtains the downstream auth token, the resource completes the original request and returns the result at its pending URL.
 
-When call chaining involves a mission-aware downstream resource, the intermediary resource's PS federates with the downstream AS. See (#ps-as-federation).
+# Third-Party Login {#third-party-login}
+
+A third party — such as a PS, enterprise portal, app marketplace, or partner site — can direct a user to an agent's or resource's `login_endpoint` to initiate authentication. The agent or resource creates a resource token and sends it to the PS's token endpoint, obtaining an auth token with user identity.
+
+This enables use cases where the user's journey starts outside the agent or resource — for example, an enterprise portal launching an agent for a specific user, an app marketplace connecting a user to a new service, or a PS dashboard directing a user to an agent.
+
+## Login Endpoint
+
+Agents and resources MAY publish a `login_endpoint` in their metadata. The `login_endpoint` accepts the following query parameters:
+
+- `ps` (REQUIRED): The PS URL to authenticate with. The agent or resource MUST verify this is a valid PS by fetching its metadata at `{ps}/.well-known/aauth-person.json` (#ps-metadata).
+- `login_hint` (OPTIONAL): Hint about who to authorize, per [@!OpenID.Core] Section 3.1.2.1.
+- `domain_hint` (OPTIONAL): Domain hint, per OpenID Connect Enterprise Extensions 1.0 [@OpenID.Enterprise].
+- `tenant` (OPTIONAL): Tenant identifier, per OpenID Connect Enterprise Extensions 1.0 [@OpenID.Enterprise].
+- `start_path` (OPTIONAL): Path on the agent's or resource's origin where the user should be directed after login completes. The recipient MUST validate that `start_path` is a relative path on its own origin.
+
+**Example login URL:**
+```
+https://agent.example/login?ps=https://ps.example&tenant=corp&login_hint=user@corp.example&start_path=/projects/tokyo-trip
+```
+
+## Login Flow
+
+Upon receiving a request at its `login_endpoint`, the agent or resource:
+
+1. Validates the `ps` parameter by fetching the PS's metadata.
+2. Creates a resource token with `aud` = PS URL, binding the request to its own identity.
+3. POSTs to the PS's `token_endpoint` with the resource token and any provided `login_hint`, `domain_hint`, or `tenant` parameters.
+4. Proceeds with the standard deferred response flow (#deferred-responses) — directing the user to the PS's interaction endpoint with the interaction code.
+5. After obtaining the auth token, redirects the user to `start_path` if provided, or to a default landing page.
+
+If the user is already authenticated at the PS, the interaction step resolves near-instantly — the PS recognizes the user from its own session. If not, the user completes a normal authentication and consent flow.
+
+~~~ ascii-art
+User         Third Party     Agent/Resource                  PS
+  |               |               |                           |
+  |  select       |               |                           |
+  |-------------->|               |                           |
+  |               |               |                           |
+  |  redirect to login_endpoint   |                           |
+  |  (ps, tenant, start_path)     |                           |
+  |<--------------|               |                           |
+  |               |               |                           |
+  |  login_endpoint               |                           |
+  |------------------------------>|                           |
+  |               |               |                           |
+  |               |               |  POST token_endpoint      |
+  |               |               |  resource_token,          |
+  |               |               |  login_hint, tenant       |
+  |               |               |-------------------------->|
+  |               |               |                           |
+  |               |               |  202 Accepted             |
+  |               |               |  requirement=interaction  |
+  |               |               |  url, code                |
+  |               |               |<--------------------------|
+  |               |               |                           |
+  |  direct to {url}?code={code}  |                           |
+  |<------------------------------|                           |
+  |               |               |                           |
+  |  authenticate at PS           |                           |
+  |------------------------------------------------------>---|
+  |               |               |                           |
+  |               |               |  GET pending URL          |
+  |               |               |-------------------------->|
+  |               |               |  200 OK, auth_token       |
+  |               |               |<--------------------------|
+  |               |               |                           |
+  |  redirect to start_path       |                           |
+  |<------------------------------|                           |
+~~~
+
+The third party does not need to be the PS. Any party that knows the agent's or resource's `login_endpoint` (from metadata) can initiate the flow. The agent or resource treats the redirect as untrusted input — it verifies the PS through metadata discovery and initiates a signed flow.
+
+## Security Considerations for Third-Party Login
+
+- The `login_endpoint` does not carry any tokens, codes, or pre-authorized state. The agent or resource initiates a standard signed flow with the PS, which independently authenticates the user.
+- The `start_path` parameter MUST be validated as a relative path on the recipient's own origin to prevent open redirect attacks.
+- The `ps` parameter is untrusted input. The agent or resource MUST discover and verify the PS via its well-known metadata before proceeding.
 
 # Protocol Primitives {#protocol-primitives}
 
@@ -1599,7 +1681,7 @@ Implementations MUST perform exact string comparison on agent identifiers (case-
 
 ## Endpoint URLs
 
-The `token_endpoint`, `authorization_endpoint`, `mission_endpoint`, and `callback_endpoint` values MUST conform to the following:
+The `token_endpoint`, `authorization_endpoint`, `mission_endpoint`, `login_endpoint`, and `callback_endpoint` values MUST conform to the following:
 
 - MUST use the `https` scheme
 - MUST NOT contain a fragment
@@ -1627,6 +1709,7 @@ Published at `/.well-known/aauth-agent.json`:
   "logo_uri": "https://agent.example/logo.png",
   "logo_dark_uri": "https://agent.example/logo-dark.png",
   "callback_endpoint": "https://agent.example/callback",
+  "login_endpoint": "https://agent.example/login",
   "localhost_callback_allowed": true,
   "tos_uri": "https://agent.example/tos",
   "policy_uri": "https://agent.example/privacy"
@@ -1641,6 +1724,7 @@ Fields:
 - `logo_uri` (OPTIONAL): URL to agent logo (per [@RFC7591])
 - `logo_dark_uri` (OPTIONAL): URL to agent logo for dark backgrounds
 - `callback_endpoint` (OPTIONAL): The agent's HTTPS callback endpoint URL
+- `login_endpoint` (OPTIONAL): URL where third parties direct users to initiate login (#third-party-login). If absent, the agent does not support third-party initiated login.
 - `localhost_callback_allowed` (OPTIONAL): Boolean. Default: `false`.
 - `tos_uri` (OPTIONAL): URL to terms of service (per [@RFC7591])
 - `policy_uri` (OPTIONAL): URL to privacy policy (per [@RFC7591])
@@ -1701,6 +1785,7 @@ Published at `/.well-known/aauth-resource.json`:
   "logo_uri": "https://resource.example/logo.png",
   "logo_dark_uri": "https://resource.example/logo-dark.png",
   "authorization_endpoint": "https://resource.example/authorize",
+  "login_endpoint": "https://resource.example/login",
   "scope_descriptions": {
     "data.read": "Read access to your data and documents",
     "data.write": "Create and update your data and documents",
@@ -1718,6 +1803,7 @@ Fields:
 - `logo_uri` (OPTIONAL): URL to resource logo (per [@RFC7591])
 - `logo_dark_uri` (OPTIONAL): URL to resource logo for dark backgrounds
 - `authorization_endpoint` (REQUIRED): URL where agents request authorization (#authorization-endpoint)
+- `login_endpoint` (OPTIONAL): URL where third parties direct users to initiate login (#third-party-login). If absent, the resource does not support third-party initiated login.
 - `scope_descriptions` (OPTIONAL): Object mapping scope values to Markdown strings for consent display. Scope values are resource-specific; resources that already define OAuth scopes SHOULD use the same scope values in AAuth. Identity-related scopes (e.g., `openid`, `profile`, `email`) follow [@!OpenID.Core].
 - `signature_window` (OPTIONAL): Integer. The signature validity window in seconds for the `created` timestamp. Default: 60. Resources serving agents with poor clock synchronization (mobile, IoT) MAY advertise a larger value. High-security resources MAY advertise a smaller value.
 - `additional_signature_components` (OPTIONAL): Array of HTTP message component identifiers ([@!RFC9421]) that agents MUST include in the `Signature-Input` covered components when signing requests to this resource, in addition to the base components required by the HTTP Message Signatures profile ([@!I-D.hardt-httpbis-signature-key])
@@ -1790,6 +1876,8 @@ The resource's AS is identified by the `aud` claim in the resource token. Federa
 
 The PS is a centralized authority that sees every authorization in a mission. PS implementations MUST apply appropriate security controls including access control, audit logging, and monitoring. Compromise of a PS could affect all agents and missions it manages.
 
+Several architectural properties mitigate this centralization risk. The legal person chooses their PS — no other party in the protocol imposes a PS, and the person can migrate to a different PS at any time. The PS MAY delegate authentication to an identity provider chosen by the person or organization (e.g., an enterprise IdP via OIDC federation), reducing the PS's role in credential management. The PS MAY also delegate policy evaluation to external services selected by the person, so that consent and authorization decisions are not solely determined by the PS operator. To the rest of the protocol, the PS presents a single interface regardless of how it is composed internally.
+
 ## Call Chaining Identity
 
 When a resource acts as an agent in call chaining, it uses its own signing key and presents its own credentials. The resource MUST publish agent metadata so downstream parties can verify its identity.
@@ -1817,7 +1905,7 @@ The PS provides a pairwise pseudonymous user identifier (`sub`) for each AS, pre
 
 ## PS Visibility
 
-The PS sees every authorization request made by its agents — including the resource being accessed, the requested scope, and the mission context. This centralized visibility is inherent to the architecture and enables governance and audit, but it also means the PS is a sensitive data aggregation point. PS implementations MUST apply appropriate access controls and data retention policies.
+The PS sees every authorization request made by its agents — including the resource being accessed, the requested scope, and the mission context. This centralized visibility is inherent to the architecture and enables governance and audit, but it also means the PS is a sensitive data aggregation point. The legal person chooses to trust their PS with this visibility — no other party imposes the choice. PS implementations MUST apply appropriate access controls and data retention policies.
 
 ## Mission Text Exposure
 
