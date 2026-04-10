@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:notes.karlmcguinness.com)",
+      "Bash(perl -pi -e 's/MM\\([a-z]\\)/MM $1/g' draft-hardt-aauth-protocol.md)",
+      "Bash(perl -pi -e 's/\\\\bMA\\\\b/MM/g' /Users/dick/github/DickHardt/AAuth/draft-hardt-aauth-protocol.md)",
+      "Bash(perl -pi -e 's/\\\\bMA\\\\b/MM/g' /Users/dick/github/DickHardt/AAuth/draft-hardt-aauth-r3.md)",
+      "Bash(git submodule:*)",
+      "Read(//opt/homebrew/**)",
+      "Read(//Users/dick/.local/**)",
+      "Read(//Users/dick/Library/**)",
+      "Bash(pip3 list:*)",
+      "Bash(pipx list:*)",
+      "WebFetch(domain:docs.cdp.coinbase.com)",
+      "WebFetch(domain:mpp.dev)",
+      "WebFetch(domain:tempoxyz.github.io)",
+      "WebFetch(domain:www.x402.org)",
+      "Bash(mmark --version)",
+      "WebFetch(domain:www.iana.org)",
+      "Read(//Users/dick/.claude/plans/**)",
+      "Bash(mmark -html draft-hardt-aauth-protocol.md)",
+      "Bash(mmark draft-hardt-aauth-protocol.md)",
+      "Read(//Users/dick/github/DickHardt/AAuth/**)",
+      "Bash(mmark --help)",
+      "WebFetch(domain:mmark.miek.nl)",
+      "Bash(mmark draft-hardt-aauth-protocol-new.md)",
+      "Read(//Users/dick/hello.coop/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/dick/github/DickHardt/AAuth",
+      "/tmp"
+    ]
+  }
+}
