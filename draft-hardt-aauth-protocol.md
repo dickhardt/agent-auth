@@ -183,7 +183,7 @@ AAuth supports four resource access modes, each adding parties and capabilities.
 | PS-managed access (three-party) | Agent, Resource, PS | Resource issues resource token to PS; PS issues auth token |
 | Federated access (four-party) | Agent, Resource, PS, AS | Resource has its own access server; PS federates with AS |
 
-The following diagram shows all parties in the full model (four-party) with governance:
+The following diagram shows all parties and their relationships. Not all parties or relationships are present in every mode — each mode uses a subset.
 
 ~~~ ascii-art
               Agent Trust Domain   |  Resource Trust Domain
@@ -192,31 +192,35 @@ The following diagram shows all parties in the full model (four-party) with gove
                     |  Legal    |
                     |  Person   |
                     +-----------+
-                      |   |
-                     (3) (5)
-                      |   |
+                          |
+                       consent
+                          |
                     +-----------+       +-----------+
                     |  Person   |       |  Access   |
-                    |  Server   |--(6)--|  Server   |
+                    |  Server   |-------|  Server   |
                     +-----------+       +-----------+
-                      |   |   |
-                     (2) (4) (5)
-                      |   |   |
+                     /    |    \
+              mission  token    auth
+              (gov)    request  token
+                     \    |    /
 +-----------+       +-----------+       +-----------+
-|   Agent   |       |           |--(5)--|           |
-|   Server  |--(1)--|   Agent   |--(4)--|  Resource |
+|   Agent   | agent |           | signed|           |
+|   Server  |-------|   Agent   |-------|  Resource |
+|           | token |           |request|           |
 +-----------+       +-----------+       +-----------+
 ~~~
-{: #fig-parties title="Protocol Parties and Relationships (Four-Party with Governance)"}
+Figure: Protocol Parties and Relationships {#fig-parties}
 
-- (1) agent server provisions the agent with an agent token
-- (2) agent creates a mission at its PS (governance)
-- (3) PS obtains user approval for mission and consent for resource access
-- (4) agent requests access at the resource's authorization endpoint; resource returns a resource token
-- (5) agent sends resource token to PS; PS obtains user authorization and an auth token; agent calls resource with auth token
-- (6) PS federates with the resource's AS to obtain the auth token (four-party only)
+| Relationship | Description |
+|------|-------------|
+| Agent Server → Agent | Provisions the agent with an agent token binding its signing key to its identity |
+| Agent → Resource | Signed requests; in two-party and above, agent calls the authorization endpoint |
+| Agent → PS | Token requests (with resource tokens); mission creation (governance) |
+| PS → Legal Person | Consent for resource access, mission approval |
+| PS → AS | Federation: PS sends resource token to AS, receives auth token (four-party) |
+| PS → Agent | Returns auth tokens; mission approval with capabilities |
 
-Not all steps are required in every mode. Identity-based access uses only (1) and a direct request. Resource-managed access uses (1) and (4). PS-managed and federated access add (5) and (6). Governance (2, 3) is orthogonal — see (#agent-governance). Detailed end-to-end flows are in (#detailed-flows). The following subsections describe each mode.
+Detailed end-to-end flows are in (#detailed-flows). The following subsections describe each mode.
 
 ### Identity-Based Access
 
@@ -232,7 +236,7 @@ Agent                                       Resource
   |  200 OK                                    |
   |<-------------------------------------------|
 ~~~
-{: #fig-identity-access title="Identity-Based Access"}
+Figure: Identity-Based Access {#fig-identity-access}
 
 ### Resource-Managed Access (Two-Party)
 
@@ -264,7 +268,7 @@ Agent                                       Resource
   |  200 OK                                    |
   |<-------------------------------------------|
 ~~~
-{: #fig-resource-managed title="Resource-Managed Access (Two-Party)"}
+Figure: Resource-Managed Access (Two-Party) {#fig-resource-managed}
 
 ### PS-Managed Access (Three-Party)
 
@@ -294,7 +298,7 @@ Agent                     Resource                    PS
   |  200 OK                  |                         |
   |<-------------------------|                         |
 ~~~
-{: #fig-ps-managed title="PS-Managed Access (Three-Party)"}
+Figure: PS-Managed Access (Three-Party) {#fig-ps-managed}
 
 ### Federated Access (Four-Party)
 
@@ -330,7 +334,7 @@ Agent                     Resource              PS              AS
   |  200 OK                  |                   |               |
   |<-------------------------|                   |               |
 ~~~
-{: #fig-federated title="Federated Access (Four-Party)"}
+Figure: Federated Access (Four-Party) {#fig-federated}
 
 ## Agent Governance {#agent-governance}
 
@@ -369,7 +373,7 @@ Agent                        PS                         User
   |  {capabilities, interaction_endpoint, ...}            |
   |<-------------------------|                            |
 ~~~
-{: #fig-mission title="Mission Creation and Approval"}
+Figure: Mission Creation and Approval {#fig-mission}
 
 ### Governance Endpoints
 
@@ -1132,7 +1136,7 @@ PS                        User                    AS
   |<------------------------------------------------|
   |                         |                       |
 ~~~
-{: #fig-mm-as-trust title="PS-AS Trust Establishment (all steps shown — most requests skip some)"}
+Figure: PS-AS Trust Establishment (all steps shown — most requests skip some) {#fig-mm-as-trust}
 
 ### AS Decision Logic (Non-Normative) {#as-decision-logic}
 
@@ -1319,7 +1323,7 @@ User         Third Party     Agent/Resource                  PS
   |  redirect to start_path       |                           |
   |<------------------------------|                           |
 ~~~
-{: #fig-third-party-login title="Third-Party Login Flow"}
+Figure: Third-Party Login Flow {#fig-third-party-login}
 
 The third party does not need to be the PS. Any party that knows the agent's or resource's `login_endpoint` (from metadata) can initiate the flow. The agent or resource treats the redirect as untrusted input — it verifies the PS through metadata discovery and initiates a signed flow.
 
@@ -1461,7 +1465,7 @@ Agent                        User                         Server
   |  200 OK                                                  |
   |<---------------------------------------------------------|
 ~~~
-{: #fig-interaction title="Interaction Required Flow"}
+Figure: Interaction Required Flow {#fig-interaction}
 
 **Use cases:** User login, consent, payment confirmation, document review, CAPTCHA, any workflow requiring human action.
 
