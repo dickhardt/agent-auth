@@ -1,0 +1,171 @@
+
+
+
+
+TBD                                                             D. Hardt
+Internet-Draft                                                     Hellō
+Intended status: Standards Track                           10 April 2026
+Expires: 12 October 2026
+
+
+                           HTTP AAuth Headers
+                    draft-hardt-aauth-headers-latest
+
+Abstract
+
+   This document is obsolete.  The content previously defined here has
+   been incorporated into other specifications:
+
+   *  The Signature-Error response header and its error code registry
+      have moved to the HTTP Signature Keys specification
+      ([I-D.hardt-httpbis-signature-key]).
+   *  The AAuth-Requirement response header, the interaction and
+      approval requirement values, and the HTTP Message Signatures
+      profile (algorithms, keying material, signing, and verification)
+      have moved to the AAuth Protocol specification
+      ([I-D.hardt-aauth-protocol]).
+   *  The pseudonym and identity requirement values have been replaced
+      by the Accept-Signature response header defined in the HTTP
+      Signature Keys specification ([I-D.hardt-httpbis-signature-key]).
+
+   This document is retained for historical reference only.
+   Implementers MUST use the specifications listed above.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 12 October 2026.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction
+     1.1.  Content Migration Summary
+   2.  Security Considerations
+   3.  IANA Considerations
+   4.  Document History
+   5.  Acknowledgments
+   6.  Normative References
+   Author's Address
+
+1.  Introduction
+
+   This document previously defined the AAuth-Requirement and Signature-
+   Error HTTP response headers and profiled HTTP Message Signatures for
+   request authentication.  That content has been split across two
+   successor specifications as described in the abstract.
+
+   This document will not be updated further.
+
+1.1.  Content Migration Summary
+
+     +========================+=====================================+
+     | Content                | Moved To                            |
+     +========================+=====================================+
+     | Signature-Error header | HTTP Signature Keys                 |
+     | and error codes        | ([I-D.hardt-httpbis-signature-key]) |
+     +------------------------+-------------------------------------+
+     | AAuth-Requirement      | AAuth Protocol                      |
+     | header                 | ([I-D.hardt-aauth-protocol])        |
+     +------------------------+-------------------------------------+
+     | interaction            | AAuth Protocol                      |
+     | requirement value      | ([I-D.hardt-aauth-protocol])        |
+     +------------------------+-------------------------------------+
+     | approval requirement   | AAuth Protocol                      |
+     | value                  | ([I-D.hardt-aauth-protocol])        |
+     +------------------------+-------------------------------------+
+     | pseudonym requirement  | Replaced by Accept-Signature in     |
+     | value                  | HTTP Signature Keys                 |
+     |                        | ([I-D.hardt-httpbis-signature-key]) |
+     +------------------------+-------------------------------------+
+     | identity requirement   | Replaced by Accept-Signature in     |
+     | value                  | HTTP Signature Keys                 |
+     |                        | ([I-D.hardt-httpbis-signature-key]) |
+     +------------------------+-------------------------------------+
+     | HTTP Message           | AAuth Protocol                      |
+     | Signatures profile     | ([I-D.hardt-aauth-protocol])        |
+     +------------------------+-------------------------------------+
+     | Keying material        | HTTP Signature Keys                 |
+     | (Signature-Key         | ([I-D.hardt-httpbis-signature-key]) |
+     | schemes)               |                                     |
+     +------------------------+-------------------------------------+
+
+                                 Table 1
+
+2.  Security Considerations
+
+   This document defines no new protocol elements.  See the security
+   considerations of the successor specifications.
+
+3.  IANA Considerations
+
+   This document has no IANA actions.  The registries previously
+   proposed here are now defined by the successor specifications.
+
+4.  Document History
+
+   _Note: This section is to be removed before publishing as an RFC._
+
+   *  draft-hardt-aauth-headers-01
+
+      -  Marked as obsolete; all content migrated to HTTP Signature Keys
+         and AAuth Protocol specifications
+
+   *  draft-hardt-aauth-headers-00
+
+      -  Initial submission, renamed from draft-hardt-aauth-header
+      -  Added Signature-Error header with extensible error code
+         registry
+      -  Added interaction and approval requirement levels
+      -  Added url parameter to interaction for self-contained challenge
+      -  Renamed terminology from "resource" to "server"
+
+5.  Acknowledgments
+
+   TBD
+
+6.  Normative References
+
+   [I-D.hardt-aauth-protocol]
+              Hardt, D., "AAuth Protocol", Work in Progress, Internet-
+              Draft, draft-hardt-aauth-protocol-00, 2 April 2026,
+              <https://datatracker.ietf.org/doc/html/draft-hardt-aauth-
+              protocol-00>.
+
+   [I-D.hardt-httpbis-signature-key]
+              Hardt, D. and T. Meunier, "HTTP Signature-Key Header",
+              Work in Progress, Internet-Draft, draft-hardt-httpbis-
+              signature-key-02, 2 March 2026,
+              <https://datatracker.ietf.org/doc/html/draft-hardt-
+              httpbis-signature-key-02>.
+
+Author's Address
+
+   Dick Hardt
+   Hellō
+   Email: dick.hardt@gmail.com
