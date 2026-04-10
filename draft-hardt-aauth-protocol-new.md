@@ -1676,17 +1676,17 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 
 **Response:** `200 OK` if the token was revoked or was already invalid. `404` if the `jti` is not recognized.
 
-Either the PS or the AS can revoke tokens they have issued or provided. The following revocation scenarios are supported:
+Revocation provides real-time termination of access. The PS or AS calls the revocation endpoint of the resource that a token was issued for, passing the `jti` of the auth token to revoke. The following revocation scenarios are supported:
 
-- **Agent server revokes an agent token**: The agent server refuses to serve the agent's JWKS `kid`, causing signature verification to fail for any party that refreshes the JWKS. Takes effect within the JWKS cache window (maximum 24 hours per (#jwks-discovery), but typically much faster).
 - **PS revokes an auth token it issued** (three-party): The PS calls the resource's revocation endpoint with the auth token's `jti`.
-- **PS revokes an auth token it provided** (four-party): The PS calls the AS's revocation endpoint with the auth token's `jti`. The AS MAY propagate revocation to the resource.
+- **PS revokes an auth token it provided** (four-party): The PS calls the resource's revocation endpoint with the auth token's `jti`. The PS MAY also notify the AS.
 - **AS revokes an auth token it issued**: The AS calls the resource's revocation endpoint with the auth token's `jti`.
-- **PS revokes a mission**: The PS marks the mission as revoked. All subsequent token requests referencing that mission's `s256` are denied. Existing auth tokens remain valid until expiry, but cannot be renewed.
+- **PS revokes a mission**: The PS marks the mission as revoked. All subsequent token requests referencing that mission's `s256` are denied. The PS SHOULD revoke outstanding auth tokens issued under the mission.
+- **Agent server stops issuing agent tokens**: The agent server decides not to issue new agent tokens to the agent. Existing agent tokens expire naturally. This is part of the regular token lifecycle — all tokens have limited lifetimes and require periodic re-issuance, which provides a natural policy re-evaluation point.
 
-Revocation endpoints are advertised in server metadata as `revocation_endpoint`. Resources and ASes that accept revocation requests MUST verify the caller's identity via HTTP Message Signatures and MUST only accept revocation from the issuer of the token being revoked or from a trusted PS.
+Revocation endpoints are advertised in server metadata as `revocation_endpoint`. Resources that accept revocation requests MUST verify the caller's identity via HTTP Message Signatures and MUST only accept revocation from the issuer of the token being revoked or from a trusted PS.
 
-Auth tokens are short-lived (maximum 1 hour) and proof-of-possession (useless without the bound signing key), so revocation is a defense-in-depth measure rather than the primary access control mechanism. The control points described in (#security-considerations) — agent server, PS, and AS — provide coarser-grained but immediate control at the next re-authorization cycle.
+Auth tokens are short-lived (maximum 1 hour) and proof-of-possession (useless without the bound signing key). All AAuth tokens have limited lifetimes — agent tokens, resource tokens, and auth tokens all expire and require re-issuance. Each re-issuance is a policy evaluation point where the issuer can deny renewal. This natural expiration cycle, combined with real-time revocation, provides layered access control.
 
 ## HTTP Message Signatures Profile {#http-message-signatures-profile}
 
@@ -2001,16 +2001,19 @@ Several architectural properties mitigate this centralization risk. The legal pe
 
 When a resource acts as an agent in call chaining, it uses its own signing key and presents its own credentials. The resource MUST publish agent metadata so downstream parties can verify its identity.
 
-## Token Revocation
+## Token Revocation and Lifecycle
 
-Auth tokens are short-lived (max 1 hour), proof-of-possession (useless without the bound signing key), and re-authorization is asynchronous to resource access — the agent obtains new auth tokens in the background before existing ones expire. Token revocation (#token-revocation) provides defense-in-depth, but organizations have multiple coarser-grained control points to terminate access without revoking individual tokens:
+Access control in AAuth operates at two speeds:
 
-- **Agent server**: Refuse to issue or renew agent tokens, immediately preventing the agent from authenticating.
-- **Person server**: Suspend or revoke the mission, causing all subsequent token requests for that mission to fail.
-- **Authorization server**: Deny token requests on re-authorization, preventing new auth tokens from being issued.
-- **Token lifetime**: Shorter auth token lifetimes reduce the window of exposure. Organizations can configure token lifetimes based on their risk tolerance.
+- **Real-time revocation**: The PS or AS calls the resource's revocation endpoint with the auth token's `jti`, immediately terminating access (#token-revocation).
+- **Natural expiration**: All AAuth tokens have limited lifetimes. Each re-issuance — agent tokens from the agent server, resource tokens from the resource, auth tokens from the PS or AS — is a policy evaluation point where the issuer can deny renewal.
 
-These control points take effect at the next re-authorization cycle. For high-security environments, shorter token lifetimes reduce the gap between a control action and its enforcement.
+Organizations have multiple control points:
+
+- **Agent server**: Stop issuing agent tokens, preventing the agent from authenticating at the next renewal.
+- **Person server**: Revoke outstanding auth tokens in real time. Suspend or revoke the mission, preventing future token requests.
+- **Authorization server**: Revoke auth tokens in real time. Deny token requests on re-authorization.
+- **Token lifetime**: Shorter auth token lifetimes reduce the window between a control action and natural expiration. Organizations can configure lifetimes based on their risk tolerance.
 
 ## TLS Requirements
 
