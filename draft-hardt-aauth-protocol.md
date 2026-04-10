@@ -92,7 +92,7 @@ organization = "Hellō"
 
 .# Abstract
 
-This document defines the AAuth authorization protocol for agent-to-resource authorization. The protocol supports four resource access modes — identity-based access, resource-managed access (two-party), PS-managed access (three-party), and federated access (four-party) — with agent governance (missions, permissions, audit) as an orthogonal layer. It specifies three proof-of-possession token types (agent, resource, and auth), the `AAuth-Requirement` response header for communicating requirements, the `AAuth-Capabilities` request header for declaring agent capabilities, and the `AAuth-Access` response header for opaque access tokens. It builds on the HTTP Signature Keys specification ([@!I-D.hardt-httpbis-signature-key]) for HTTP Message Signatures, key discovery, and the `Signature-Error` response header.
+This document defines the AAuth authorization protocol for agent-to-resource authorization. The protocol supports four resource access modes — identity-based, resource-managed (two-party), PS-managed (three-party), and federated (four-party) — with agent governance as an orthogonal layer. It builds on the HTTP Signature Keys specification ([@!I-D.hardt-httpbis-signature-key]) for HTTP Message Signatures, key discovery, and the `Signature-Error` response header.
 
 .# Discussion Venues
 
@@ -127,7 +127,7 @@ Agents don't work this way. They discover resources at runtime. They execute lon
 - **Per-instance identity**: Each agent instance gets its own identifier (`aauth:local@domain`) and signing key.
 - **Proof-of-possession on every request**: HTTP Message Signatures ([@!RFC9421]) bind every request to the agent's key — a stolen token is useless without the private key.
 - **Two-party mode with first-call registration**: An agent calls a resource it has never contacted before; the resource returns `AAuth-Requirement`; a browser interaction handles account creation, payment, and consent. The first API call is the registration.
-- **First-party mode for tool-call governance**: An agent and PS work together directly — the PS manages what tools the agent can call, providing permission and audit for tool use, with no resource involved.
+- **Tool-call governance**: An agent and PS work together directly — the PS manages what tools the agent can call, providing permission and audit for tool use, with no resource involved.
 - **Missions**: Optional scoped authorization contexts that span multiple resources. The agent proposes what it intends to do; the user reviews; every resource access is evaluated in context.
 - **Cross-domain federation**: PS-to-AS federation enables access across trust domains without the agent needing to know about each access server.
 - **Clarification chat**: Users can ask questions during consent; agents can explain or adjust their requests.
@@ -163,7 +163,7 @@ Parties:
 - **Legal Person**: A user or organization on whose behalf an agent acts. The legal person is the accountable party for an agent's actions. A legal person trusts their person server to handle consent and authorization, and trusts their agent server to issue agent tokens only to authorized agents.
 - **Agent**: An HTTP client ([@!RFC9110], Section 3.5) acting on behalf of a legal person. Identified by an agent identifier URIs using the `aauth` scheme, of the form `aauth:local@domain` (#agent-identifiers). An agent MAY have a person server, declared via the `ps` claim in the agent token.
 - **Agent Server**: A server that manages agent identity and issues agent tokens to agents. Trusted by the legal person to issue agent tokens only to authorized agents. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-agent.json`.
-- **Resource**: A server that requires authentication and/or authorization to protect access to its APIs and data. A resource trusts its access server to enforce access policy. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-resource.json`. A mission-aware resource has exactly one AS that it accepts auth tokens from.
+- **Resource**: A server that requires authentication and/or authorization to protect access to its APIs and data. A resource trusts its access server to enforce access policy. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-resource.json`. A mission-aware resource includes the mission object from the `AAuth-Mission` header in the resource tokens it issues.
 - **Person Server (PS)**: A server that represents the legal person to the rest of the protocol. The legal person — user or organization — chooses their PS; it is not imposed by any other party. The PS is trusted by the legal person to manage missions, handle consent, assert user identity, and broker all authorization on behalf of agents. The PS ensures that each agent is associated with exactly one legal person — this invariant is what makes the delegation chain trustworthy (#agent-person-binding). The PS is the only entity that calls access server token endpoints. Internally, the PS MAY delegate authentication to an external identity provider and MAY delegate policy evaluation to external services — to the rest of the protocol, the PS is the single interface. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-person.json`.
 - **Access Server (AS)**: A policy engine for a resource. Trusted by the resource to evaluate token requests from PSes, apply resource policy, and issue auth tokens. Only called by PSes. The AS may require interaction or approval during trust establishment or policy evaluation. Identified by an HTTPS URL (#server-identifiers) and publishes metadata at `/.well-known/aauth-access.json`.
 
@@ -428,7 +428,7 @@ Before protocol flows begin, each entity must be established with its identity, 
 **Federated access (four-party):**
 
 - Access servers publish metadata at `/.well-known/aauth-access.json` (#access-server-metadata).
-- The resource publishes its AS reference in metadata (#resource-metadata) and issues resource tokens with `aud` = AS URL.
+- The resource issues resource tokens with `aud` = AS URL.
 - The PS and the resource's AS must have a trust relationship before the AS will issue auth tokens. This trust may be pre-established (through a business relationship) or established dynamically through the AS's token endpoint responses — interaction, payment, or claims. When an organization controls both the PS and AS, trust is implicit. See (#ps-as-federation) for details.
 
 # Agent Identity {#agent-identity}
@@ -787,7 +787,7 @@ Parameters:
 
 When a mission-aware resource receives a request with the `AAuth-Mission` header, it includes the mission object (`approver` and `s256`) in the resource token it issues. When a resource does not support missions, it ignores the header.
 
-Agents operating in a mission context MUST include the `AAuth-Mission` header on all requests to resources.
+Agents operating in a mission context MUST include the `AAuth-Mission` header on requests to resources that do not include an auth token containing a `mission` claim.
 
 # Person Server {#person-server}
 
@@ -1004,11 +1004,11 @@ Agents SHOULD proactively obtain a new agent token and refresh all auth tokens b
 
 # Access Server Federation {#access-server-federation}
 
-This section defines auth tokens and the mechanisms by which they are issued. The auth token is the end result of the authorization flow — a JWT issued by an access server that grants an agent access to a specific resource. This section covers the AS token endpoint (called only by PSes), PS-AS federation, and the auth token structure.
+This section defines auth tokens and the mechanisms by which they are issued. The auth token is the end result of the authorization flow — a JWT issued by an access server that grants an agent access to a specific resource. This section covers the AS token endpoint, PS-AS federation, and the auth token structure.
 
 ## AS Token Endpoint {#as-token-endpoint}
 
-The AS's `token_endpoint` is called only by PSes. The AS evaluates resource policy and issues auth tokens. It accepts JSON POST requests.
+The AS evaluates resource policy and issues auth tokens. It accepts JSON POST requests.
 
 ### PS-to-AS Token Request
 
@@ -1801,6 +1801,7 @@ Fields:
 - `logo_uri` (OPTIONAL): URL to agent logo (per [@RFC7591])
 - `logo_dark_uri` (OPTIONAL): URL to agent logo for dark backgrounds
 - `callback_endpoint` (OPTIONAL): The agent's HTTPS callback endpoint URL
+- `login_endpoint` (OPTIONAL): URL where third parties can direct users to initiate authentication (#third-party-login)
 - `localhost_callback_allowed` (OPTIONAL): Boolean. Default: `false`.
 - `tos_uri` (OPTIONAL): URL to terms of service (per [@RFC7591])
 - `policy_uri` (OPTIONAL): URL to privacy policy (per [@RFC7591])
@@ -1880,6 +1881,7 @@ Fields:
 - `logo_uri` (OPTIONAL): URL to resource logo (per [@RFC7591])
 - `logo_dark_uri` (OPTIONAL): URL to resource logo for dark backgrounds
 - `authorization_endpoint` (REQUIRED): URL where agents request authorization (#authorization-endpoint)
+- `login_endpoint` (OPTIONAL): URL where third parties can direct users to initiate authentication (#third-party-login)
 - `scope_descriptions` (OPTIONAL): Object mapping scope values to Markdown strings for consent display. Scope values are resource-specific; resources that already define OAuth scopes SHOULD use the same scope values in AAuth. Identity-related scopes (e.g., `openid`, `profile`, `email`) follow [@!OpenID.Core].
 - `signature_window` (OPTIONAL): Integer. The signature validity window in seconds for the `created` timestamp. Default: 60. Resources serving agents with poor clock synchronization (mobile, IoT) MAY advertise a larger value. High-security resources MAY advertise a smaller value.
 - `additional_signature_components` (OPTIONAL): Array of HTTP message component identifiers ([@!RFC9421]) that agents MUST include in the `Signature-Input` covered components when signing requests to this resource, in addition to the base components required by the HTTP Message Signatures profile ([@!I-D.hardt-httpbis-signature-key])
@@ -1902,10 +1904,10 @@ Each step builds on the previous one. An agent that adopts any step gains immedi
 
 Each step builds on the previous one. A resource that adopts any step works with agents at all identity levels.
 
-1. **Recognize AAuth signatures**: The resource verifies HTTP Message Signatures and responds with `Accept-Signature` headers ([@!RFC9421], Section 5) with the `sigkey` parameter as defined in the HTTP Signature Keys specification ([@!I-D.hardt-httpbis-signature-key]). Resources that don't recognize AAuth ignore the signature headers — existing auth mechanisms continue to work.
-2. **Publish an authorization endpoint**: The resource publishes an `authorization_endpoint` in its metadata. Agents can request authorization, including interactive authorization with user consent. The resource MAY return an `AAuth-Access` header (#aauth-access) for subsequent calls. This is resource-managed access (two-party).
-3. **Issue resource tokens to PS**: The resource reads the `ps` claim from the agent token and issues resource tokens with `aud` = PS URL. The PS issues auth tokens directly. This is PS-managed access (three-party).
-4. **Deploy an access server**: The resource has an AS for policy enforcement. Resource tokens have `aud` = AS URL. The PS federates with the AS. This is federated access (four-party).
+1. **Recognize AAuth signatures**: Verify HTTP Message Signatures and respond with `Accept-Signature` headers ([@!I-D.hardt-httpbis-signature-key]). Resources that don't recognize AAuth ignore the signature headers — existing auth mechanisms continue to work. This is identity-based access.
+2. **Publish an authorization endpoint**: Handle authorization with interaction, consent, or existing infrastructure. Return `AAuth-Access` headers (#aauth-access) for subsequent calls. This is resource-managed access (two-party).
+3. **Issue resource tokens to PS**: Read the `ps` claim from the agent token and issue resource tokens with `aud` = PS URL. This is PS-managed access (three-party).
+4. **Deploy an access server**: Issue resource tokens with `aud` = AS URL. The PS federates with the AS. This is federated access (four-party).
 
 ## Adoption Matrix
 
@@ -1915,7 +1917,7 @@ Each step builds on the previous one. A resource that adopts any step works with
 | Agent token | Authorization endpoint | Resource-managed | Resource-handled auth, interaction, `AAuth-Access` |
 | Agent token + `ps` | Issues resource tokens | PS-managed | PS-issued auth tokens with user identity, org, groups |
 | Agent token + `ps` | AS deployed | Federated | Full federation, AS policy enforcement |
-| + mission | Any of above | + governance | Permissions, audit, PS-relayed interaction, consent-managed access |
+| Agent token + `ps` + mission | Any or none | + governance | Tool-call permissions, audit, PS-relayed interaction, consent-managed access |
 
 # Security Considerations
 
@@ -1986,17 +1988,7 @@ When a resource acts as an agent in call chaining, it uses its own signing key a
 
 ## Token Revocation and Lifecycle
 
-Access control in AAuth operates at two speeds:
-
-- **Real-time revocation**: The PS or AS calls the resource's revocation endpoint with the auth token's `jti`, immediately terminating access (#token-revocation).
-- **Natural expiration**: All AAuth tokens have limited lifetimes. Each re-issuance — agent tokens from the agent server, resource tokens from the resource, auth tokens from the PS or AS — is a policy evaluation point where the issuer can deny renewal.
-
-Organizations have multiple control points:
-
-- **Agent server**: Stop issuing agent tokens, preventing the agent from authenticating at the next renewal.
-- **Person server**: Revoke outstanding auth tokens in real time. Suspend or revoke the mission, preventing future token requests.
-- **Authorization server**: Revoke auth tokens in real time. Deny token requests on re-authorization.
-- **Token lifetime**: Shorter auth token lifetimes reduce the window between a control action and natural expiration. Organizations can configure lifetimes based on their risk tolerance.
+Real-time revocation (#token-revocation) and short token lifetimes provide layered access control. Organizations have multiple control points — agent server, PS, and AS — each of which can deny renewal or revoke tokens independently. Shorter auth token lifetimes reduce the window between a control action and natural expiration.
 
 ## TLS Requirements
 
@@ -2160,7 +2152,11 @@ The `aauth` URI scheme follows the pattern established by the `acct` scheme ([@R
 
 This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in [@RFC7942]. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.
 
-No implementations of this version of the specification are known at the time of writing.
+The following implementations are known:
+
+- **TypeScript** — [github.com/hellocoop/AAuth](https://github.com/hellocoop/AAuth). Organization: Hellō. Coverage: agent token issuance, HTTP Message Signatures, resource token exchange, PS token endpoint. Level of maturity: exploratory.
+- **Python** — [github.com/christian-posta/aauth-full-demo](https://github.com/christian-posta/aauth-full-demo). Contact: Christian Posta. Coverage: agent-to-resource flows with Keycloak as AS. Level of maturity: exploratory.
+- **Java (Keycloak SPI)** — [github.com/christian-posta/keycloak-aauth-extension](https://github.com/christian-posta/keycloak-aauth-extension). Contact: Christian Posta. Coverage: AAuth access server extension for Keycloak 26.2.5. Level of maturity: exploratory.
 
 # Document History
 
@@ -2621,47 +2617,95 @@ User         Agent          Resource 1        Resource 2       PS
 
 # Design Rationale
 
-## Why Standard HTTP Async Pattern
+## Identity and Foundation
 
-AAuth uses standard HTTP async semantics (`202 Accepted`, `Location`, `Prefer: wait`, `Retry-After`). This applies uniformly to all endpoints, aligns with RFC 7240, replaces OAuth device flow, supports headless agents, and enables clarification chat.
-
-## Why No Authorization Code
-
-AAuth eliminates authorization codes entirely. OAuth authorization codes require PKCE ([@RFC7636]) to prevent interception attacks, adding complexity for both clients and servers. AAuth avoids the problem: the user redirect carries only the callback URL, which has no security value to an attacker. The auth token is delivered exclusively via polling, authenticated by the agent's HTTP Message Signature.
-
-## Why Every Agent Has a Legal Person
-
-AAuth requires every agent to be associated with a legal person — a user or an organization. There are no truly autonomous agents. The PS maintains this association. This ensures there is always an accountable party for an agent's actions, which is essential for authorization decisions, audit, and liability.
-
-## Why HTTPS-Based Agent Identity
+### Why HTTPS-Based Agent Identity
 
 HTTPS URLs as agent identifiers enable dynamic ecosystems without pre-registration.
 
-## Why No Refresh Token
+### Why Per-Instance Agent Identity
 
-AAuth has no refresh tokens. When an auth token expires, the agent obtains a fresh resource token and submits it through the standard authorization flow. This gives the resource a voice in every re-authorization — the resource can adjust scope, require step-up authorization, or deny access based on current policy. A separate refresh token would bypass the resource entirely, and is unnecessary given that the standard flow is a single additional request.
+OAuth's `client_id` identifies an application — every instance of the same app shares a single identifier and typically a single set of credentials. AAuth's `aauth:local@domain` agent identifier identifies a specific instance with its own signing key. This enables per-instance authorization (grant access to this specific agent process, not all instances of the app), per-instance revocation (revoke one compromised instance without affecting others), and per-instance audit (trace every action to the specific instance that performed it). The agent server controls which instances receive agent tokens, providing centralized governance over a distributed agent fleet.
 
-## Why JSON Instead of Form-Encoded
+### Why Every Agent Has a Legal Person
+
+AAuth requires every agent to be associated with a legal person — a user or an organization. There are no truly autonomous agents. The PS maintains this association. This ensures there is always an accountable party for an agent's actions, which is essential for authorization decisions, audit, and liability.
+
+### Why the `ps` Claim in Agent Tokens
+
+Resources need to discover the agent's PS to issue resource tokens in three-party mode. The `ps` claim in the agent token provides this discovery without requiring the `AAuth-Mission` header, which is only present when the agent is operating within a mission. This separates PS discovery from mission governance — an agent can use three-party mode without missions.
+
+## Protocol Mechanics
+
+### Why Standard HTTP Async Pattern
+
+AAuth uses standard HTTP async semantics (`202 Accepted`, `Location`, `Prefer: wait`, `Retry-After`). This applies uniformly to all endpoints, aligns with RFC 7240, replaces OAuth device flow, supports headless agents, and enables clarification chat.
+
+### Why JSON Instead of Form-Encoded
 
 JSON is the standard format for modern APIs. AAuth uses JSON for both request and response bodies.
 
-## Why Callback URL Has No Security Role
+### Why No Authorization Code
+
+AAuth eliminates authorization codes entirely. OAuth authorization codes require PKCE ([@RFC7636]) to prevent interception attacks, adding complexity for both clients and servers. AAuth avoids the problem: the user redirect carries only the callback URL, which has no security value to an attacker. The auth token is delivered exclusively via polling, authenticated by the agent's HTTP Message Signature.
+
+### Why Callback URL Has No Security Role
 
 Tokens never pass through the user's browser. The callback URL is purely a UX optimization.
 
-## Why Reuse OpenID Connect Vocabulary
+### Why No Refresh Token
+
+AAuth has no refresh tokens. When an auth token expires, the agent obtains a fresh resource token and submits it through the standard authorization flow. This gives the resource a voice in every re-authorization — the resource can adjust scope, require step-up authorization, or deny access based on current policy. A separate refresh token would bypass the resource entirely, and is unnecessary given that the standard flow is a single additional request.
+
+### Why Reuse OpenID Connect Vocabulary
 
 AAuth reuses OpenID Connect scope values, identity claims, and enterprise parameters. This lowers the adoption barrier.
 
-## Why Not mTLS?
+## Architecture
+
+### Why a Separate Person Server
+
+The PS is distinct from the AS because they serve different parties with different concerns. The PS represents the agent and its user — it handles consent, identity, mission governance, and audit. The AS represents the resource — it evaluates policy and issues tokens. Combining these into a single entity would conflate the interests of the requesting party with the interests of the resource owner, which is the same conflation that makes OAuth insufficient for cross-domain agent ecosystems.
+
+### Why Four Adoption Modes
+
+The protocol supports identity-based, resource-managed (two-party), PS-managed (three-party), and federated (four-party) resource access modes, with agent governance as an orthogonal layer. A resource that only verifies agent signatures can start using AAuth today without deploying a PS or AS. As the ecosystem matures, the same resource can issue resource tokens to the agent's PS (three-party) and eventually deploy its own AS (four-party). Each mode is self-contained and useful — not a stepping stone to the "real" protocol. Agent governance (missions, permissions, audit) works independently of resource access modes.
+
+### Why Resource Tokens
+
+In GNAP and OAuth, the resource server is a passive consumer of tokens — it verifies them but never produces signed artifacts. AAuth inverts this: the resource cryptographically asserts what is being requested by issuing a resource token that binds the resource's own identity, the agent's key thumbprint, the requested scope, and the mission context into a single signed JWT. This prevents confused deputy attacks — an attacker cannot substitute a different resource in the authorization flow because the resource token is signed by the resource. It also gives the resource a voice in every authorization and re-authorization, and provides a complete audit artifact linking the request to a specific resource, agent, scope, and mission.
+
+### Why Opaque AAuth-Access Tokens
+
+In two-party mode, the resource returns an opaque wrapped token via the `AAuth-Access` header rather than a JWT auth token. This allows the resource to wrap its existing authorization infrastructure (OAuth access tokens, session tokens, etc.) without exposing internal structure. The token is bound to the AAuth signature — the agent includes it in the `Authorization` header as a covered component — so it cannot be stolen and replayed as a standalone bearer token.
+
+### Why Missions Are Not a Policy Language
+
+Missions are intentionally not a machine-evaluable policy language. AAuth separates two kinds of authorization decisions:
+
+- **Deterministic policy** is handled by scopes, resource tokens, and AS policy evaluation. These are mechanically evaluable — "does this agent have `data.read` scope for this resource?" A policy engine (Cedar, OPA/Rego, or any other) can answer this question consistently and automatically.
+
+- **Contextual governance** is handled by missions, justifications, and clarification at the PS. These are the contextual decisions that policy engines cannot answer — "is booking a $10,000 flight reasonable for planning a weekend trip?" or "should this agent access the HR database given what it's trying to accomplish?" The mission description, the agent's justification for each resource access, and the clarification dialog between user and agent provide the context for these decisions.
+
+This context can be presented to humans or to agents acting as decision-makers. The PS does not need to evaluate missions deterministically — it presents the mission context, the justification, and the resource request to whatever decision-maker is appropriate: a human reviewing a consent screen, an AI agent evaluating policy on behalf of an organization, or an automated system applying heuristics. This is no different from any bespoke system that puts a human in the loop for decisions that cannot be reduced to deterministic rules. AAuth standardizes the protocol for conveying context to the decision-maker; it does not prescribe how the decision is made.
+
+The mission's `description` is Markdown because it represents human intent, not machine policy. The `approved_tools` array provides structured machine-evaluable elements where appropriate. The protocol is designed so that additional structured fields can be added to the mission blob as the ecosystem develops — a companion specification could define a structured authority model using a policy language, carried as additional fields in the mission blob. The protocol does not mandate a single representation because different deployments will need different levels of formalization.
+
+### Why Downstream Scope Is Not Constrained by Upstream Scope
+
+In multi-hop scenarios, downstream authorization is intentionally not required to be a subset of upstream scopes. A flight booking API that calls a payment processor needs the payment processor to charge a card — an operation orthogonal to the upstream scope. Formal subset rules would prevent legitimate delegation chains. Instead, the PS evaluates each hop against the mission context, providing governance-based constraints that are more flexible than algebraic attenuation rules while maintaining a complete audit trail.
+
+## Comparisons with Alternatives
+
+### Why Not mTLS?
 
 Mutual TLS (mTLS) authenticates the TLS connection, not individual HTTP requests. Different paths on the same resource may have different requirements — some paths may require no signature, others a signed request, others verified identity, and others an auth token. Per-request signatures allow resources to vary requirements by path. Additionally, mTLS requires PKI infrastructure (CA, certificate provisioning, revocation), cannot express progressive requirements, and is stripped by TLS-terminating proxies and CDNs. mTLS remains the right choice for infrastructure-level mutual authentication (e.g., service mesh). AAuth addresses application-level identity where progressive requirements and intermediary compatibility are needed.
 
-## Why Not DPoP?
+### Why Not DPoP?
 
 DPoP ([@RFC9449]) binds an existing OAuth access token to a key, preventing token theft. AAuth differs in that agents can establish identity from zero — no pre-existing token, no pre-registration. At the signature level ([@!I-D.hardt-httpbis-signature-key]), AAuth requires no tokens at all, only a signed request. DPoP has a single mode (prove you hold the key bound to this token), while AAuth supports progressive requirements from pseudonymous access through verified identity to authorized access with interactive consent. DPoP is the right choice for adding proof-of-possession to existing OAuth deployments.
 
-## Why Not Extend GNAP
+### Why Not Extend GNAP
 
 GNAP ([@RFC9635]) shares several motivations with AAuth — proof-of-possession by default, client identity without pre-registration, and async authorization. A natural question is whether AAuth's capabilities could be achieved as GNAP extensions rather than a new protocol. There are several reasons they cannot.
 
@@ -2675,7 +2719,7 @@ GNAP ([@RFC9635]) shares several motivations with AAuth — proof-of-possession 
 
 In summary, AAuth's core innovations — resource-signed challenges, interaction chaining through multi-hop calls, PS-to-AS federation, mission-scoped authorization, and clarification chat during consent — are architectural choices that would require changing GNAP's foundations rather than extending them. The result would be a heavily constrained GNAP profile that shares little with other GNAP deployments.
 
-## Why Not Extend WWW-Authenticate?
+### Why Not Extend WWW-Authenticate?
 
 `WWW-Authenticate` ([@!RFC9110], Section 11.6.1) tells the client which authentication scheme to use. Its challenge model is "present credentials" — it cannot express progressive requirements, authorization, or deferred approval, and it cannot appear in a `202 Accepted` response.
 
@@ -2695,43 +2739,3 @@ WWW-Authenticate: Payment id="x7Tg2pLq", method="example",
     request="eyJhbW91bnQiOiIxMDAw..."
 Accept-Signature: sig=("@method" "@authority" "@path");sigkey=jkt
 ```
-
-## Why Missions Are Not a Policy Language
-
-Missions are intentionally not a machine-evaluable policy language. AAuth separates two kinds of authorization decisions:
-
-- **Deterministic policy** is handled by scopes, resource tokens, and AS policy evaluation. These are mechanically evaluable — "does this agent have `data.read` scope for this resource?" A policy engine (Cedar, OPA/Rego, or any other) can answer this question consistently and automatically.
-
-- **Contextual governance** is handled by missions, justifications, and clarification at the PS. These are the contextual decisions that policy engines cannot answer — "is booking a $10,000 flight reasonable for planning a weekend trip?" or "should this agent access the HR database given what it's trying to accomplish?" The mission description, the agent's justification for each resource access, and the clarification dialog between user and agent provide the context for these decisions.
-
-This context can be presented to humans or to agents acting as decision-makers. The PS does not need to evaluate missions deterministically — it presents the mission context, the justification, and the resource request to whatever decision-maker is appropriate: a human reviewing a consent screen, an AI agent evaluating policy on behalf of an organization, or an automated system applying heuristics. This is no different from any bespoke system that puts a human in the loop for decisions that cannot be reduced to deterministic rules. AAuth standardizes the protocol for conveying context to the decision-maker; it does not prescribe how the decision is made.
-
-The mission's `description` is Markdown because it represents human intent, not machine policy. The `approved_tools` array provides structured machine-evaluable elements where appropriate. The protocol is designed so that additional structured fields can be added to the mission blob as the ecosystem develops — a companion specification could define a structured authority model using a policy language, carried as additional fields in the mission blob. The protocol does not mandate a single representation because different deployments will need different levels of formalization.
-
-## Why Downstream Scope Is Not Constrained by Upstream Scope
-
-In multi-hop scenarios, downstream authorization is intentionally not required to be a subset of upstream scopes. A flight booking API that calls a payment processor needs the payment processor to charge a card — an operation orthogonal to the upstream scope. Formal subset rules would prevent legitimate delegation chains. Instead, the PS evaluates each hop against the mission context, providing governance-based constraints that are more flexible than algebraic attenuation rules while maintaining a complete audit trail.
-
-## Why a Separate Person Server
-
-The PS is distinct from the AS because they serve different parties with different concerns. The PS represents the agent and its user — it handles consent, identity, mission governance, and audit. The AS represents the resource — it evaluates policy and issues tokens. Combining these into a single entity would conflate the interests of the requesting party with the interests of the resource owner, which is the same conflation that makes OAuth insufficient for cross-domain agent ecosystems.
-
-## Why Four Adoption Modes
-
-The protocol supports first-party, two-party, three-party, and four-party modes to enable incremental adoption. A resource that only verifies agent signatures (two-party) can start using AAuth today without deploying a PS or AS. As the ecosystem matures, the same resource can issue resource tokens to the agent's PS (three-party) and eventually deploy its own AS (four-party). Each mode is self-contained and useful — not a stepping stone to the "real" protocol.
-
-## Why the `ps` Claim in Agent Tokens
-
-Resources need to discover the agent's PS to issue resource tokens in three-party mode. The `ps` claim in the agent token provides this discovery without requiring the `AAuth-Mission` header, which is only present when the agent is operating within a mission. This separates PS discovery from mission governance — an agent can use three-party mode without missions.
-
-## Why Opaque AAuth-Access Tokens
-
-In two-party mode, the resource returns an opaque wrapped token via the `AAuth-Access` header rather than a JWT auth token. This allows the resource to wrap its existing authorization infrastructure (OAuth access tokens, session tokens, etc.) without exposing internal structure. The token is bound to the AAuth signature — the agent includes it in the `Authorization` header as a covered component — so it cannot be stolen and replayed as a standalone bearer token.
-
-## Why Resource Tokens
-
-In GNAP and OAuth, the resource server is a passive consumer of tokens — it verifies them but never produces signed artifacts. AAuth inverts this: the resource cryptographically asserts what is being requested by issuing a resource token that binds the resource's own identity, the agent's key thumbprint, the requested scope, and the mission context into a single signed JWT. This prevents confused deputy attacks — an attacker cannot substitute a different resource in the authorization flow because the resource token is signed by the resource. It also gives the resource a voice in every authorization and re-authorization, and provides a complete audit artifact linking the request to a specific resource, agent, scope, and mission.
-
-## Why Per-Instance Agent Identity
-
-OAuth's `client_id` identifies an application — every instance of the same app shares a single identifier and typically a single set of credentials. AAuth's `aauth:local@domain` agent identifier identifies a specific instance with its own signing key. This enables per-instance authorization (grant access to this specific agent process, not all instances of the app), per-instance revocation (revoke one compromised instance without affecting others), and per-instance audit (trace every action to the specific instance that performed it). The agent server controls which instances receive agent tokens, providing centralized governance over a distributed agent fleet.
