@@ -69,10 +69,11 @@ make
 
 Each `draft-*.md` file produces a corresponding HTML file.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to participate. Discussion happens on [GitHub Issues](https://github.com/dickhardt/AAuth/issues).
+
 ---
 
 > Founding sponsor: [Greffen Posner](https://www.linkedin.com/in/geffenpo/)
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to participate. Discussion happens on [GitHub Issues](https://github.com/dickhardt/AAuth/issues).
