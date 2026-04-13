@@ -12,7 +12,7 @@ name = "Internet-Draft"
 value = "draft-hardt-aauth-protocol-latest"
 stream = "IETF"
 
-date = 2026-04-09T00:00:00Z
+date = 2026-04-13T00:00:00Z
 
 [[author]]
 initials = "D."
@@ -2518,6 +2518,9 @@ The following implementations are known:
 # Document History
 
 *Note: This section is to be removed before publishing as an RFC.*
+
+- draft-hardt-aauth-protocol-01
+  - Complete rework of specification
 
 - draft-hardt-aauth-protocol-00
   - Initial submission
