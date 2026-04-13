@@ -4,13 +4,13 @@
 
 ## HTTP Clients Need Their Own Identity
 
-In OAuth 2.0 and OpenID Connect, the client has no independent identity. Client identifiers are issued by each authorization server or OpenID provider — a `client_id` at Google is meaningless at GitHub. The client's identity exists only in the context of each server it has pre-registered with. This made sense when the web had a manageable number of integrations and a human developer could visit each portal to register.
+In [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) and [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html), the client has no independent identity. Client identifiers are issued by each authorization server or OpenID provider — a `client_id` at Google is meaningless at GitHub. The client's identity exists only in the context of each server it has pre-registered with. This made sense when the web had a manageable number of integrations and a human developer could visit each portal to register.
 
 API keys are the same model pushed further: a shared secret issued by a service, copied to the client, and used as a bearer credential. The problem is that any secret that must be copied to where the workload runs will eventually be copied somewhere it shouldn't be.
 
 SPIFFE and WIMSE brought workload identity to enterprise infrastructure — a workload can prove who it is without shared secrets. But these operate within a single enterprise's trust domain. They don't help an agent that needs to access resources across organizational boundaries, or a developer's tool that runs outside any enterprise platform.
 
-AAuth starts from this premise: every agent has its own cryptographic identity. An agent identifier (`aauth:local@domain`) is bound to a signing key, published at a well-known URL, and verifiable by any party — no pre-registration, no shared secrets, no dependency on a particular server. At its simplest, an agent signs a request and a resource decides what to do based on who the agent is. This identity-based access replaces API keys and is the foundation that authorization, governance, and federation build on incrementally.
+AAuth starts from this premise: every agent has its own cryptographic identity. An agent identifier (`aauth:local@domain`) is bound to a signing key, published at a well-known URL, and verifiable by any party — no pre-registration, no shared secrets, no dependency on a particular server. At its simplest, an agent signs a request and a resource decides what to do based on who the agent is. This identity-based access can replace API keys and is the foundation that authorization, governance, and federation build on incrementally.
 
 ## Agents Are Different
 
@@ -23,19 +23,19 @@ Agents don't work this way. They discover resources at runtime. They execute lon
 - **Agent identity without pre-registration**: A domain, static metadata, and a JWKS establish identity with no portal, no bilateral agreement, no shared secret.
 - **Per-instance identity**: Each agent instance gets its own identifier (`aauth:local@domain`) and signing key.
 - **Proof-of-possession on every request**: HTTP Message Signatures bind every request to the agent's key — a stolen token is useless without the private key.
-- **Two-party mode with first-call registration**: An agent calls a resource it has never contacted before; the resource returns `AAuth-Requirement`; a browser interaction handles account creation, payment, and consent. The first API call is the registration.
-- **Tool-call governance**: An agent and PS work together directly — the PS manages what tools the agent can call, providing permission and audit for tool use, with no resource involved.
+- **Two-party mode with first-call registration**: An agent calls a resource it has never contacted before; the resource returns `AAuth-Requirement`; a browser interaction can handle account creation, payment, and user consent. The first API call is the registration.
+- **Tool-call governance**: A person server (PS) represents the user and manages what tools the agent can call, providing permission and audit for tool use — no resource involved.
 - **Missions**: Optional scoped authorization contexts that span multiple resources. The agent proposes what it intends to do; the user reviews; every resource access is evaluated in context.
-- **Cross-domain federation**: PS-to-AS federation enables access across trust domains without the agent needing to know about each access server.
+- **Cross-domain federation**: The PS federates with access servers (AS) — the policy engines that guard resources — to enable access across trust domains without the agent needing to know about each one.
 - **Clarification chat**: Users can ask questions during consent; agents can explain or adjust their requests.
 - **Progressive adoption**: Each party can adopt independently; modes build on each other.
 
 ## What AAuth Does Not Do
 
-- Does not grant automatic access — services decide what to do with a verified identity
-- Does not replace service authorization decisions
-- Does not require centralized identity providers
-- Complements OAuth for browser-based user login; does not replace it
+- Does not require centralized identity providers — agents publish their own identity
+- Does not use shared secrets or bearer tokens — every credential is bound to a signing key and useless without it
+- Does not require coordination to adopt — each party adds support independently
+- Does not replace OAuth — complements it for browser-based user login
 
 For the full story, see [aauth.dev](https://www.aauth.dev).
 
@@ -43,15 +43,21 @@ For the full story, see [aauth.dev](https://www.aauth.dev).
 
 ### HTTP Signature Keys (Foundation)
 
-**[draft-hardt-httpbis-signature-key](https://dickhardt.github.io/signature-key/draft-hardt-httpbis-signature-key.html)** — [Datatracker](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key/)
+A standalone HTTP specification that AAuth builds on. Defines well-known key discovery, the `Signature-Key` header for conveying public keying material alongside HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)), and the `Signature-Error` header for structured error reporting.
 
-A standalone HTTP specification that AAuth builds on. Defines the `Signature-Key` header for conveying public keying material alongside HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)), the `Signature-Error` header for structured error reporting, and well-known key discovery.
+* [Editor's Copy](https://dickhardt.github.io/signature-key/draft-hardt-httpbis-signature-key.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-httpbis-signature-key)
+* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/signature-key/#go.draft-hardt-httpbis-signature-key.diff)
 
 ### AAuth Protocol
 
-**[draft-hardt-aauth-protocol](https://dickhardt.github.io/AAuth/draft-hardt-aauth-protocol.html)** — [Datatracker](https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol)
-
 The authorization protocol for agent-to-resource access. Defines four resource access modes (identity-based, resource-managed, PS-managed, federated), three proof-of-possession token types (agent, resource, auth), agent governance (missions, permissions, audit), deferred responses with clarification chat, and call chaining for multi-hop resource access.
+
+* [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-aauth-protocol.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-aauth-protocol)
+* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/AAuth/#go.draft-hardt-aauth-protocol.diff)
 
 #### Implementations
 
