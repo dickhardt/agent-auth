@@ -1052,7 +1052,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Hardt</td>
-<td class="center">Expires 15 October 2026</td>
+<td class="center">Expires 17 October 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1065,12 +1065,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-hardt-aauth-r3-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-04-13" class="published">13 April 2026</time>
+<time datetime="2026-04-15" class="published">15 April 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-15">15 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-10-17">17 October 2026</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1111,7 +1111,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 15 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 17 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1184,7 +1184,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-resource-token-endpoint" class="internal xref">Resource Token Endpoint</a></p>
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-authorization-endpoint-exte" class="internal xref">Authorization Endpoint Extensions</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
                 <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-request" class="internal xref">Request</a></p>
@@ -1378,7 +1378,6 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <div class="lang-json sourcecode" id="section-4.1-2">
 <pre>{
   "resource": "https://calendar.example.com",
-  "resource_token_endpoint": "https://calendar.example.com/aauth/token",
   "r3_vocabularies": {
     "urn:aauth:vocabulary:mcp": "https://calendar.example.com/mcp",
     "urn:aauth:vocabulary:openapi": "https://calendar.example.com/openapi.json"
@@ -1587,19 +1586,20 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </div>
 </section>
 </div>
-<div id="resource-token-endpoint">
+<div id="authorization-endpoint-extensions">
 <section id="section-5">
-      <h2 id="name-resource-token-endpoint">
-<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-resource-token-endpoint" class="section-name selfRef">Resource Token Endpoint</a>
+      <h2 id="name-authorization-endpoint-exte">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-authorization-endpoint-exte" class="section-name selfRef">Authorization Endpoint Extensions</a>
       </h2>
-<p id="section-5-1">When an agent wants to acquire a resource token proactively, before making an API call rather than waiting for a 401, it calls the <code>resource_token_endpoint</code> with an <code>r3_operations</code> parameter describing what it intends to do in the resource's vocabulary.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-1">R3 extends the authorization endpoint defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) with an <code>r3_operations</code> request parameter. When an agent wants to declare intended operations using a resource's vocabulary, it includes <code>r3_operations</code> in the authorization endpoint request body.<a href="#section-5-1" class="pilcrow">¶</a></p>
 <div id="request">
 <section id="section-5.1">
         <h3 id="name-request">
 <a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-request" class="section-name selfRef">Request</a>
         </h3>
-<div class="lang-http sourcecode" id="section-5.1-1">
-<pre>POST /aauth/token HTTP/1.1
+<p id="section-5.1-1">The agent sends <code>r3_operations</code> in the authorization endpoint request:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div class="lang-http sourcecode" id="section-5.1-2">
+<pre>POST /authorize HTTP/1.1
 Host: calendar.example.com
 Content-Type: application/json
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1741824000
@@ -1616,17 +1616,18 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
   }
 }
 
-</pre><a href="#section-5.1-1" class="pilcrow">¶</a>
+</pre><a href="#section-5.1-2" class="pilcrow">¶</a>
 </div>
-<p id="section-5.1-2"><strong><code>r3_operations</code></strong> (REQUIRED). An object containing:<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<p id="section-5.1-3"><strong><code>r3_operations</code></strong> (OPTIONAL). An object containing:<a href="#section-5.1-3" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-5.1-3.1">
-            <strong><code>vocabulary</code></strong> (REQUIRED). A URI identifying the vocabulary. MUST be supported by the resource as advertised in <code>r3_vocabularies</code>.<a href="#section-5.1-3.1" class="pilcrow">¶</a>
+<li class="compact" id="section-5.1-4.1">
+            <strong><code>vocabulary</code></strong> (REQUIRED). A URI identifying the vocabulary. MUST be supported by the resource as advertised in <code>r3_vocabularies</code>.<a href="#section-5.1-4.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-5.1-3.2">
-            <strong><code>operations</code></strong> (REQUIRED). An array of operation requests. Structure is vocabulary-specific; see {{mcp-vocabulary}} through {{odata-vocabulary}}.<a href="#section-5.1-3.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-5.1-4.2">
+            <strong><code>operations</code></strong> (REQUIRED). An array of operation requests. Structure is vocabulary-specific; see {{mcp-vocabulary}} through {{odata-vocabulary}}.<a href="#section-5.1-4.2" class="pilcrow">¶</a>
 </li>
         </ul>
+<p id="section-5.1-5">When <code>r3_operations</code> is present, the resource maps the declared operations to an appropriate R3 document and includes <code>r3_uri</code> and <code>r3_s256</code> in the resource token. When <code>r3_operations</code> is absent, the resource MAY still include R3 claims in the resource token based on its own policy.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="response">
@@ -1634,7 +1635,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
         <h3 id="name-response">
 <a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-response" class="section-name selfRef">Response</a>
         </h3>
-<p id="section-5.2-1">The resource maps the declared operations to an appropriate R3 document and returns a signed resource token:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-1">The resource returns a resource token as defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>), extended with R3 claims:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
 <div class="lang-json sourcecode" id="section-5.2-2">
 <pre>{
   "resource_token": "eyJhbGciOiJFUzI1NiJ9..."
@@ -1902,7 +1903,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 </li>
         </ol>
 <p id="section-8.1-3">No token introspection or R3 document fetch is needed at enforcement time. The resource uses the vocabulary it already understands.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
-<p id="section-8.1-4">When <code>r3_operations</code> was not used (the agent received the resource token via a 401 rather than the resource token endpoint), the AS populates <code>r3_granted</code> and <code>r3_conditional</code> based on the operations defined in the R3 document and its own policy. The AS decides which operations to grant outright and which to make conditional.<a href="#section-8.1-4" class="pilcrow">¶</a></p>
+<p id="section-8.1-4">When <code>r3_operations</code> was not used (the agent received the resource token via a 401 rather than the authorization endpoint), the AS populates <code>r3_granted</code> and <code>r3_conditional</code> based on the operations defined in the R3 document and its own policy. The AS decides which operations to grant outright and which to make conditional.<a href="#section-8.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
