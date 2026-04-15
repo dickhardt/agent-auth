@@ -87,7 +87,6 @@ R3 extends the `/.well-known/aauth-resource.json` document defined in AAuth Prot
 ```json
 {
   "resource": "https://calendar.example.com",
-  "resource_token_endpoint": "https://calendar.example.com/aauth/token",
   "r3_vocabularies": {
     "urn:aauth:vocabulary:mcp": "https://calendar.example.com/mcp",
     "urn:aauth:vocabulary:openapi": "https://calendar.example.com/openapi.json"
@@ -232,14 +231,16 @@ Each operation entry contains:
 }
 ```
 
-# Resource Token Endpoint
+# Authorization Endpoint Extensions {#authorization-endpoint-extensions}
 
-When an agent wants to acquire a resource token proactively, before making an API call rather than waiting for a 401, it calls the `resource_token_endpoint` with an `r3_operations` parameter describing what it intends to do in the resource's vocabulary.
+R3 extends the authorization endpoint defined in AAuth Protocol ([@!I-D.hardt-aauth-protocol]) with an `r3_operations` request parameter. When an agent wants to declare intended operations using a resource's vocabulary, it includes `r3_operations` in the authorization endpoint request body.
 
 ## Request
 
+The agent sends `r3_operations` in the authorization endpoint request:
+
 ```http
-POST /aauth/token HTTP/1.1
+POST /authorize HTTP/1.1
 Host: calendar.example.com
 Content-Type: application/json
 Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1741824000
@@ -257,14 +258,16 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 }
 ```
 
-**`r3_operations`** (REQUIRED). An object containing:
+**`r3_operations`** (OPTIONAL). An object containing:
 
 - **`vocabulary`** (REQUIRED). A URI identifying the vocabulary. MUST be supported by the resource as advertised in `r3_vocabularies`.
 - **`operations`** (REQUIRED). An array of operation requests. Structure is vocabulary-specific; see {{mcp-vocabulary}} through {{odata-vocabulary}}.
 
+When `r3_operations` is present, the resource maps the declared operations to an appropriate R3 document and includes `r3_uri` and `r3_s256` in the resource token. When `r3_operations` is absent, the resource MAY still include R3 claims in the resource token based on its own policy.
+
 ## Response
 
-The resource maps the declared operations to an appropriate R3 document and returns a signed resource token:
+The resource returns a resource token as defined in AAuth Protocol ([@!I-D.hardt-aauth-protocol]), extended with R3 claims:
 
 ```json
 {
@@ -471,7 +474,7 @@ The resource matches each incoming API call against the auth token claims:
 
 No token introspection or R3 document fetch is needed at enforcement time. The resource uses the vocabulary it already understands.
 
-When `r3_operations` was not used (the agent received the resource token via a 401 rather than the resource token endpoint), the AS populates `r3_granted` and `r3_conditional` based on the operations defined in the R3 document and its own policy. The AS decides which operations to grant outright and which to make conditional.
+When `r3_operations` was not used (the agent received the resource token via a 401 rather than the authorization endpoint), the AS populates `r3_granted` and `r3_conditional` based on the operations defined in the R3 document and its own policy. The AS decides which operations to grant outright and which to make conditional.
 
 # Security Considerations
 

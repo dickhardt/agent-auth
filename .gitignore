@@ -1,4 +1,6 @@
 lib/
+.claude
+.cursor
 *.xml
 *.html
 *.txt
