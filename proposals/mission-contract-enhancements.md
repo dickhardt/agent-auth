@@ -19,8 +19,8 @@ capabilities from our DOC work that address gaps in the current AAuth Mission
 spec. These are proposed as optional extensions that complement the existing
 design without changing the core protocol.
 
-A reference implementation demonstrating all five proposals is available at:
-https://github.com/strata-io/orchestrator-blueprints (branch: `aauth-poc`)
+A reference implementation demonstrating all five proposals is available
+upon request.
 
 ---
 
@@ -290,16 +290,9 @@ understand denial patterns across their fleet.
 
 ## Implementation Reference
 
-All five proposals are implemented in the Strata Identity orchestrator-blueprints
-repository (`aauth-poc` branch):
-
-- **Proposal 1** (hash chaining): `apps/person-server/audit.go`
-- **Proposal 2** (template discovery): `apps/person-server/templates.go`
-- **Proposal 3** (constraint budgets): `apps/person-server/permission.go`
-- **Proposal 4** (ordering constraints): `apps/person-server/permission.go`
-- **Proposal 5** (denial categories): `apps/person-server/permission.go`
-
-The implementation uses these extensions alongside a full AAuth Mission Contract
+All five proposals are implemented in a working POC that includes a Person Server
+(Go), MCP Auth Proxy (Python), and Enterprise Ledger (banking MCP server). The
+implementation uses these extensions alongside a full AAuth Mission Contract
 lifecycle (proposal, approval with HITL, per-call permission, audit logging)
-governing an Enterprise Ledger MCP server with tools of varying sensitivity
-levels.
+governing tools of varying sensitivity levels. Reference implementation available
+upon request.
