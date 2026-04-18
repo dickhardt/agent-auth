@@ -73,6 +73,12 @@ The authorization protocol for agent-to-resource access. Defines four resource a
 
 Rich Resource Requests. Vocabulary-based authorization using formats agents already understand (MCP, OpenAPI, gRPC, GraphQL). Content-addressed R3 documents provide human-readable consent display and permanent audit provenance.
 
+### AAuth Bootstrap (Exploratory)
+
+**[draft-hardt-aauth-bootstrap](draft-hardt-aauth-bootstrap.md)**
+
+Bootstrap ceremony for SaaS browser, SaaS mobile, and B2B SaaS agents. Defines the `bootstrap_token`, the PS and agent-server bootstrap endpoints, per-platform attestation (WebAuthn, App Attest, Play Integrity), and renewal flows that bypass the PS after the initial binding is established.
+
 ## Links
 
 | Resource | Link |
