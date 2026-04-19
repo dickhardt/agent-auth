@@ -4,8 +4,8 @@
 
 TBD                                                             D. Hardt
 Internet-Draft                                                     Hellō
-Intended status: Standards Track                           15 April 2026
-Expires: 17 October 2026
+Intended status: Standards Track                           19 April 2026
+Expires: 21 October 2026
 
 
                    AAuth Rich Resource Requests (R3)
@@ -48,7 +48,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 17 October 2026.
+   This Internet-Draft will expire on 21 October 2026.
 
 Copyright Notice
 

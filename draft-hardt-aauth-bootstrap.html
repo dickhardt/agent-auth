@@ -1,0 +1,2805 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>AAuth Bootstrap</title>
+<meta content="Dick Hardt" name="author">
+<meta content="
+       This document defines AAuth Bootstrap, an extension to the AAuth Protocol ( ) that specifies how a SaaS browser agent, SaaS mobile agent, or B2B SaaS agent obtains its initial agent identity ( aauth:local@domain ), agent token, and resource token through a ceremony mediated by the user's Person Server (PS). Bootstrap establishes a binding between a user (as vouched for by the user's PS) and an agent identity minted by the vendor-operated agent server. The specification defines the  bootstrap_token , the  /bootstrap  endpoints on the PS and agent server, the signature schemes used at each step, and renewal flows that bypass the PS after the initial binding is established. 
+    " name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="agent" name="keyword">
+<meta content="authorization" name="keyword">
+<meta content="bootstrap" name="keyword">
+<meta content="http" name="keyword">
+<meta content="identity" name="keyword">
+<meta content="draft-hardt-aauth-bootstrap-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.12.13
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.2
+    platformdirs 4.9.6
+    pycountry 24.6.1
+    PyYAML 6.0.3
+    requests 2.32.5
+    wcwidth 0.6.0
+-->
+<link href="draft-hardt-aauth-bootstrap.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+    }
+  }
+  &.olPercent > dt {
+    float: none;
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+}
+dl:not(.dlNewline) > dt {
+  float: left;
+  margin-right: 2ch;
+  min-width: 8ch;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href].selfRef, .iref + a[href].internal {
+  color: var(--text-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+}
+@media not print {
+  :hover > a.pilcrow, a.pilcrow:focus {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* Comments */
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc nav {
+    font-family: var(--font-title);
+    font-weight: 360;
+    & > ul { margin-bottom: 2em; }
+    & ul {
+      margin: 0 0 0 4px;
+      & :is(p, li) {
+        margin: 2px 0;
+      }
+    }
+  }
+  #toc a.toplink {
+    float: right;
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+    &::before { /* css hamburger */
+      float: right;
+      position: relative;
+      width: 1em;
+      height: 1px;
+      left: -164px;
+      margin: 8px 0 0 0;
+      background: white none repeat scroll 0 0;
+      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+      content: "";
+    }
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active {
+    opacity: 1;
+    & nav { display: block; }
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:is(:link, :focus, :hover),
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin: 2px 0.5em 0;
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+  #toc a.toplink {
+    margin: 8px 0.5em 0;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([fill="white"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">AAuth-Bootstrap</td>
+<td class="right">April 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Hardt</td>
+<td class="center">Expires 21 October 2026</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">TBD</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-hardt-aauth-bootstrap-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-04-19" class="published">19 April 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2026-10-21">21 October 2026</time></dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">D. Hardt</div>
+<div class="org">Hellō</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">AAuth Bootstrap</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines AAuth Bootstrap, an extension to the AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) that specifies how a SaaS browser agent, SaaS mobile agent, or B2B SaaS agent obtains its initial agent identity (<code>aauth:local@domain</code>), agent token, and resource token through a ceremony mediated by the user's Person Server (PS). Bootstrap establishes a binding between a user (as vouched for by the user's PS) and an agent identity minted by the vendor-operated agent server. The specification defines the <code>bootstrap_token</code>, the <code>/bootstrap</code> endpoints on the PS and agent server, the signature schemes used at each step, and renewal flows that bypass the PS after the initial binding is established.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note" id="section-note.1">
+      <h2 id="name-discussion-venues">
+<a href="#name-discussion-venues" class="section-name selfRef">Discussion Venues</a>
+      </h2>
+<p id="section-note.1-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">This document is part of the AAuth specification family. Source for this draft and an issue tracker can be found at <a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 21 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-in-scope" class="internal xref">In Scope</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-out-of-scope" class="internal xref">Out of Scope</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-terms-reused-from-aauth-pro" class="internal xref">Terms Reused From AAuth Protocol</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-terms-reused-from-http-sign" class="internal xref">Terms Reused From HTTP Signature Keys</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-terms-defined-in-this-docum" class="internal xref">Terms Defined in This Document</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-parties-and-topology" class="internal xref">Parties and Topology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-bootstrap-overview" class="internal xref">Bootstrap Overview</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-agent-server-metadata-exten" class="internal xref">Agent Server Metadata Extensions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-webauthn-endpoint" class="internal xref">WebAuthn Endpoint</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-request" class="internal xref">Request</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-response" class="internal xref">Response</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-bootstrap-flow" class="internal xref">Bootstrap Flow</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-key-generation" class="internal xref">Key Generation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-request-to-ps-bootstrap" class="internal xref">Request to PS /bootstrap</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-interaction-response" class="internal xref">Interaction Response</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4">
+                <p id="section-toc.1-1.8.2.4.1"><a href="#section-8.4" class="auto internal xref">8.4</a>.  <a href="#name-bootstrap_token-issuance" class="internal xref">bootstrap_token Issuance</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.1">
+                    <p id="section-toc.1-1.8.2.4.2.1.1"><a href="#section-8.4.1" class="auto internal xref">8.4.1</a>.  <a href="#name-bootstrap_token-header" class="internal xref">bootstrap_token Header</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4.2.2">
+                    <p id="section-toc.1-1.8.2.4.2.2.1"><a href="#section-8.4.2" class="auto internal xref">8.4.2</a>.  <a href="#name-bootstrap_token-payload" class="internal xref">bootstrap_token Payload</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.5">
+                <p id="section-toc.1-1.8.2.5.1"><a href="#section-8.5" class="auto internal xref">8.5</a>.  <a href="#name-request-to-agent-server-boo" class="internal xref">Request to Agent Server /bootstrap</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.6">
+                <p id="section-toc.1-1.8.2.6.1"><a href="#section-8.6" class="auto internal xref">8.6</a>.  <a href="#name-binding-creation" class="internal xref">Binding Creation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7">
+                <p id="section-toc.1-1.8.2.7.1"><a href="#section-8.7" class="auto internal xref">8.7</a>.  <a href="#name-token-response" class="internal xref">Token Response</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7.2.1">
+                    <p id="section-toc.1-1.8.2.7.2.1.1"><a href="#section-8.7.1" class="auto internal xref">8.7.1</a>.  <a href="#name-agent_token" class="internal xref">agent_token</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7.2.2">
+                    <p id="section-toc.1-1.8.2.7.2.2.1"><a href="#section-8.7.2" class="auto internal xref">8.7.2</a>.  <a href="#name-resource_token" class="internal xref">resource_token</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.8">
+                <p id="section-toc.1-1.8.2.8.1"><a href="#section-8.8" class="auto internal xref">8.8</a>.  <a href="#name-completion" class="internal xref">Completion</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-attestation" class="internal xref">Attestation</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-ceremony-selection" class="internal xref">Ceremony Selection</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-browser-webauthn" class="internal xref">Browser: WebAuthn</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2.2.1">
+                    <p id="section-toc.1-1.9.2.2.2.1.1"><a href="#section-9.2.1" class="auto internal xref">9.2.1</a>.  <a href="#name-registration-at-bootstrap" class="internal xref">Registration (at Bootstrap)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2.2.2">
+                    <p id="section-toc.1-1.9.2.2.2.2.1"><a href="#section-9.2.2" class="auto internal xref">9.2.2</a>.  <a href="#name-assertion-at-renewal" class="internal xref">Assertion (at Renewal)</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3">
+                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-mobile-platform-attestation" class="internal xref">Mobile: Platform Attestation and Enclave Proof</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3.2.1">
+                    <p id="section-toc.1-1.9.2.3.2.1.1"><a href="#section-9.3.1" class="auto internal xref">9.3.1</a>.  <a href="#name-initial-attestation-at-boot" class="internal xref">Initial Attestation (at Bootstrap)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3.2.2">
+                    <p id="section-toc.1-1.9.2.3.2.2.1"><a href="#section-9.3.2" class="auto internal xref">9.3.2</a>.  <a href="#name-enclave-proof-at-renewal" class="internal xref">Enclave Proof (at Renewal)</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-signature-scheme-summary" class="internal xref">Signature Scheme Summary</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-renewal" class="internal xref">Renewal</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-renewal-flow" class="internal xref">Renewal Flow</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-refresh-response" class="internal xref">Refresh Response</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#section-11.3" class="auto internal xref">11.3</a>.  <a href="#name-renewal-failure" class="internal xref">Renewal Failure</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-agent-person-binding-invari" class="internal xref">Agent-Person Binding Invariant</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-out-of-band-consent-updates" class="internal xref">Out-of-Band Consent Updates</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-b2b-extensions" class="internal xref">B2B Extensions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#section-15" class="auto internal xref">15</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.1">
+                <p id="section-toc.1-1.15.2.1.1"><a href="#section-15.1" class="auto internal xref">15.1</a>.  <a href="#name-bootstrap_token-replay" class="internal xref">bootstrap_token Replay</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.2">
+                <p id="section-toc.1-1.15.2.2.1"><a href="#section-15.2" class="auto internal xref">15.2</a>.  <a href="#name-consent-phishing" class="internal xref">Consent Phishing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.3">
+                <p id="section-toc.1-1.15.2.3.1"><a href="#section-15.3" class="auto internal xref">15.3</a>.  <a href="#name-key-to-user-binding-without" class="internal xref">Key-to-User Binding Without Attestation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.4">
+                <p id="section-toc.1-1.15.2.4.1"><a href="#section-15.4" class="auto internal xref">15.4</a>.  <a href="#name-enclave-key-compromise" class="internal xref">Enclave Key Compromise</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.5">
+                <p id="section-toc.1-1.15.2.5.1"><a href="#section-15.5" class="auto internal xref">15.5</a>.  <a href="#name-agent-server-compromise" class="internal xref">Agent Server Compromise</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.6">
+                <p id="section-toc.1-1.15.2.6.1"><a href="#section-15.6" class="auto internal xref">15.6</a>.  <a href="#name-ps-compromise" class="internal xref">PS Compromise</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#section-16" class="auto internal xref">16</a>. <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.1">
+                <p id="section-toc.1-1.16.2.1.1"><a href="#section-16.1" class="auto internal xref">16.1</a>.  <a href="#name-directed-user-identifiers" class="internal xref">Directed User Identifiers</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.2">
+                <p id="section-toc.1-1.16.2.2.1"><a href="#section-16.2" class="auto internal xref">16.2</a>.  <a href="#name-mobile-enclave-identity" class="internal xref">Mobile Enclave Identity</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.3">
+                <p id="section-toc.1-1.16.2.3.1"><a href="#section-16.3" class="auto internal xref">16.3</a>.  <a href="#name-out-of-band-consent-channel" class="internal xref">Out-of-Band Consent Channel</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17">
+            <p id="section-toc.1-1.17.1"><a href="#section-17" class="auto internal xref">17</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.1">
+                <p id="section-toc.1-1.17.2.1.1"><a href="#section-17.1" class="auto internal xref">17.1</a>.  <a href="#name-media-type-registration" class="internal xref">Media Type Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.2">
+                <p id="section-toc.1-1.17.2.2.1"><a href="#section-17.2" class="auto internal xref">17.2</a>.  <a href="#name-jwt-claims" class="internal xref">JWT Claims</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.3">
+                <p id="section-toc.1-1.17.2.3.1"><a href="#section-17.3" class="auto internal xref">17.3</a>.  <a href="#name-aauth-agent-server-metadata" class="internal xref">AAuth Agent Server Metadata Registration</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18">
+            <p id="section-toc.1-1.18.1"><a href="#section-18" class="auto internal xref">18</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.19">
+            <p id="section-toc.1-1.19.1"><a href="#section-19" class="auto internal xref">19</a>. <a href="#name-document-history" class="internal xref">Document History</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.20">
+            <p id="section-toc.1-1.20.1"><a href="#section-20" class="auto internal xref">20</a>. <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.21">
+            <p id="section-toc.1-1.21.1"><a href="#section-21" class="auto internal xref">21</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.21.2.1">
+                <p id="section-toc.1-1.21.2.1.1"><a href="#section-21.1" class="auto internal xref">21.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.21.2.2">
+                <p id="section-toc.1-1.21.2.2.1"><a href="#section-21.2" class="auto internal xref">21.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.22">
+            <p id="section-toc.1-1.22.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-relationship-to-other-speci" class="internal xref">Relationship to Other Specifications</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.23">
+            <p id="section-toc.1-1.23.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><strong>Status: Exploratory Draft</strong><a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) defines agent identities of the form <code>aauth:local@domain</code>, each bound to a signing key and published under a well-known JWKS. For self-hosted agents, server workloads, and developer tools, an agent identity can be established from durable local material at deployment time. These cases do not need bootstrap.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">For SaaS browser agents, SaaS mobile agents, and B2B SaaS agents, the agent identity depends on which user opens the application. The identity cannot be pre-minted at build time because it is tied to a specific user, and the user's identity is vouched for by the user's PS rather than by the vendor. Bootstrap is the ceremony by which the user's PS conveys user identity to the vendor's agent server so that the agent server can mint an <code>aauth:local@domain</code> identity bound to that user.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This document specifies that ceremony. It defines:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-1-5.1">The <code>bootstrap_token</code>, a short-lived JWT issued by the PS and consumed by the agent server.<a href="#section-1-5.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-1-5.2">The <code>/bootstrap</code> endpoints on the PS and the agent server.<a href="#section-1-5.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-1-5.3">Which signature schemes from <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span> are used at each step.<a href="#section-1-5.3" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-1-5.4">Renewal flows on the agent server that do not require re-involving the PS.<a href="#section-1-5.4" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-1-5.5">B2B extensions that carry organizational identity from an enterprise directory through the PS to the agent server.<a href="#section-1-5.5" class="pilcrow">¶</a>
+</li>
+      </ul>
+<div id="in-scope">
+<section id="section-1.1">
+        <h3 id="name-in-scope">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-in-scope" class="section-name selfRef">In Scope</a>
+        </h3>
+<ul class="compact">
+<li class="compact" id="section-1.1-1.1">SaaS browser agents (vendor-operated agent server).<a href="#section-1.1-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.1-1.2">SaaS mobile agents (vendor-operated agent server).<a href="#section-1.1-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.1-1.3">B2B SaaS agents (organization's PS, vendor's agent server).<a href="#section-1.1-1.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="out-of-scope">
+<section id="section-1.2">
+        <h3 id="name-out-of-scope">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-out-of-scope" class="section-name selfRef">Out of Scope</a>
+        </h3>
+<ul class="compact">
+<li class="compact" id="section-1.2-1.1">Self-hosted agents (including developer AI agents). These self-issue agent tokens from durable local keys published in their own JWKS.<a href="#section-1.2-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-1.2">Command-line tools. Agent identity is established by deployment tooling that registers a public key with a JWKS-hosting endpoint.<a href="#section-1.2-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-1.3">Server workloads and headless services. These use platform attestation mechanisms such as SPIFFE, WIMSE, or cloud instance identity.<a href="#section-1.2-1.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-1.2-1.4">Organizational agents operating within a pre-established PS-AS trust relationship with administrative enrollment.<a href="#section-1.2-1.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-2">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-2-1">{::boilerplate bcp14-tagged}<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-3">
+      <h2 id="name-terminology">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<div id="terms-reused-from-aauth-protocol">
+<section id="section-3.1">
+        <h3 id="name-terms-reused-from-aauth-pro">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-terms-reused-from-aauth-pro" class="section-name selfRef">Terms Reused From AAuth Protocol</a>
+        </h3>
+<p id="section-3.1-1">The following terms are defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> and are used in this document with the same meaning. Summaries are provided for convenience; the referenced specification is authoritative.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-3.1-2.1">
+            <strong>Person</strong>: The user or organization on whose behalf an agent acts. Referred to in this document as "the user".<a href="#section-3.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.2">
+            <strong>Agent</strong>: An HTTP client acting on behalf of a person, identified by an <code>aauth:local@domain</code> URI.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.3">
+            <strong>Agent Server</strong>: A server that manages agent identity and issues agent tokens. In the context of this document, the agent server is operated by the vendor whose software the user is running.<a href="#section-3.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.4">
+            <strong>Person Server (PS)</strong>: A server that represents the person to the rest of the protocol. In the context of this document, the PS vouches for the user to the agent server during bootstrap.<a href="#section-3.1-2.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.5">
+            <strong>Resource</strong>: A server that protects access to its APIs. Not directly involved in bootstrap.<a href="#section-3.1-2.5" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.6">
+            <strong>Agent Token</strong>: A JWT issued by an agent server to establish the agent's identity.<a href="#section-3.1-2.6" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.7">
+            <strong>Resource Token</strong>: A JWT issued by a resource (or, in bootstrap, by the agent server acting as resource) describing the access an agent needs.<a href="#section-3.1-2.7" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.8">
+            <strong>Auth Token</strong>: A JWT issued by a PS or AS granting an agent access to a resource.<a href="#section-3.1-2.8" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.1-2.9">
+            <strong>Interaction</strong>: User authentication or consent at an interaction endpoint, triggered when a server returns <code>202 Accepted</code> with <code>requirement=interaction</code>.<a href="#section-3.1-2.9" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="terms-reused-from-http-signature-keys">
+<section id="section-3.2">
+        <h3 id="name-terms-reused-from-http-sign">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-terms-reused-from-http-sign" class="section-name selfRef">Terms Reused From HTTP Signature Keys</a>
+        </h3>
+<p id="section-3.2-1">The following signature schemes are defined in <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span> and used in this document without modification:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-3.2-2.1">
+            <strong><code>hwk</code> scheme</strong>: Conveys a public key inline in the <code>Signature-Key</code> header.<a href="#section-3.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.2-2.2">
+            <strong><code>jkt-jwt</code> scheme</strong>: Chains a JWT signed by one key (e.g., a durable enclave key) to authorize a second key (e.g., an ephemeral HTTP signing key).<a href="#section-3.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.2-2.3">
+            <strong><code>jwt</code> scheme</strong>: Conveys a JWT (e.g., an agent token) that names the signing key.<a href="#section-3.2-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="terms-defined-in-this-document">
+<section id="section-3.3">
+        <h3 id="name-terms-defined-in-this-docum">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-terms-defined-in-this-docum" class="section-name selfRef">Terms Defined in This Document</a>
+        </h3>
+<ul class="compact">
+<li class="compact" id="section-3.3-1.1">
+            <strong>Bootstrap</strong>: The PS-mediated ceremony defined in this document by which a SaaS or B2B agent obtains its initial agent token and resource token. Distinct from the developer-side ceremonies used by self-hosted agents and from platform attestation enrollment.<a href="#section-3.3-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.3-1.2">
+            <strong>Ephemeral Key</strong>: An HTTP signing key generated by the agent whose lifetime is bounded by the agent token. Typically hours to a day, not per-request.<a href="#section-3.3-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.3-1.3">
+            <strong>Durable Key</strong>: A platform-protected key whose lifetime is bounded by the application install. Typically months to years. On mobile, this is an enclave-protected key identified by a JWK thumbprint (<code>urn:jkt</code>).<a href="#section-3.3-1.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.3-1.4">
+            <strong>bootstrap_token</strong>: A short-lived JWT issued by the PS, directed at an agent server, and bound to an agent's ephemeral key via a <code>cnf</code> claim. Defined in <a href="#bootstrap-token-issuance" class="auto internal xref">Section 8.4</a>.<a href="#section-3.3-1.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.3-1.5">
+            <strong>Binding</strong>: The one-to-one association <code>(ps_url, user_sub) -&gt; aauth:local@&lt;agent-server-domain&gt;</code> recorded by the agent server at the end of bootstrap, together with the device credentials associated with it.<a href="#section-3.3-1.5" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-3.3-1.6">
+            <strong>Device Credential</strong>: A credential held by the agent server and associated with a binding, used to authenticate renewal requests without re-involving the PS. A WebAuthn credential ID on browsers or an enclave-key thumbprint (<code>urn:jkt:sha-256:&lt;thumbprint&gt;</code>) on mobile.<a href="#section-3.3-1.6" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="parties-and-topology">
+<section id="section-4">
+      <h2 id="name-parties-and-topology">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-parties-and-topology" class="section-name selfRef">Parties and Topology</a>
+      </h2>
+<p id="section-4-1">The bootstrap ceremony involves three parties:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4-2.1">The <strong>agent</strong>, which generates key material and initiates the ceremony.<a href="#section-4-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-4-2.2">The <strong>PS</strong>, which authenticates the user, collects consent, and issues the <code>bootstrap_token</code>.<a href="#section-4-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-4-2.3">The <strong>agent server</strong>, which verifies the <code>bootstrap_token</code>, performs attestation, records the <code>(user, agent)</code> binding, and issues the agent token and resource token.<a href="#section-4-2.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-3">Resources and access servers (AS) are not involved in bootstrap. After bootstrap, the agent interacts with them using the tokens returned by the agent server following the flows defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="bootstrap-overview">
+<section id="section-5">
+      <h2 id="name-bootstrap-overview">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-bootstrap-overview" class="section-name selfRef">Bootstrap Overview</a>
+      </h2>
+<p id="section-5-1">The following sequence shows the bootstrap ceremony end to end. Attestation and renewal sub-flows are shown separately for clarity.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<span id="name-bootstrap-ceremony"></span><div id="fig-bootstrap">
+<figure id="figure-1">
+        <div class="lang-ascii-art sourcecode" id="section-5-2.1">
+<pre>Agent                              PS              Agent Server
+  |                                 |                    |
+  | HTTPSig (hwk, ephemeral)        |                    |
+  | POST bootstrap_endpoint (PS)    |                    |
+  | { agent_server, scope, ... }    |                    |
+  |--------------------------------&gt;|                    |
+  |                                 |                    |
+  | 202 Accepted                    |                    |
+  | Location: /bootstrap/pending/X  |                    |
+  |&lt;--------------------------------|                    |
+  |                                 |                    |
+  | [user interaction and consent]  |                    |
+  |                                 |                    |
+  | GET pending URL                 |                    |
+  |--------------------------------&gt;|                    |
+  |                                 |                    |
+  | bootstrap_token                 |                    |
+  |&lt;--------------------------------|                    |
+  |                                 |                    |
+  | [attestation ceremony -- see (#attestation)]         |
+  |                                 |                    |
+  | HTTPSig (hwk or jkt-jwt)        |                    |
+  | POST bootstrap_endpoint         |                    |
+  | { bootstrap_token,              |                    |
+  |   &lt;attestation&gt; }               |                    |
+  |-----------------------------------------------------&gt;|
+  |                                 |                    |
+  | { agent_token, resource_token } |                    |
+  |&lt;-----------------------------------------------------|
+  |                                 |                    |
+  | HTTPSig w/ agent token          |                    |
+  | POST token_endpoint (PS)        |                    |
+  | w/ resource_token               |                    |
+  |--------------------------------&gt;|                    |
+  |                                 |                    |
+  | auth_token                      |                    |
+  |&lt;--------------------------------|                    |
+  |                                 |                    |
+  | HTTPSig w/ auth token           |                    |
+  | GET /api/...                    |                    |
+  |-----------------------------------------------------&gt;|
+  |                                 |                    |
+  | 200 OK                          |                    |
+  |&lt;-----------------------------------------------------|
+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-bootstrap-ceremony" class="selfRef">Bootstrap Ceremony</a>
+        </figcaption></figure>
+</div>
+<p id="section-5-3">The subsequent renewal flow skips the PS and uses the device credential recorded at bootstrap:<a href="#section-5-3" class="pilcrow">¶</a></p>
+<span id="name-renewal-ceremony"></span><div id="fig-renewal">
+<figure id="figure-2">
+        <div class="lang-ascii-art sourcecode" id="section-5-4.1">
+<pre>Agent                                          Agent Server
+  |                                                  |
+  | [renewal attestation -- see (#attestation)]      |
+  |                                                  |
+  | HTTPSig (hwk or jkt-jwt, new ephemeral)          |
+  | POST refresh_endpoint                            |
+  | { &lt;attestation&gt; }                                |
+  |-------------------------------------------------&gt;|
+  |                                                  |
+  | { agent_token, resource_token } (new ephemeral)  |
+  |&lt;-------------------------------------------------|
+
+</pre>
+</div>
+<figcaption><a href="#figure-2" class="selfRef">Figure 2</a>:
+<a href="#name-renewal-ceremony" class="selfRef">Renewal Ceremony</a>
+        </figcaption></figure>
+</div>
+</section>
+</div>
+<div id="agent-server-metadata">
+<section id="section-6">
+      <h2 id="name-agent-server-metadata-exten">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-agent-server-metadata-exten" class="section-name selfRef">Agent Server Metadata Extensions</a>
+      </h2>
+<p id="section-6-1">This specification extends the <code>/.well-known/aauth-agent.json</code> document defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> with the following fields:<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-6-2">
+<pre>{
+  "issuer": "https://agent-server.example",
+  "jwks_uri": "https://agent-server.example/.well-known/jwks.json",
+  "client_name": "Example AI Assistant",
+  "logo_uri": "https://agent-server.example/logo.png",
+  "bootstrap_endpoint": "https://agent-server.example/bootstrap",
+  "refresh_endpoint": "https://agent-server.example/refresh",
+  "webauthn_endpoint": "https://agent-server.example/webauthn"
+}
+
+</pre><a href="#section-6-2" class="pilcrow">¶</a>
+</div>
+<p id="section-6-3">Fields:<a href="#section-6-3" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-6-4.1">
+          <strong><code>bootstrap_endpoint</code></strong> (REQUIRED for agent servers that support this specification). The URL where the agent POSTs the <code>bootstrap_token</code> and attestation result per <a href="#request-to-agent-server-bootstrap" class="auto internal xref">Section 8.5</a>. MUST be an HTTPS URL within the agent server's origin.<a href="#section-6-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-6-4.2">
+          <strong><code>refresh_endpoint</code></strong> (REQUIRED for agent servers that support this specification). The URL where the agent POSTs renewal requests per <a href="#renewal" class="auto internal xref">Section 11</a>. MUST be an HTTPS URL within the agent server's origin.<a href="#section-6-4.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-6-4.3">
+          <strong><code>webauthn_endpoint</code></strong> (REQUIRED for agent servers that support browser-based clients). The URL from which the agent fetches a WebAuthn challenge and, for registration, WebAuthn ceremony options. Defined in <a href="#webauthn-endpoint" class="auto internal xref">Section 7</a>. MUST be an HTTPS URL within the agent server's origin.<a href="#section-6-4.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-6-5">Agents MUST NOT assume a fixed path for these endpoints; the agent MUST discover them from agent-server metadata. Agents MUST verify that all endpoint URLs share the origin of the <code>issuer</code> field.<a href="#section-6-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="webauthn-endpoint">
+<section id="section-7">
+      <h2 id="name-webauthn-endpoint">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-webauthn-endpoint" class="section-name selfRef">WebAuthn Endpoint</a>
+      </h2>
+<p id="section-7-1">The <code>webauthn_endpoint</code> issues WebAuthn challenges for both bootstrap (registration) and refresh (assertion). It is used by browser-based clients. The endpoint takes no user context on the request; the server tracks each challenge as an opaque single-use nonce and binds it to the user only when the ceremony result is submitted.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div id="request">
+<section id="section-7.1">
+        <h3 id="name-request">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-request" class="section-name selfRef">Request</a>
+        </h3>
+<p id="section-7.1-1">The agent issues a GET request with the ceremony type as a query parameter:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7.1-2">
+<pre>GET /webauthn?type=create HTTP/1.1
+Host: agent-server.example
+
+</pre><a href="#section-7.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7.1-3">or<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7.1-4">
+<pre>GET /webauthn?type=get HTTP/1.1
+Host: agent-server.example
+
+</pre><a href="#section-7.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-7.1-5">Query parameters:<a href="#section-7.1-5" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-7.1-6.1">
+            <strong><code>type</code></strong> (REQUIRED). Either <code>create</code> (for bootstrap registration) or <code>get</code> (for refresh assertion).<a href="#section-7.1-6.1" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-7.1-7">The request is unsigned. The agent MUST NOT include user identifiers on the challenge request.<a href="#section-7.1-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="response">
+<section id="section-7.2">
+        <h3 id="name-response">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-response" class="section-name selfRef">Response</a>
+        </h3>
+<div class="alignLeft art-text artwork" id="section-7.2-1">
+<pre>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "challenge": "&lt;base64url random bytes&gt;",
+  "creation_options": {
+    "rp": { "id": "agent-server.example", "name": "Example AI Assistant" },
+    "pubKeyCredParams": [{ "type": "public-key", "alg": -7 }, ...],
+    "authenticatorSelection": { ... },
+    "attestation": "none"
+  }
+}
+
+</pre><a href="#section-7.2-1" class="pilcrow">¶</a>
+</div>
+<p id="section-7.2-2">Response members:<a href="#section-7.2-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-7.2-3.1">
+            <strong><code>challenge</code></strong> (REQUIRED). Server-generated random value of at least 16 bytes, base64url-encoded without padding. The agent server MUST store the challenge in a single-use, time-limited registry. The challenge SHOULD expire within 5 minutes.<a href="#section-7.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-7.2-3.2">
+            <strong><code>creation_options</code></strong> (REQUIRED when <code>type=create</code>). The non-user portions of a WebAuthn <code>PublicKeyCredentialCreationOptions</code> object (<span>[<a href="#WebAuthn" class="cite xref">WebAuthn</a>]</span>): <code>rp</code>, <code>pubKeyCredParams</code>, <code>authenticatorSelection</code>, <code>attestation</code>, <code>timeout</code>, and related server-decided fields. The agent fills in the <code>challenge</code> field from this response and fills in the <code>user</code> field from the <code>bootstrap_token</code> (using <code>bootstrap_token.sub</code> as <code>user.id</code>). MUST be absent when <code>type=get</code>.<a href="#section-7.2-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-7.2-4">The response MUST NOT include user-identifying information. The agent server MUST NOT bind the challenge to a particular user in its issuing state; user context enters only when the ceremony result is submitted.<a href="#section-7.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="bootstrap-flow">
+<section id="section-8">
+      <h2 id="name-bootstrap-flow">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-bootstrap-flow" class="section-name selfRef">Bootstrap Flow</a>
+      </h2>
+<p id="section-8-1">The bootstrap flow consists of the following steps.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<div id="key-generation">
+<section id="section-8.1">
+        <h3 id="name-key-generation">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-key-generation" class="section-name selfRef">Key Generation</a>
+        </h3>
+<p id="section-8.1-1">The agent generates an ephemeral signing key.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1-2">On mobile platforms, the agent also has (or generates on first install) a durable enclave-protected key with a stable JWK thumbprint of the form <code>urn:jkt:sha-256:&lt;thumbprint&gt;</code>.<a href="#section-8.1-2" class="pilcrow">¶</a></p>
+<p id="section-8.1-3">On browsers and command-line environments, only the ephemeral key exists.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="request-to-ps-bootstrap">
+<section id="section-8.2">
+        <h3 id="name-request-to-ps-bootstrap">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-request-to-ps-bootstrap" class="section-name selfRef">Request to PS /bootstrap</a>
+        </h3>
+<p id="section-8.2-1">The agent sends an HTTP request to the PS's <code>/bootstrap</code> endpoint signed under the <code>hwk</code> scheme (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) using the ephemeral key:<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8.2-2">
+<pre>POST /bootstrap HTTP/1.1
+Host: ps.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="&lt;ephemeral-pubkey&gt;"
+Content-Type: application/json
+
+{
+  "agent_server": "https://agent-server.example",
+  "scope": "openid profile email"
+}
+
+</pre><a href="#section-8.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.2-3">The request body is a JSON object with the following members:<a href="#section-8.2-3" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.2-4.1">
+            <strong><code>agent_server</code></strong> (REQUIRED). The HTTPS URL identifying the agent server that will mint the agent identity. This value is placed in the <code>aud</code> claim of the issued <code>bootstrap_token</code>. This document uses the parameter name <code>agent_server</code> to align with the <code>"Agent Server"</code> terminology of <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>; implementations MUST NOT use alternative names such as <code>audience</code> or <code>client_id</code> for this field.<a href="#section-8.2-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-4.2">
+            <strong><code>scope</code></strong> (REQUIRED). Space-separated list of identity scopes the agent server is requesting.<a href="#section-8.2-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-4.3">
+            <strong><code>domain_hint</code></strong> (OPTIONAL). Identifies which of the user's identities at this PS should be used when the user has more than one (for example a personal identity and a work identity). The value is a DNS domain, as defined in <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>. When present, the PS SHOULD select the identity associated with the given domain without prompting the user to choose. When absent and more than one identity is available, the PS MAY prompt the user to choose.<a href="#section-8.2-4.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-4.4">
+            <strong><code>login_hint</code></strong> (OPTIONAL). A hint as defined in <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> identifying the user (for example an email address) to help the PS select the appropriate identity.<a href="#section-8.2-4.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.2-4.5">
+            <strong><code>tenant</code></strong> (OPTIONAL). Organizational tenant identifier from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>. See <a href="#b2b-extensions" class="auto internal xref">Section 14</a>.<a href="#section-8.2-4.5" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-8.2-5">Additional parameters from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> MAY be included to select an organizational identity context.<a href="#section-8.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="interaction-response">
+<section id="section-8.3">
+        <h3 id="name-interaction-response">
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-interaction-response" class="section-name selfRef">Interaction Response</a>
+        </h3>
+<p id="section-8.3-1">The PS responds with an interaction requirement:<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8.3-2">
+<pre>HTTP/1.1 202 Accepted
+AAuth-Requirement: requirement=interaction
+Location: /bootstrap/pending/&lt;id&gt;
+
+</pre><a href="#section-8.3-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.3-3">The agent directs the user to the interaction URL. The PS authenticates the user and presents a consent screen describing the agent server and the scopes being requested.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
+<p id="section-8.3-4">The consent screen SHOULD display the agent server's domain, name, and logo as retrieved from the agent server's <code>/.well-known/aauth-agent.json</code> metadata document. The user approves or denies the request.<a href="#section-8.3-4" class="pilcrow">¶</a></p>
+<p id="section-8.3-5">The agent polls the pending URL indicated by <code>Location</code> until the interaction completes.<a href="#section-8.3-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="bootstrap-token-issuance">
+<section id="section-8.4">
+        <h3 id="name-bootstrap_token-issuance">
+<a href="#section-8.4" class="section-number selfRef">8.4. </a><a href="#name-bootstrap_token-issuance" class="section-name selfRef">bootstrap_token Issuance</a>
+        </h3>
+<p id="section-8.4-1">On successful user approval, the PS returns a <code>bootstrap_token</code> from the pending URL.<a href="#section-8.4-1" class="pilcrow">¶</a></p>
+<p id="section-8.4-2">The <code>bootstrap_token</code> is a signed JWT with the following structure.<a href="#section-8.4-2" class="pilcrow">¶</a></p>
+<div id="bootstrap-token-header">
+<section id="section-8.4.1">
+          <h4 id="name-bootstrap_token-header">
+<a href="#section-8.4.1" class="section-number selfRef">8.4.1. </a><a href="#name-bootstrap_token-header" class="section-name selfRef">bootstrap_token Header</a>
+          </h4>
+<ul class="compact">
+<li class="compact" id="section-8.4.1-1.1">
+              <strong><code>alg</code></strong>: The signature algorithm, for example <code>EdDSA</code>.<a href="#section-8.4.1-1.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.1-1.2">
+              <strong><code>typ</code></strong>: <code>aa-bootstrap+jwt</code>.<a href="#section-8.4.1-1.2" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.1-1.3">
+              <strong><code>kid</code></strong>: Key identifier for the PS key used to sign the token.<a href="#section-8.4.1-1.3" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<div id="bootstrap-token-payload">
+<section id="section-8.4.2">
+          <h4 id="name-bootstrap_token-payload">
+<a href="#section-8.4.2" class="section-number selfRef">8.4.2. </a><a href="#name-bootstrap_token-payload" class="section-name selfRef">bootstrap_token Payload</a>
+          </h4>
+<ul class="compact">
+<li class="compact" id="section-8.4.2-1.1">
+              <strong><code>iss</code></strong> (REQUIRED). The PS URL.<a href="#section-8.4.2-1.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.2">
+              <strong><code>dwk</code></strong> (REQUIRED). The PS's well-known document name, typically <code>aauth-person.json</code>.<a href="#section-8.4.2-1.2" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.3">
+              <strong><code>aud</code></strong> (REQUIRED). The agent server URL (matches <code>agent_server</code> from the request).<a href="#section-8.4.2-1.3" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.4">
+              <strong><code>sub</code></strong> (REQUIRED). A pairwise user identifier, directed at <code>aud</code>, identifying the user to the agent server.<a href="#section-8.4.2-1.4" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.5">
+              <strong><code>cnf</code></strong> (REQUIRED). An object containing <code>jwk</code>, the agent's ephemeral public key. MUST match the <code>hwk</code> key used to sign the PS /bootstrap request.<a href="#section-8.4.2-1.5" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.6">
+              <strong><code>scope</code></strong> (REQUIRED). Space-separated list of identity scopes granted by the user.<a href="#section-8.4.2-1.6" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.7">
+              <strong><code>jti</code></strong> (REQUIRED). A unique token identifier.<a href="#section-8.4.2-1.7" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.8">
+              <strong><code>iat</code></strong> (REQUIRED). Issued-at time.<a href="#section-8.4.2-1.8" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-1.9">
+              <strong><code>exp</code></strong> (REQUIRED). Expiration time. SHOULD NOT exceed 5 minutes after <code>iat</code>.<a href="#section-8.4.2-1.9" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-8.4.2-2">The <code>bootstrap_token</code> differs from a resource token defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>:<a href="#section-8.4.2-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.4.2-3.1">It omits the <code>agent</code> claim, because the agent identity does not yet exist at bootstrap time. The binding to the agent is carried solely by <code>cnf</code>.<a href="#section-8.4.2-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.4.2-3.2">It is directed at an agent server (not an AS or a PS as recipient of a resource token).<a href="#section-8.4.2-3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="request-to-agent-server-bootstrap">
+<section id="section-8.5">
+        <h3 id="name-request-to-agent-server-boo">
+<a href="#section-8.5" class="section-number selfRef">8.5. </a><a href="#name-request-to-agent-server-boo" class="section-name selfRef">Request to Agent Server /bootstrap</a>
+        </h3>
+<p id="section-8.5-1">Before calling <code>bootstrap_endpoint</code>, the agent performs the attestation ceremony appropriate to its platform. See <a href="#attestation" class="auto internal xref">Section 9</a> for the ceremony details and for the logic by which the platform is chosen. The attestation result is carried in the POST body.<a href="#section-8.5-1" class="pilcrow">¶</a></p>
+<p id="section-8.5-2">The agent sends a single POST to <code>bootstrap_endpoint</code>:<a href="#section-8.5-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8.5-3">
+<pre>POST /bootstrap HTTP/1.1
+Host: agent-server.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=&lt;scheme&gt;
+Content-Type: application/json
+
+{
+  "bootstrap_token": "&lt;jwt&gt;",
+  "attestation": {
+    "type": "&lt;attestation type&gt;",
+    ...
+  }
+}
+
+</pre><a href="#section-8.5-3" class="pilcrow">¶</a>
+</div>
+<p id="section-8.5-4">The HTTP Message Signature scheme is determined by the platform:<a href="#section-8.5-4" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.5-5.1">
+            <strong>Browser clients</strong> use <code>hwk</code> with the agent's ephemeral key.<a href="#section-8.5-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.5-5.2">
+            <strong>Mobile clients</strong> use <code>jkt-jwt</code> (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>), where the JWT header references the enclave key and the JWT payload's <code>cnf.jwk</code> is the ephemeral public key. The ephemeral key signs the HTTP message.<a href="#section-8.5-5.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-8.5-6">Request body members:<a href="#section-8.5-6" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.5-7.1">
+            <strong><code>bootstrap_token</code></strong> (REQUIRED). The JWT received from the PS.<a href="#section-8.5-7.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.5-7.2">
+            <strong><code>attestation</code></strong> (REQUIRED). The attestation result, whose shape is defined by the ceremony described in <a href="#attestation" class="auto internal xref">Section 9</a>. The <code>type</code> field identifies the ceremony (e.g., <code>webauthn</code>, <code>app-attest</code>, <code>play-integrity</code>) and MUST match the scheme implied by the HTTP signature.<a href="#section-8.5-7.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-8.5-8">On receiving the request, the agent server MUST:<a href="#section-8.5-8" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-8.5-9">
+<li id="section-8.5-9.1">Verify the HTTP Message Signature as defined in <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>.<a href="#section-8.5-9.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.2">Resolve and validate the <code>bootstrap_token</code> signature by fetching the PS's JWKS using <code>iss</code> and <code>dwk</code>.<a href="#section-8.5-9.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.3">Verify that <code>bootstrap_token.aud</code> equals the agent server's own URL.<a href="#section-8.5-9.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.4">Verify that <code>bootstrap_token.cnf.jwk</code> matches the ephemeral public key used to sign the HTTP request.<a href="#section-8.5-9.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.5">Verify <code>iat</code>, <code>exp</code>, and <code>jti</code> per standard JWT rules; reject replays by <code>jti</code>.<a href="#section-8.5-9.5" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.6">Verify the <code>attestation</code> per the rules of the indicated ceremony in <a href="#attestation" class="auto internal xref">Section 9</a>, including that any ceremony challenge or nonce matches one issued by the agent server and has not expired or been consumed. Mark the ceremony challenge as consumed.<a href="#section-8.5-9.6" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.7">Create or look up the binding <a href="#binding-creation" class="auto internal xref">Section 8.6</a>.<a href="#section-8.5-9.7" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.8">Store the device credential derived from the attestation (a WebAuthn credential ID for browsers, or the enclave key thumbprint for mobile) on the binding.<a href="#section-8.5-9.8" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.5-9.9">Issue the agent token and resource token <a href="#token-response" class="auto internal xref">Section 8.7</a>.<a href="#section-8.5-9.9" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-8.5-10">If <code>bootstrap_token</code> verification fails, the agent server MUST respond <code>400 Bad Request</code>. If attestation verification fails, the agent server MUST respond <code>401 Unauthorized</code>.<a href="#section-8.5-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="binding-creation">
+<section id="section-8.6">
+        <h3 id="name-binding-creation">
+<a href="#section-8.6" class="section-number selfRef">8.6. </a><a href="#name-binding-creation" class="section-name selfRef">Binding Creation</a>
+        </h3>
+<p id="section-8.6-1">The agent server looks up or creates a binding keyed by <code>(bootstrap_token.iss, bootstrap_token.sub)</code>:<a href="#section-8.6-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8.6-2">
+<pre>(ps_url, user_sub) -&gt; aauth:local@&lt;agent-server-domain&gt;
+
+</pre><a href="#section-8.6-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.6-3">The binding is one-to-one: the same user at the same PS at the same agent server MUST map to the same <code>aauth:local@domain</code> identity, regardless of device.<a href="#section-8.6-3" class="pilcrow">¶</a></p>
+<p id="section-8.6-4">The agent server stores the device credential obtained during attestation (a WebAuthn credential ID, or a <code>urn:jkt:sha-256:&lt;enclave&gt;</code> thumbprint) against the binding. Multiple device credentials MAY be associated with a single binding.<a href="#section-8.6-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="token-response">
+<section id="section-8.7">
+        <h3 id="name-token-response">
+<a href="#section-8.7" class="section-number selfRef">8.7. </a><a href="#name-token-response" class="section-name selfRef">Token Response</a>
+        </h3>
+<p id="section-8.7-1">The agent server returns an agent token and a resource token:<a href="#section-8.7-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8.7-2">
+<pre>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "agent_token": "&lt;jwt&gt;",
+  "resource_token": "&lt;jwt&gt;"
+}
+
+</pre><a href="#section-8.7-2" class="pilcrow">¶</a>
+</div>
+<div id="agent-token">
+<section id="section-8.7.1">
+          <h4 id="name-agent_token">
+<a href="#section-8.7.1" class="section-number selfRef">8.7.1. </a><a href="#name-agent_token" class="section-name selfRef">agent_token</a>
+          </h4>
+<p id="section-8.7.1-1">The <code>agent_token</code> is a JWT as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> with:<a href="#section-8.7.1-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.7.1-2.1">
+              <strong><code>typ</code></strong>: <code>aa-agent+jwt</code>.<a href="#section-8.7.1-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.1-2.2">
+              <strong><code>iss</code></strong>: The agent server URL.<a href="#section-8.7.1-2.2" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.1-2.3">
+              <strong><code>dwk</code></strong>: <code>aauth-agent.json</code>.<a href="#section-8.7.1-2.3" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.1-2.4">
+              <strong><code>sub</code></strong>: The <code>aauth:local@&lt;agent-server-domain&gt;</code> identity from the binding.<a href="#section-8.7.1-2.4" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.1-2.5">
+              <strong><code>ps</code></strong>: The PS URL (from <code>bootstrap_token.iss</code>).<a href="#section-8.7.1-2.5" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.1-2.6">
+              <strong><code>cnf.jwk</code></strong>: The agent's ephemeral public key.<a href="#section-8.7.1-2.6" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<div id="resource-token">
+<section id="section-8.7.2">
+          <h4 id="name-resource_token">
+<a href="#section-8.7.2" class="section-number selfRef">8.7.2. </a><a href="#name-resource_token" class="section-name selfRef">resource_token</a>
+          </h4>
+<p id="section-8.7.2-1">The <code>resource_token</code> is a JWT as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> with:<a href="#section-8.7.2-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.7.2-2.1">
+              <strong><code>typ</code></strong>: <code>aa-resource+jwt</code>.<a href="#section-8.7.2-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.2-2.2">
+              <strong><code>iss</code></strong>: The agent server URL (acting as resource).<a href="#section-8.7.2-2.2" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.2-2.3">
+              <strong><code>aud</code></strong>: The PS URL.<a href="#section-8.7.2-2.3" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.2-2.4">
+              <strong><code>agent</code></strong>: The <code>aauth:local@&lt;agent-server-domain&gt;</code> identity.<a href="#section-8.7.2-2.4" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-8.7.2-2.5">
+              <strong><code>scope</code></strong>: The identity scopes granted by the PS.<a href="#section-8.7.2-2.5" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="completion">
+<section id="section-8.8">
+        <h3 id="name-completion">
+<a href="#section-8.8" class="section-number selfRef">8.8. </a><a href="#name-completion" class="section-name selfRef">Completion</a>
+        </h3>
+<p id="section-8.8-1">The agent exchanges the <code>resource_token</code> at the PS <code>/token</code> endpoint, as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>, to obtain an <code>auth_token</code> carrying identity claims. The agent then calls the agent server's APIs using that <code>auth_token</code>.<a href="#section-8.8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="attestation">
+<section id="section-9">
+      <h2 id="name-attestation">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-attestation" class="section-name selfRef">Attestation</a>
+      </h2>
+<p id="section-9-1">Every call in this specification that mints tokens for an agent (at bootstrap or at renewal) carries a platform-specific attestation. At bootstrap the attestation registers a device credential on the binding; at renewal it proves possession of that device credential. Without attestation an attacker who intercepted a <code>bootstrap_token</code> or replayed a refresh could obtain tokens from a machine the user does not control.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<div id="ceremony-selection">
+<section id="section-9.1">
+        <h3 id="name-ceremony-selection">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-ceremony-selection" class="section-name selfRef">Ceremony Selection</a>
+        </h3>
+<p id="section-9.1-1">The agent selects the ceremony from its runtime platform. The agent server determines which ceremony to expect from the HTTP signature scheme on the <code>bootstrap_endpoint</code> or <code>refresh_endpoint</code> POST.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+          <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Platform</th>
+              <th class="text-left" rowspan="1" colspan="1">Bootstrap ceremony</th>
+              <th class="text-left" rowspan="1" colspan="1">Renewal ceremony</th>
+              <th class="text-left" rowspan="1" colspan="1">HTTP signature scheme</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Browser (incl. B2B web)</td>
+              <td class="text-left" rowspan="1" colspan="1">WebAuthn registration (<span>[<a href="#WebAuthn" class="cite xref">WebAuthn</a>]</span>)</td>
+              <td class="text-left" rowspan="1" colspan="1">WebAuthn assertion (<span>[<a href="#WebAuthn" class="cite xref">WebAuthn</a>]</span>)</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>hwk</code>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Mobile (iOS)</td>
+              <td class="text-left" rowspan="1" colspan="1">App Attest</td>
+              <td class="text-left" rowspan="1" colspan="1">Enclave <code>jkt-jwt</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>jkt-jwt</code>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Mobile (Android)</td>
+              <td class="text-left" rowspan="1" colspan="1">Play Integrity</td>
+              <td class="text-left" rowspan="1" colspan="1">Enclave <code>jkt-jwt</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>jkt-jwt</code>
+</td>
+            </tr>
+          </tbody>
+        </table>
+<p id="section-9.1-3">An agent server that supports browser clients MUST publish <code>webauthn_endpoint</code> in its metadata <a href="#agent-server-metadata" class="auto internal xref">Section 6</a>. Mobile clients obtain ceremony nonces through platform-specific means; no corresponding metadata field is defined by this document because the ceremony details are platform-specific.<a href="#section-9.1-3" class="pilcrow">¶</a></p>
+<p id="section-9.1-4">Agents that cannot perform any of the ceremonies above (for example, a command-line tool with no platform authenticator and no enclave) are outside the scope of this specification.<a href="#section-9.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="browser-webauthn">
+<section id="section-9.2">
+        <h3 id="name-browser-webauthn">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-browser-webauthn" class="section-name selfRef">Browser: WebAuthn</a>
+        </h3>
+<p id="section-9.2-1">Browser clients use the same <code>webauthn_endpoint</code> <a href="#webauthn-endpoint" class="auto internal xref">Section 7</a> for both bootstrap (<code>type=create</code>) and renewal (<code>type=get</code>). The ceremony result is carried in the POST body to <code>bootstrap_endpoint</code> or <code>refresh_endpoint</code>.<a href="#section-9.2-1" class="pilcrow">¶</a></p>
+<div id="registration-at-bootstrap">
+<section id="section-9.2.1">
+          <h4 id="name-registration-at-bootstrap">
+<a href="#section-9.2.1" class="section-number selfRef">9.2.1. </a><a href="#name-registration-at-bootstrap" class="section-name selfRef">Registration (at Bootstrap)</a>
+          </h4>
+<p id="section-9.2.1-1">The agent first fetches a challenge and creation options from <code>webauthn_endpoint</code>:<a href="#section-9.2.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-9.2.1-2">
+<pre>GET /webauthn?type=create HTTP/1.1
+Host: agent-server.example
+
+</pre><a href="#section-9.2.1-2" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-9.2.1-3">
+<pre>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "challenge": "&lt;base64url random bytes&gt;",
+  "creation_options": {
+    "rp": { "id": "agent-server.example", "name": "Example AI Assistant" },
+    "pubKeyCredParams": [
+      { "type": "public-key", "alg": -7 },
+      { "type": "public-key", "alg": -257 }
+    ],
+    "authenticatorSelection": {
+      "residentKey": "required",
+      "userVerification": "preferred"
+    },
+    "attestation": "none"
+  }
+}
+
+</pre><a href="#section-9.2.1-3" class="pilcrow">¶</a>
+</div>
+<p id="section-9.2.1-4">The agent invokes <code>navigator.credentials.create()</code> using those options, filling <code>user.id</code> with <code>bootstrap_token.sub</code> and supplying <code>user.name</code> and <code>user.displayName</code> from agent-side data. The resulting <code>PublicKeyCredential</code> is included in the POST to <code>bootstrap_endpoint</code>:<a href="#section-9.2.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-9.2.1-5">
+<pre>POST /bootstrap HTTP/1.1
+Host: agent-server.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="&lt;ephemeral-pubkey&gt;"
+Content-Type: application/json
+
+{
+  "bootstrap_token": "&lt;jwt&gt;",
+  "attestation": {
+    "type": "webauthn",
+    "credential": {
+      "id": "&lt;base64url credential id&gt;",
+      "rawId": "&lt;base64url&gt;",
+      "response": {
+        "clientDataJSON": "&lt;base64url&gt;",
+        "attestationObject": "&lt;base64url&gt;"
+      },
+      "type": "public-key"
+    }
+  }
+}
+
+</pre><a href="#section-9.2.1-5" class="pilcrow">¶</a>
+</div>
+<p id="section-9.2.1-6">The agent server verifies the WebAuthn registration (<span>[<a href="#WebAuthn" class="cite xref">WebAuthn</a>]</span>) including that <code>clientDataJSON.challenge</code> matches a challenge it issued via <code>webauthn_endpoint</code>, and records the credential ID as a device credential on the binding.<a href="#section-9.2.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="assertion-at-renewal">
+<section id="section-9.2.2">
+          <h4 id="name-assertion-at-renewal">
+<a href="#section-9.2.2" class="section-number selfRef">9.2.2. </a><a href="#name-assertion-at-renewal" class="section-name selfRef">Assertion (at Renewal)</a>
+          </h4>
+<p id="section-9.2.2-1">The agent first fetches a challenge from <code>webauthn_endpoint</code>:<a href="#section-9.2.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-9.2.2-2">
+<pre>GET /webauthn?type=get HTTP/1.1
+Host: agent-server.example
+
+</pre><a href="#section-9.2.2-2" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-9.2.2-3">
+<pre>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "challenge": "&lt;base64url random bytes&gt;"
+}
+
+</pre><a href="#section-9.2.2-3" class="pilcrow">¶</a>
+</div>
+<p id="section-9.2.2-4">The agent invokes <code>navigator.credentials.get()</code> with that challenge and the agent server's <code>rpId</code>, using a discoverable credential (no <code>allowCredentials</code>). The resulting <code>PublicKeyCredential</code> is included in the POST to <code>refresh_endpoint</code>:<a href="#section-9.2.2-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-9.2.2-5">
+<pre>POST /refresh HTTP/1.1
+Host: agent-server.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="&lt;new-ephemeral-pubkey&gt;"
+Content-Type: application/json
+
+{
+  "attestation": {
+    "type": "webauthn",
+    "credential": {
+      "id": "&lt;base64url credential id&gt;",
+      "rawId": "&lt;base64url&gt;",
+      "response": {
+        "clientDataJSON": "&lt;base64url&gt;",
+        "authenticatorData": "&lt;base64url&gt;",
+        "signature": "&lt;base64url&gt;",
+        "userHandle": "&lt;base64url&gt;"
+      },
+      "type": "public-key"
+    }
+  }
+}
+
+</pre><a href="#section-9.2.2-5" class="pilcrow">¶</a>
+</div>
+<p id="section-9.2.2-6">The agent server looks up the binding by the credential's <code>rawId</code> and verifies the WebAuthn assertion (<span>[<a href="#WebAuthn" class="cite xref">WebAuthn</a>]</span>) including that <code>clientDataJSON.challenge</code> matches a challenge it issued via <code>webauthn_endpoint</code>.<a href="#section-9.2.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="mobile-platform-attestation-and-enclave-proof">
+<section id="section-9.3">
+        <h3 id="name-mobile-platform-attestation">
+<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-mobile-platform-attestation" class="section-name selfRef">Mobile: Platform Attestation and Enclave Proof</a>
+        </h3>
+<p id="section-9.3-1">Mobile clients use App Attest (iOS) or Play Integrity (Android) at bootstrap to enroll the enclave key as the device credential. At renewal, the enclave key signature in the <code>jkt-jwt</code> HTTP Message Signature is itself sufficient proof; no additional ceremony is required.<a href="#section-9.3-1" class="pilcrow">¶</a></p>
+<div id="initial-attestation-at-bootstrap">
+<section id="section-9.3.1">
+          <h4 id="name-initial-attestation-at-boot">
+<a href="#section-9.3.1" class="section-number selfRef">9.3.1. </a><a href="#name-initial-attestation-at-boot" class="section-name selfRef">Initial Attestation (at Bootstrap)</a>
+          </h4>
+<p id="section-9.3.1-1">The mobile platform produces an attestation keyed to a server-nominated nonce. The nonce handshake is platform-specific (App Attest on iOS, Play Integrity on Android) and out of scope of this document.<a href="#section-9.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.3.1-2">Once the ceremony has produced an attestation, the agent POSTs to <code>bootstrap_endpoint</code>:<a href="#section-9.3.1-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-9.3.1-3">
+<pre>POST /bootstrap HTTP/1.1
+Host: agent-server.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=jkt-jwt;jwt="&lt;jkt-jwt-token&gt;"
+Content-Type: application/json
+
+{
+  "bootstrap_token": "&lt;jwt&gt;",
+  "attestation": {
+    "type": "app-attest",
+    "key_id": "&lt;base64url&gt;",
+    "attestation_object": "&lt;base64url&gt;",
+    "client_data_hash": "&lt;base64url&gt;"
+  }
+}
+
+</pre><a href="#section-9.3.1-3" class="pilcrow">¶</a>
+</div>
+<p id="section-9.3.1-4">For Play Integrity the <code>attestation</code> object has the form:<a href="#section-9.3.1-4" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-9.3.1-5">
+<pre>{
+  "type": "play-integrity",
+  "integrity_token": "&lt;JWS-encoded attestation&gt;"
+}
+
+</pre><a href="#section-9.3.1-5" class="pilcrow">¶</a>
+</div>
+<p id="section-9.3.1-6">The agent server verifies the attestation per the platform's published rules, including that the nonce was one it nominated, and records the enclave key thumbprint (<code>urn:jkt:sha-256:&lt;thumbprint&gt;</code>) as the device credential on the binding.<a href="#section-9.3.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="enclave-proof-at-renewal">
+<section id="section-9.3.2">
+          <h4 id="name-enclave-proof-at-renewal">
+<a href="#section-9.3.2" class="section-number selfRef">9.3.2. </a><a href="#name-enclave-proof-at-renewal" class="section-name selfRef">Enclave Proof (at Renewal)</a>
+          </h4>
+<p id="section-9.3.2-1">The agent generates a new ephemeral key, has the enclave sign a <code>jkt-jwt</code> binding that key, and POSTs to <code>refresh_endpoint</code>:<a href="#section-9.3.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-9.3.2-2">
+<pre>POST /refresh HTTP/1.1
+Host: agent-server.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=jkt-jwt;jwt="&lt;jkt-jwt-token&gt;"
+
+</pre><a href="#section-9.3.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-9.3.2-3">The request body is empty. The agent server computes the enclave key thumbprint from the <code>jkt-jwt</code> header, looks up the binding, and issues fresh tokens. No <code>attestation</code> member appears in the body because the <code>jkt-jwt</code> signature itself is the proof.<a href="#section-9.3.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="signature-scheme-summary">
+<section id="section-10">
+      <h2 id="name-signature-scheme-summary">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-signature-scheme-summary" class="section-name selfRef">Signature Scheme Summary</a>
+      </h2>
+<p id="section-10-1">The following signature schemes from <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span> are used at each step of bootstrap and renewal:<a href="#section-10-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-2">
+        <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Context</th>
+            <th class="text-left" rowspan="1" colspan="1">Scheme</th>
+            <th class="text-left" rowspan="1" colspan="1">Key material</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">PS /bootstrap request</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>hwk</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Ephemeral (inline)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Agent Server webauthn_endpoint request (browser)</td>
+            <td class="text-left" rowspan="1" colspan="1">unsigned</td>
+            <td class="text-left" rowspan="1" colspan="1">(no signature)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Agent Server bootstrap_endpoint request (browser)</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>hwk</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Ephemeral (same as PS call)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Agent Server bootstrap_endpoint request (mobile)</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>jkt-jwt</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Enclave signs ephemeral</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Post-bootstrap resource calls</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>jwt</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">agent_token wrapping ephemeral</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Agent Server refresh_endpoint request (mobile)</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>jkt-jwt</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Enclave signs new ephemeral</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Agent Server refresh_endpoint request (browser)</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>hwk</code> + WebAuthn assertion in body</td>
+            <td class="text-left" rowspan="1" colspan="1">New ephemeral + user proof</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<div id="renewal">
+<section id="section-11">
+      <h2 id="name-renewal">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-renewal" class="section-name selfRef">Renewal</a>
+      </h2>
+<p id="section-11-1">Agent tokens expire. Per <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> the maximum lifetime is 24 hours. Renewal bypasses the PS because the agent server already holds the <code>(user, agent)</code> binding and the device credential recorded at bootstrap.<a href="#section-11-1" class="pilcrow">¶</a></p>
+<p id="section-11-2">Agent servers that support this specification MUST expose a <code>refresh_endpoint</code> as defined in <a href="#agent-server-metadata" class="auto internal xref">Section 6</a>. The endpoint issues a fresh agent token and resource token bound to a new ephemeral key.<a href="#section-11-2" class="pilcrow">¶</a></p>
+<div id="renewal-flow">
+<section id="section-11.1">
+        <h3 id="name-renewal-flow">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-renewal-flow" class="section-name selfRef">Renewal Flow</a>
+        </h3>
+<p id="section-11.1-1">Before calling <code>refresh_endpoint</code>, the agent performs the renewal attestation ceremony appropriate to its platform. See <a href="#attestation" class="auto internal xref">Section 9</a> for the ceremony details. The ceremony result, if any, is carried in the POST body.<a href="#section-11.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-11.1-2">
+<pre>POST /refresh HTTP/1.1
+Host: agent-server.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=&lt;scheme&gt;
+Content-Type: application/json
+
+{
+  "attestation": {
+    "type": "&lt;attestation type&gt;",
+    ...
+  }
+}
+
+</pre><a href="#section-11.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-11.1-3">The HTTP Message Signature scheme is determined by the platform:<a href="#section-11.1-3" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-11.1-4.1">
+            <strong>Browser clients</strong> use <code>hwk</code> with a newly generated ephemeral key.<a href="#section-11.1-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.1-4.2">
+            <strong>Mobile clients</strong> use <code>jkt-jwt</code> (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>), where the enclave key signs a <code>jkt-jwt</code> binding a newly generated ephemeral key; the ephemeral key signs the HTTP message. For mobile, the request body MAY be empty because the <code>jkt-jwt</code> signature itself proves possession of the device credential.<a href="#section-11.1-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-11.1-5">Request body members:<a href="#section-11.1-5" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-11.1-6.1">
+            <strong><code>attestation</code></strong> (REQUIRED for browser clients; omitted for mobile clients). The assertion result defined by the renewal ceremony in <a href="#attestation" class="auto internal xref">Section 9</a>.<a href="#section-11.1-6.1" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-11.1-7">On receiving the request, the agent server MUST:<a href="#section-11.1-7" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-11.1-8">
+<li id="section-11.1-8.1">Verify the HTTP Message Signature.<a href="#section-11.1-8.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.1-8.2">
+            <p id="section-11.1-8.2.1">Look up the binding:<a href="#section-11.1-8.2.1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-11.1-8.2.2.1">For browser clients, by the credential ID (<code>rawId</code>) in the WebAuthn assertion.<a href="#section-11.1-8.2.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="compact" id="section-11.1-8.2.2.2">For mobile clients, by the enclave key thumbprint (<code>urn:jkt:sha-256:&lt;thumbprint&gt;</code>) derived from the <code>jkt-jwt</code> header.<a href="#section-11.1-8.2.2.2" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li id="section-11.1-8.3">Verify the renewal attestation per the rules of the indicated ceremony in <a href="#attestation" class="auto internal xref">Section 9</a>, including that any ceremony challenge matches one it issued and has not expired or been consumed. Mark the challenge as consumed.<a href="#section-11.1-8.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.1-8.4">Issue a fresh agent token and resource token bound to the new ephemeral key.<a href="#section-11.1-8.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="refresh-response">
+<section id="section-11.2">
+        <h3 id="name-refresh-response">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-refresh-response" class="section-name selfRef">Refresh Response</a>
+        </h3>
+<p id="section-11.2-1">On success, the agent server returns:<a href="#section-11.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-11.2-2">
+<pre>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "agent_token": "&lt;jwt&gt;",
+  "resource_token": "&lt;jwt&gt;"
+}
+
+</pre><a href="#section-11.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-11.2-3">The tokens have the same structure as in <a href="#token-response" class="auto internal xref">Section 8.7</a> but bound to the new ephemeral key.<a href="#section-11.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="renewal-failure">
+<section id="section-11.3">
+        <h3 id="name-renewal-failure">
+<a href="#section-11.3" class="section-number selfRef">11.3. </a><a href="#name-renewal-failure" class="section-name selfRef">Renewal Failure</a>
+        </h3>
+<p id="section-11.3-1">Renewal MUST fail in the following conditions. The agent server MUST respond with <code>401 Unauthorized</code> (for credential failures) or <code>404 Not Found</code> (for missing bindings), and the agent MUST repeat the full PS-mediated bootstrap flow from <a href="#bootstrap-flow" class="auto internal xref">Section 8</a>:<a href="#section-11.3-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-11.3-2.1">The enclave key has been regenerated (for example, after mobile reinstall) and the <code>urn:jkt</code> is no longer recognized.<a href="#section-11.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.3-2.2">The WebAuthn credential is no longer usable (for example, browser storage cleared or hardware key removed).<a href="#section-11.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.3-2.3">The binding has been revoked at the agent server.<a href="#section-11.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-11.3-2.4">The PS has stopped vouching for the user (for example, B2B deprovisioning). In this case subsequent PS <code>/token</code> calls during bootstrap will fail, and the agent will be unable to obtain <code>auth_tokens</code>.<a href="#section-11.3-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="agent-person-binding-invariant">
+<section id="section-12">
+      <h2 id="name-agent-person-binding-invari">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-agent-person-binding-invari" class="section-name selfRef">Agent-Person Binding Invariant</a>
+      </h2>
+<p id="section-12-1">Per <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>, each agent is bound to exactly one person. In bootstrap:<a href="#section-12-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-12-2.1">
+          <code>(ps_url, user_sub) -&gt; aauth:local@&lt;agent-server-domain&gt;</code> is one-to-one.<a href="#section-12-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-12-2.2">The same user at the same PS maps to the same <code>aauth:local@&lt;agent-server-domain&gt;</code> regardless of device.<a href="#section-12-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-12-2.3">Multiple devices per binding MAY exist through multiple associated device credentials.<a href="#section-12-2.3" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-12-2.4">Revoking a binding at the agent server revokes access for all devices bound to it.<a href="#section-12-2.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-12-3">This supports:<a href="#section-12-3" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-12-4.1">Account switching, where an agent holds multiple agent tokens for multiple <code>(user, agent)</code> bindings and selects among them at runtime.<a href="#section-12-4.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-12-4.2">Multi-device use, where a single <code>aauth:local</code> identity has device credentials on several devices.<a href="#section-12-4.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-12-4.3">Immediate cross-device revocation, where disabling the binding at the agent server invalidates all device credentials simultaneously.<a href="#section-12-4.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="out-of-band-consent-updates">
+<section id="section-13">
+      <h2 id="name-out-of-band-consent-updates">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-out-of-band-consent-updates" class="section-name selfRef">Out-of-Band Consent Updates</a>
+      </h2>
+<p id="section-13-1">After first bootstrap, the PS knows the <code>(user, agent_server)</code> consent state and holds a communication channel with the user.<a href="#section-13-1" class="pilcrow">¶</a></p>
+<p id="section-13-2">This enables scope changes without agent involvement:<a href="#section-13-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-13-3">
+<li id="section-13-3.1">The agent server requests additional scopes via a later interaction with the PS.<a href="#section-13-3.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-13-3.2">The PS prompts the user via the established channel.<a href="#section-13-3.2" class="pilcrow">¶</a>
+</li>
+        <li id="section-13-3.3">On approval, the PS updates its consent state for the <code>(user, agent_server)</code> pair.<a href="#section-13-3.3" class="pilcrow">¶</a>
+</li>
+        <li id="section-13-3.4">The next <code>auth_token</code> issuance from the PS includes the new scopes.<a href="#section-13-3.4" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-13-4">PS implementations that wish to support out-of-band consent updates SHOULD establish a direct user communication channel at first bootstrap.<a href="#section-13-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="b2b-extensions">
+<section id="section-14">
+      <h2 id="name-b2b-extensions">
+<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-b2b-extensions" class="section-name selfRef">B2B Extensions</a>
+      </h2>
+<p id="section-14-1">Bootstrap extends to B2B use cases by carrying enterprise parameters on the PS <code>/bootstrap</code> request:<a href="#section-14-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-14-2">
+<pre>{
+  "agent_server": "https://vendor.example",
+  "scope": "openid profile email org groups roles",
+  "tenant": "acme-corp",
+  "domain_hint": "acme.example",
+  "login_hint": "employee@acme.example"
+}
+
+</pre><a href="#section-14-2" class="pilcrow">¶</a>
+</div>
+<p id="section-14-3">These parameters are drawn from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> and tell the PS which organizational identity context to use.<a href="#section-14-3" class="pilcrow">¶</a></p>
+<p id="section-14-4">The <code>bootstrap_token</code> and the resulting <code>auth_tokens</code> carry enterprise claims such as <code>org</code>, <code>groups</code>, and <code>roles</code> from the organization's identity infrastructure. This allows the vendor to apply organization-based authorization without running a per-customer SAML or OIDC integration.<a href="#section-14-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-15">
+      <h2 id="name-security-considerations">
+<a href="#section-15" class="section-number selfRef">15. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="bootstrap-token-replay">
+<section id="section-15.1">
+        <h3 id="name-bootstrap_token-replay">
+<a href="#section-15.1" class="section-number selfRef">15.1. </a><a href="#name-bootstrap_token-replay" class="section-name selfRef">bootstrap_token Replay</a>
+        </h3>
+<p id="section-15.1-1">The <code>bootstrap_token</code> carries a <code>cnf</code> claim binding it to the agent's ephemeral public key. Possession of the token alone is insufficient; the holder MUST also control the corresponding private key. Agent servers MUST reject <code>bootstrap_token</code>s that are not accompanied by an HTTP request signed with the key named in <code>cnf.jwk</code>, and MUST reject replay by <code>jti</code>.<a href="#section-15.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="consent-phishing">
+<section id="section-15.2">
+        <h3 id="name-consent-phishing">
+<a href="#section-15.2" class="section-number selfRef">15.2. </a><a href="#name-consent-phishing" class="section-name selfRef">Consent Phishing</a>
+        </h3>
+<p id="section-15.2-1">The user sees the agent server's domain, name, and logo at the PS consent screen. This relies on user recognition of the agent server. The PS SHOULD retrieve the agent server's display metadata from its <code>/.well-known/aauth-agent.json</code> document and present it at the consent screen.<a href="#section-15.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="key-to-user-binding-without-attestation">
+<section id="section-15.3">
+        <h3 id="name-key-to-user-binding-without">
+<a href="#section-15.3" class="section-number selfRef">15.3. </a><a href="#name-key-to-user-binding-without" class="section-name selfRef">Key-to-User Binding Without Attestation</a>
+        </h3>
+<p id="section-15.3-1">The bootstrap flow as specified relies on platform attestation at the agent server step. Environments without a platform attestation mechanism cannot safely use this flow because a remote process may impersonate a local user by relaying ephemeral keys through them. This is the reason command-line tools are out of scope.<a href="#section-15.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="enclave-key-compromise">
+<section id="section-15.4">
+        <h3 id="name-enclave-key-compromise">
+<a href="#section-15.4" class="section-number selfRef">15.4. </a><a href="#name-enclave-key-compromise" class="section-name selfRef">Enclave Key Compromise</a>
+        </h3>
+<p id="section-15.4-1">On mobile, compromise of the enclave key breaks the chain of delegated ephemeral keys. Implementations SHOULD use the shortest practical <code>jkt-jwt</code> lifetimes.<a href="#section-15.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="agent-server-compromise">
+<section id="section-15.5">
+        <h3 id="name-agent-server-compromise">
+<a href="#section-15.5" class="section-number selfRef">15.5. </a><a href="#name-agent-server-compromise" class="section-name selfRef">Agent Server Compromise</a>
+        </h3>
+<p id="section-15.5-1">Compromise of an agent server breaks all agent identities minted by that server. Bootstrap does not introduce this risk, but centralizes it at the agent server.<a href="#section-15.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ps-compromise">
+<section id="section-15.6">
+        <h3 id="name-ps-compromise">
+<a href="#section-15.6" class="section-number selfRef">15.6. </a><a href="#name-ps-compromise" class="section-name selfRef">PS Compromise</a>
+        </h3>
+<p id="section-15.6-1">The PS is already a high-value target in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>. Bootstrap does not change the risk profile, but makes the PS load-bearing for agent identity creation.<a href="#section-15.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-16">
+      <h2 id="name-privacy-considerations">
+<a href="#section-16" class="section-number selfRef">16. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<div id="directed-user-identifiers">
+<section id="section-16.1">
+        <h3 id="name-directed-user-identifiers">
+<a href="#section-16.1" class="section-number selfRef">16.1. </a><a href="#name-directed-user-identifiers" class="section-name selfRef">Directed User Identifiers</a>
+        </h3>
+<p id="section-16.1-1">The <code>bootstrap_token.sub</code> claim MUST be a pairwise user identifier directed at the agent server. This prevents cross-vendor correlation of users across different agent servers.<a href="#section-16.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="mobile-enclave-identity">
+<section id="section-16.2">
+        <h3 id="name-mobile-enclave-identity">
+<a href="#section-16.2" class="section-number selfRef">16.2. </a><a href="#name-mobile-enclave-identity" class="section-name selfRef">Mobile Enclave Identity</a>
+        </h3>
+<p id="section-16.2-1">The PS sees only the ephemeral <code>hwk</code> key. The agent server sees the <code>jkt-jwt</code> carrying the enclave identity. The PS therefore cannot track a device across bootstraps at different agent servers.<a href="#section-16.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="out-of-band-consent-channel">
+<section id="section-16.3">
+        <h3 id="name-out-of-band-consent-channel">
+<a href="#section-16.3" class="section-number selfRef">16.3. </a><a href="#name-out-of-band-consent-channel" class="section-name selfRef">Out-of-Band Consent Channel</a>
+        </h3>
+<p id="section-16.3-1">The user communication channel held by the PS after first bootstrap is privacy-sensitive. PS implementations SHOULD document their user communication practices.<a href="#section-16.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-17">
+      <h2 id="name-iana-considerations">
+<a href="#section-17" class="section-number selfRef">17. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="media-type-registration">
+<section id="section-17.1">
+        <h3 id="name-media-type-registration">
+<a href="#section-17.1" class="section-number selfRef">17.1. </a><a href="#name-media-type-registration" class="section-name selfRef">Media Type Registration</a>
+        </h3>
+<p id="section-17.1-1">This document requests registration of the following media type in the IANA Media Types registry:<a href="#section-17.1-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-17.1-2.1">
+            <strong><code>application/aa-bootstrap+jwt</code></strong>: JWT used by the AAuth Bootstrap protocol.<a href="#section-17.1-2.1" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="jwt-claims">
+<section id="section-17.2">
+        <h3 id="name-jwt-claims">
+<a href="#section-17.2" class="section-number selfRef">17.2. </a><a href="#name-jwt-claims" class="section-name selfRef">JWT Claims</a>
+        </h3>
+<p id="section-17.2-1">This document does not introduce new JWT claims. The <code>bootstrap_token</code> uses existing claims and those defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-17.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="aauth-agent-server-metadata-registration">
+<section id="section-17.3">
+        <h3 id="name-aauth-agent-server-metadata">
+<a href="#section-17.3" class="section-number selfRef">17.3. </a><a href="#name-aauth-agent-server-metadata" class="section-name selfRef">AAuth Agent Server Metadata Registration</a>
+        </h3>
+<p id="section-17.3-1">This document registers the following parameters in the AAuth Agent Server Metadata registry established by <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>:<a href="#section-17.3-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-3">
+          <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Parameter</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>bootstrap_endpoint</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">URL of the agent server's bootstrap endpoint</td>
+              <td class="text-left" rowspan="1" colspan="1">This document, <a href="#agent-server-metadata" class="auto internal xref">Section 6</a>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>refresh_endpoint</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">URL of the agent server's refresh endpoint</td>
+              <td class="text-left" rowspan="1" colspan="1">This document, <a href="#agent-server-metadata" class="auto internal xref">Section 6</a>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>webauthn_endpoint</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">URL of the agent server's WebAuthn challenge endpoint</td>
+              <td class="text-left" rowspan="1" colspan="1">This document, <a href="#webauthn-endpoint" class="auto internal xref">Section 7</a>
+</td>
+            </tr>
+          </tbody>
+        </table>
+</section>
+</div>
+</section>
+</div>
+<div id="implementation-status">
+<section id="section-18">
+      <h2 id="name-implementation-status">
+<a href="#section-18" class="section-number selfRef">18. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
+      </h2>
+<p id="section-18-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-18-1" class="pilcrow">¶</a></p>
+<p id="section-18-2">This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in <span>[<a href="#RFC7942" class="cite xref">RFC7942</a>]</span>. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.<a href="#section-18-2" class="pilcrow">¶</a></p>
+<p id="section-18-3">There are currently no known implementations.<a href="#section-18-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="document-history">
+<section id="section-19">
+      <h2 id="name-document-history">
+<a href="#section-19" class="section-number selfRef">19. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
+      </h2>
+<p id="section-19-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-19-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-19-2.1">
+          <p id="section-19-2.1.1">draft-hardt-aauth-bootstrap-00<a href="#section-19-2.1.1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-19-2.1.2.1">Initial submission.<a href="#section-19-2.1.2.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+      </ul>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="section-20">
+      <h2 id="name-acknowledgments">
+<a href="#section-20" class="section-number selfRef">20. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="section-20-1">TBD.<a href="#section-20-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-21">
+      <h2 id="name-references">
+<a href="#section-21" class="section-number selfRef">21. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-21.1">
+        <h3 id="name-normative-references">
+<a href="#section-21.1" class="section-number selfRef">21.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.hardt-aauth-protocol">[I-D.hardt-aauth-protocol]</dt>
+        <dd>
+<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"AAuth Protocol"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.hardt-httpbis-signature-key">[I-D.hardt-httpbis-signature-key]</dt>
+      <dd>
+<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"HTTP Signature Keys"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key">https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-21.2">
+        <h3 id="name-informative-references">
+<a href="#section-21.2" class="section-number selfRef">21.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="OpenID.EnterpriseExtensions">[OpenID.EnterpriseExtensions]</dt>
+        <dd>
+<span class="refAuthor">OpenID Foundation</span>, <span class="refTitle">"OpenID Connect Enterprise Extensions"</span>, <time datetime="2024" class="refDate">2024</time>, <span>&lt;<a href="https://openid.net/specs/openid-connect-enterprise-extensions-1_0.html">https://openid.net/specs/openid-connect-enterprise-extensions-1_0.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7942">[RFC7942]</dt>
+        <dd>
+<span class="refAuthor">Sheffer, Y.</span> and <span class="refAuthor">A. Farrel</span>, <span class="refTitle">"Improving Awareness of Running Code: The Implementation Status Section"</span>, <span class="seriesInfo">BCP 205</span>, <span class="seriesInfo">RFC 7942</span>, <span class="seriesInfo">DOI 10.17487/RFC7942</span>, <time datetime="2016-07" class="refDate">July 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7942">https://www.rfc-editor.org/info/rfc7942</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="WebAuthn">[WebAuthn]</dt>
+      <dd>
+<span class="refAuthor">W3C</span>, <span class="refTitle">"Web Authentication: An API for accessing Public Key Credentials - Level 3"</span>, <time datetime="2024" class="refDate">2024</time>, <span>&lt;<a href="https://www.w3.org/TR/webauthn-3/">https://www.w3.org/TR/webauthn-3/</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="relationship-to-other-specifications">
+<section id="appendix-A">
+      <h2 id="name-relationship-to-other-speci">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-relationship-to-other-speci" class="section-name selfRef">Relationship to Other Specifications</a>
+      </h2>
+<ul class="compact">
+<li class="compact" id="appendix-A-1.1">
+          <strong>AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</strong>: Bootstrap produces an <code>agent_token</code> and <code>resource_token</code> in the shapes defined by the main specification, and consumes the HTTP Message Signatures profile defined there.<a href="#appendix-A-1.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="appendix-A-1.2">
+          <strong>HTTP Signature Keys (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)</strong>: Bootstrap uses the <code>hwk</code>, <code>jkt-jwt</code>, and <code>jwt</code> schemes defined there.<a href="#appendix-A-1.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="appendix-A-1.3">
+          <strong>OpenID Provider Commands (OPC)</strong>: A complementary protocol for lifecycle events. Bootstrap handles initial onboarding (user-initiated, pull). OPC handles lifecycle events (system-initiated, push). The two compose but operate independently.<a href="#appendix-A-1.3" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="appendix-A-1.4">
+          <strong>OpenID Connect Enterprise Extensions (<span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>)</strong>: Source of the enterprise parameters (<code>tenant</code>, <code>domain_hint</code>, <code>login_hint</code>) and claims (<code>org</code>, <code>groups</code>, <code>roles</code>) used in B2B bootstrap.<a href="#appendix-A-1.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Dick Hardt</span></div>
+<div dir="auto" class="left"><span class="org">Hellō</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:dick.hardt@gmail.com" class="email">dick.hardt@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
