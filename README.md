@@ -79,6 +79,8 @@ Rich Resource Requests. Vocabulary-based authorization using formats agents alre
 
 Bootstrap ceremony for SaaS browser, SaaS mobile, and B2B SaaS agents. Defines the `bootstrap_token`, the PS and agent-server bootstrap endpoints, per-platform attestation (WebAuthn, App Attest, Play Integrity), and renewal flows that bypass the PS after the initial binding is established.
 
+* [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-aauth-bootstrap.html)
+
 ## Links
 
 | Resource | Link |
