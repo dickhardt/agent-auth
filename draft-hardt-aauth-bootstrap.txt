@@ -4,8 +4,8 @@
 
 TBD                                                             D. Hardt
 Internet-Draft                                                     Hellō
-Intended status: Standards Track                           19 April 2026
-Expires: 21 October 2026
+Intended status: Standards Track                           20 April 2026
+Expires: 22 October 2026
 
 
                             AAuth Bootstrap
@@ -15,15 +15,17 @@ Abstract
 
    This document defines AAuth Bootstrap, an extension to the AAuth
    Protocol ([I-D.hardt-aauth-protocol]) that specifies how a SaaS
-   browser agent, SaaS mobile agent, or B2B SaaS agent obtains its
-   initial agent identity (aauth:local@domain), agent token, and
-   resource token through a ceremony mediated by the user's Person
-   Server (PS).  Bootstrap establishes a binding between a user (as
-   vouched for by the user's PS) and an agent identity minted by the
-   vendor-operated agent server.  The specification defines the
-   bootstrap_token, the /bootstrap endpoints on the PS and agent server,
-   the signature schemes used at each step, and renewal flows that
-   bypass the PS after the initial binding is established.
+   browser agent, SaaS mobile agent, or B2B SaaS agent establishes its
+   initial agent identity (aauth:local@domain) and agent token through a
+   ceremony mediated by the user's Person Server (PS).  Bootstrap
+   establishes the binding between a user (as vouched for by the user's
+   PS) and an agent identity minted by the vendor-operated agent server.
+   Identity claims and scoped authorization are obtained separately
+   through the standard three-party flow defined in AAuth Protocol.
+   This specification defines the bootstrap_token, the /bootstrap
+   endpoints on the PS and agent server, the signature schemes used at
+   each step, and renewal flows that bypass the PS after the initial
+   binding is established.
 
 Discussion Venues
 
@@ -49,7 +51,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 21 October 2026.
+   This Internet-Draft will expire on 22 October 2026.
 
 Copyright Notice
 
@@ -91,8 +93,6 @@ Table of Contents
      8.5.  Request to Agent Server /bootstrap
      8.6.  Binding Creation
      8.7.  Token Response
-       8.7.1.  agent_token
-       8.7.2.  resource_token
      8.8.  Completion
    9.  Attestation
      9.1.  Ceremony Selection
@@ -108,7 +108,7 @@ Table of Contents
      11.2.  Refresh Response
      11.3.  Renewal Failure
    12. Agent-Person Binding Invariant
-   13. Out-of-Band Consent Updates
+   13. Out-of-Band User Channel
    14. B2B Extensions
    15. Security Considerations
      15.1.  bootstrap_token Replay
@@ -150,9 +150,19 @@ Table of Contents
    identity cannot be pre-minted at build time because it is tied to a
    specific user, and the user's identity is vouched for by the user's
    PS rather than by the vendor.  Bootstrap is the ceremony by which the
-   user's PS conveys user identity to the vendor's agent server so that
-   the agent server can mint an aauth:local@domain identity bound to
-   that user.
+   user's PS conveys a directed user identifier to the vendor's agent
+   server so that the agent server can mint an aauth:local@domain
+   identity bound to that user.
+
+   Bootstrap is intentionally limited to establishing the identity
+   binding.  It does not carry scope, does not request identity claims,
+   and does not issue a resource_token.  Identity claims (email,
+   profile, organizational membership, and so on) are obtained
+   separately by the agent server running the standard three-party flow
+   defined in AAuth Protocol.  This separation keeps bootstrap focused
+   on the binding, reuses existing protocol machinery for claims
+   release, and lets the agent request claims incrementally rather than
+   up front.
 
    This document specifies that ceremony.  It defines:
 
@@ -163,8 +173,8 @@ Table of Contents
       used at each step.
    *  Renewal flows on the agent server that do not require re-involving
       the PS.
-   *  B2B extensions that carry organizational identity from an
-      enterprise directory through the PS to the agent server.
+   *  B2B extensions that let the PS select an organizational identity
+      when the user has more than one.
 
 1.1.  In Scope
 
@@ -237,9 +247,9 @@ Table of Contents
 3.3.  Terms Defined in This Document
 
    *  *Bootstrap*: The PS-mediated ceremony defined in this document by
-      which a SaaS or B2B agent obtains its initial agent token and
-      resource token.  Distinct from the developer-side ceremonies used
-      by self-hosted agents and from platform attestation enrollment.
+      which a SaaS or B2B agent obtains its initial agent token.
+      Distinct from the developer-side ceremonies used by self-hosted
+      agents and from platform attestation enrollment.
    *  *Ephemeral Key*: An HTTP signing key generated by the agent whose
       lifetime is bounded by the agent token.  Typically hours to a day,
       not per-request.
@@ -270,7 +280,7 @@ Table of Contents
       issues the bootstrap_token.
    *  The *agent server*, which verifies the bootstrap_token, performs
       attestation, records the (user, agent) binding, and issues the
-      agent token and resource token.
+      agent token.
 
    Resources and access servers (AS) are not involved in bootstrap.
    After bootstrap, the agent interacts with them using the tokens
@@ -286,7 +296,7 @@ Table of Contents
      |                                 |                    |
      | HTTPSig (hwk, ephemeral)        |                    |
      | POST bootstrap_endpoint (PS)    |                    |
-     | { agent_server, scope, ... }    |                    |
+     | { agent_server }                |                    |
      |-------------------------------->|                    |
      |                                 |                    |
      | 202 Accepted                    |                    |
@@ -309,25 +319,17 @@ Table of Contents
      |   <attestation> }               |                    |
      |----------------------------------------------------->|
      |                                 |                    |
-     | { agent_token, resource_token } |                    |
-     |<-----------------------------------------------------|
-     |                                 |                    |
-     | HTTPSig w/ agent token          |                    |
-     | POST token_endpoint (PS)        |                    |
-     | w/ resource_token               |                    |
-     |-------------------------------->|                    |
-     |                                 |                    |
-     | auth_token                      |                    |
-     |<--------------------------------|                    |
-     |                                 |                    |
-     | HTTPSig w/ auth token           |                    |
-     | GET /api/...                    |                    |
-     |----------------------------------------------------->|
-     |                                 |                    |
-     | 200 OK                          |                    |
+     | { agent_token }                 |                    |
      |<-----------------------------------------------------|
 
                         Figure 1: Bootstrap Ceremony
+
+   At this point the binding exists and the agent holds an agent_token.
+   Further access to the agent server's APIs follows the AAuth Protocol:
+   identity-based calls use the agent_token directly; calls that require
+   user claims follow the three-party flow (authorization endpoint →
+   resource_token → PS /token → auth_token), as defined in
+   [I-D.hardt-aauth-protocol].
 
    The subsequent renewal flow skips the PS and uses the device
    credential recorded at bootstrap:
@@ -341,7 +343,7 @@ Table of Contents
      | { <attestation> }                                |
      |------------------------------------------------->|
      |                                                  |
-     | { agent_token, resource_token } (new ephemeral)  |
+     | { agent_token } (new ephemeral)                  |
      |<-------------------------------------------------|
 
                          Figure 2: Renewal Ceremony
@@ -473,8 +475,7 @@ Content-Type: application/json
    Content-Type: application/json
 
    {
-     "agent_server": "https://agent-server.example",
-     "scope": "openid profile email"
+     "agent_server": "https://agent-server.example"
    }
 
    The request body is a JSON object with the following members:
@@ -486,8 +487,6 @@ Content-Type: application/json
       terminology of [I-D.hardt-aauth-protocol]; implementations MUST
       NOT use alternative names such as audience or client_id for this
       field.
-   *  *scope* (REQUIRED).  Space-separated list of identity scopes the
-      agent server is requesting.
    *  *domain_hint* (OPTIONAL).  Identifies which of the user's
       identities at this PS should be used when the user has more than
       one (for example a personal identity and a work identity).  The
@@ -514,8 +513,11 @@ Content-Type: application/json
    Location: /bootstrap/pending/<id>
 
    The agent directs the user to the interaction URL.  The PS
-   authenticates the user and presents a consent screen describing the
-   agent server and the scopes being requested.
+   authenticates the user and presents a consent screen asking the user
+   to allow the agent server to establish an account bound to the user's
+   identity at this PS.  No identity claims are released at this step;
+   claims flow through the standard AAuth three-party flow after
+   bootstrap completes.
 
    The consent screen SHOULD display the agent server's domain, name,
    and logo as retrieved from the agent server's /.well-known/aauth-
@@ -550,12 +552,16 @@ Content-Type: application/json
    *  *cnf* (REQUIRED).  An object containing jwk, the agent's ephemeral
       public key.  MUST match the hwk key used to sign the PS /bootstrap
       request.
-   *  *scope* (REQUIRED).  Space-separated list of identity scopes
-      granted by the user.
    *  *jti* (REQUIRED).  A unique token identifier.
    *  *iat* (REQUIRED).  Issued-at time.
    *  *exp* (REQUIRED).  Expiration time.  SHOULD NOT exceed 5 minutes
       after iat.
+
+   The bootstrap_token does not carry scope, agent, or any claim
+   describing user attributes.  Its sole purpose is to convey a directed
+   user identifier (sub) bound to an agent-side ephemeral key (cnf).
+   Identity claims are obtained separately via the AAuth Protocol three-
+   party flow after bootstrap.
 
    The bootstrap_token differs from a resource token defined in
    [I-D.hardt-aauth-protocol]:
@@ -627,7 +633,7 @@ Content-Type: application/json
    8.  Store the device credential derived from the attestation (a
        WebAuthn credential ID for browsers, or the enclave key
        thumbprint for mobile) on the binding.
-   9.  Issue the agent token and resource token Section 8.7.
+   9.  Issue the agent token Section 8.7.
 
    If bootstrap_token verification fails, the agent server MUST respond
    400 Bad Request.  If attestation verification fails, the agent server
@@ -651,17 +657,14 @@ Content-Type: application/json
 
 8.7.  Token Response
 
-   The agent server returns an agent token and a resource token:
+   The agent server returns an agent token:
 
    HTTP/1.1 200 OK
    Content-Type: application/json
 
    {
-     "agent_token": "<jwt>",
-     "resource_token": "<jwt>"
+     "agent_token": "<jwt>"
    }
-
-8.7.1.  agent_token
 
    The agent_token is a JWT as defined in [I-D.hardt-aauth-protocol]
    with:
@@ -674,23 +677,30 @@ Content-Type: application/json
    *  *ps*: The PS URL (from bootstrap_token.iss).
    *  *cnf.jwk*: The agent's ephemeral public key.
 
-8.7.2.  resource_token
-
-   The resource_token is a JWT as defined in [I-D.hardt-aauth-protocol]
-   with:
-
-   *  *typ*: aa-resource+jwt.
-   *  *iss*: The agent server URL (acting as resource).
-   *  *aud*: The PS URL.
-   *  *agent*: The aauth:local@<agent-server-domain> identity.
-   *  *scope*: The identity scopes granted by the PS.
+   The agent server does not issue a resource_token at bootstrap.  If
+   the agent server needs to release user identity claims to itself (for
+   example to populate a user profile page), it follows the standard
+   AAuth Protocol three-party flow after bootstrap completes.
 
 8.8.  Completion
 
-   The agent exchanges the resource_token at the PS /token endpoint, as
-   defined in [I-D.hardt-aauth-protocol], to obtain an auth_token
-   carrying identity claims.  The agent then calls the agent server's
-   APIs using that auth_token.
+   Bootstrap is complete when the agent holds the agent_token.  The
+   agent then uses the agent_token to call the agent server's APIs:
+
+   *  *Identity-based calls*, where the agent server authorizes based
+      solely on the agent's identity, use the agent_token directly per
+      the identity-based mode of [I-D.hardt-aauth-protocol].
+   *  *Calls requiring user claims* follow the standard three-party flow
+      defined in [I-D.hardt-aauth-protocol]: the agent calls the agent
+      server's authorization_endpoint to obtain a resource_token,
+      exchanges that resource_token at the PS /token endpoint for an
+      auth_token carrying the required claims, then calls the agent
+      server's API with the auth_token.
+
+   Each claim-bearing call follows the same pattern, which lets the
+   agent request claims incrementally rather than up front.  The PS
+   applies its own policy (including any user consent) when issuing each
+   auth_token.
 
 9.  Attestation
 
@@ -910,8 +920,8 @@ Content-Type: application/json
 
    The request body is empty.  The agent server computes the enclave key
    thumbprint from the jkt-jwt header, looks up the binding, and issues
-   fresh tokens.  No attestation member appears in the body because the
-   jkt-jwt signature itself is the proof.
+   a fresh agent_token.  No attestation member appears in the body
+   because the jkt-jwt signature itself is the proof.
 
 10.  Signature Scheme Summary
 
@@ -961,7 +971,7 @@ Content-Type: application/json
 
    Agent servers that support this specification MUST expose a
    refresh_endpoint as defined in Section 6.  The endpoint issues a
-   fresh agent token and resource token bound to a new ephemeral key.
+   fresh agent_token bound to a new ephemeral key.
 
 11.1.  Renewal Flow
 
@@ -1012,8 +1022,7 @@ Content-Type: application/json
        ceremony in Section 9, including that any ceremony challenge
        matches one it issued and has not expired or been consumed.  Mark
        the challenge as consumed.
-   4.  Issue a fresh agent token and resource token bound to the new
-       ephemeral key.
+   4.  Issue a fresh agent token bound to the new ephemeral key.
 
 11.2.  Refresh Response
 
@@ -1023,12 +1032,11 @@ Content-Type: application/json
    Content-Type: application/json
 
    {
-     "agent_token": "<jwt>",
-     "resource_token": "<jwt>"
+     "agent_token": "<jwt>"
    }
 
-   The tokens have the same structure as in Section 8.7 but bound to the
-   new ephemeral key.
+   The agent_token has the same structure as in Section 8.7 but bound to
+   the new ephemeral key.
 
 11.3.  Renewal Failure
 
@@ -1043,9 +1051,9 @@ Content-Type: application/json
       storage cleared or hardware key removed).
    *  The binding has been revoked at the agent server.
    *  The PS has stopped vouching for the user (for example, B2B
-      deprovisioning).  In this case subsequent PS /token calls during
-      bootstrap will fail, and the agent will be unable to obtain
-      auth_tokens.
+      deprovisioning).  In this case the subsequent PS /bootstrap call
+      will fail at the interaction step, and the agent will be unable to
+      re-establish the binding.
 
 12.  Agent-Person Binding Invariant
 
@@ -1071,23 +1079,22 @@ Content-Type: application/json
       the agent server invalidates all device credentials
       simultaneously.
 
-13.  Out-of-Band Consent Updates
+13.  Out-of-Band User Channel
 
-   After first bootstrap, the PS knows the (user, agent_server) consent
-   state and holds a communication channel with the user.
+   After first bootstrap, the PS knows the (user, agent_server) binding
+   and MAY establish a communication channel with the user (push, email,
+   or an authenticated session).  PSes that establish such a channel at
+   first bootstrap can use it to prompt the user for consent on
+   subsequent auth_token requests from the agent server without
+   requiring an in-app interaction.
 
-   This enables scope changes without agent involvement:
+   This does not change the bootstrap protocol itself; bootstrap
+   produces only the binding.  It enables a smoother user experience for
+   the standard three-party flow by letting the PS reach the user out of
+   band when a token request requires consent.
 
-   1.  The agent server requests additional scopes via a later
-       interaction with the PS.
-   2.  The PS prompts the user via the established channel.
-   3.  On approval, the PS updates its consent state for the (user,
-       agent_server) pair.
-   4.  The next auth_token issuance from the PS includes the new scopes.
-
-   PS implementations that wish to support out-of-band consent updates
-   SHOULD establish a direct user communication channel at first
-   bootstrap.
+   PS implementations that wish to support out-of-band consent SHOULD
+   establish a direct user communication channel at first bootstrap.
 
 14.  B2B Extensions
 
@@ -1096,20 +1103,24 @@ Content-Type: application/json
 
    {
      "agent_server": "https://vendor.example",
-     "scope": "openid profile email org groups roles",
      "tenant": "acme-corp",
      "domain_hint": "acme.example",
      "login_hint": "employee@acme.example"
    }
 
    These parameters are drawn from [OpenID.EnterpriseExtensions] and
-   tell the PS which organizational identity context to use.
+   tell the PS which organizational identity context to use when
+   creating the binding.  They affect which pairwise sub the PS issues
+   and which organizational identity subsequent token requests resolve
+   against.
 
-   The bootstrap_token and the resulting auth_tokens carry enterprise
-   claims such as org, groups, and roles from the organization's
-   identity infrastructure.  This allows the vendor to apply
-   organization-based authorization without running a per-customer SAML
-   or OIDC integration.
+   No enterprise claims (org, groups, roles) are carried in the
+   bootstrap_token.  Those claims are released in the auth_token issued
+   by the PS on subsequent three-party flows, per
+   [I-D.hardt-aauth-protocol].  This lets the vendor apply organization-
+   based authorization without running a per-customer SAML or OIDC
+   integration, using the same claim-release machinery as any other
+   AAuth flow.
 
 15.  Security Considerations
 
@@ -1268,9 +1279,10 @@ Content-Type: application/json
 Appendix A.  Relationship to Other Specifications
 
    *  *AAuth Protocol ([I-D.hardt-aauth-protocol])*: Bootstrap produces
-      an agent_token and resource_token in the shapes defined by the
-      main specification, and consumes the HTTP Message Signatures
-      profile defined there.
+      an agent_token in the shape defined by the main specification, and
+      consumes the HTTP Message Signatures profile defined there.
+      Identity claims and scoped authorization use the three-party flow
+      from the main specification; bootstrap does not duplicate it.
    *  *HTTP Signature Keys ([I-D.hardt-httpbis-signature-key])*:
       Bootstrap uses the hwk, jkt-jwt, and jwt schemes defined there.
    *  *OpenID Provider Commands (OPC)*: A complementary protocol for
@@ -1279,8 +1291,10 @@ Appendix A.  Relationship to Other Specifications
       push).  The two compose but operate independently.
    *  *OpenID Connect Enterprise Extensions
       ([OpenID.EnterpriseExtensions])*: Source of the enterprise
-      parameters (tenant, domain_hint, login_hint) and claims (org,
-      groups, roles) used in B2B bootstrap.
+      parameters (tenant, domain_hint, login_hint) used on the PS
+      /bootstrap request to select an organizational identity.
+      Enterprise claims (org, groups, roles) are released in auth_tokens
+      through the standard three-party flow, not in the bootstrap_token.
 
 Author's Address
 

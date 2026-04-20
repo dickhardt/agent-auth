@@ -7,7 +7,7 @@
 <title>AAuth Bootstrap</title>
 <meta content="Dick Hardt" name="author">
 <meta content="
-       This document defines AAuth Bootstrap, an extension to the AAuth Protocol ( ) that specifies how a SaaS browser agent, SaaS mobile agent, or B2B SaaS agent obtains its initial agent identity ( aauth:local@domain ), agent token, and resource token through a ceremony mediated by the user's Person Server (PS). Bootstrap establishes a binding between a user (as vouched for by the user's PS) and an agent identity minted by the vendor-operated agent server. The specification defines the  bootstrap_token , the  /bootstrap  endpoints on the PS and agent server, the signature schemes used at each step, and renewal flows that bypass the PS after the initial binding is established. 
+       This document defines AAuth Bootstrap, an extension to the AAuth Protocol ( ) that specifies how a SaaS browser agent, SaaS mobile agent, or B2B SaaS agent establishes its initial agent identity ( aauth:local@domain ) and agent token through a ceremony mediated by the user's Person Server (PS). Bootstrap establishes the binding between a user (as vouched for by the user's PS) and an agent identity minted by the vendor-operated agent server. Identity claims and scoped authorization are obtained separately through the standard three-party flow defined in AAuth Protocol. This specification defines the  bootstrap_token , the  /bootstrap  endpoints on the PS and agent server, the signature schemes used at each step, and renewal flows that bypass the PS after the initial binding is established. 
     " name="description">
 <meta content="xml2rfc 3.33.0" name="generator">
 <meta content="agent" name="keyword">
@@ -1053,7 +1053,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Hardt</td>
-<td class="center">Expires 21 October 2026</td>
+<td class="center">Expires 22 October 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1066,12 +1066,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-hardt-aauth-bootstrap-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-04-19" class="published">19 April 2026</time>
+<time datetime="2026-04-20" class="published">20 April 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-21">21 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-10-22">22 October 2026</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1084,7 +1084,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <h1 id="title">AAuth Bootstrap</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This document defines AAuth Bootstrap, an extension to the AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) that specifies how a SaaS browser agent, SaaS mobile agent, or B2B SaaS agent obtains its initial agent identity (<code>aauth:local@domain</code>), agent token, and resource token through a ceremony mediated by the user's Person Server (PS). Bootstrap establishes a binding between a user (as vouched for by the user's PS) and an agent identity minted by the vendor-operated agent server. The specification defines the <code>bootstrap_token</code>, the <code>/bootstrap</code> endpoints on the PS and agent server, the signature schemes used at each step, and renewal flows that bypass the PS after the initial binding is established.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document defines AAuth Bootstrap, an extension to the AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) that specifies how a SaaS browser agent, SaaS mobile agent, or B2B SaaS agent establishes its initial agent identity (<code>aauth:local@domain</code>) and agent token through a ceremony mediated by the user's Person Server (PS). Bootstrap establishes the binding between a user (as vouched for by the user's PS) and an agent identity minted by the vendor-operated agent server. Identity claims and scoped authorization are obtained separately through the standard three-party flow defined in AAuth Protocol. This specification defines the <code>bootstrap_token</code>, the <code>/bootstrap</code> endpoints on the PS and agent server, the signature schemes used at each step, and renewal flows that bypass the PS after the initial binding is established.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note" id="section-note.1">
       <h2 id="name-discussion-venues">
@@ -1112,7 +1112,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 21 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 22 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1220,14 +1220,6 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7">
                 <p id="section-toc.1-1.8.2.7.1"><a href="#section-8.7" class="auto internal xref">8.7</a>.  <a href="#name-token-response" class="internal xref">Token Response</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7.2.1">
-                    <p id="section-toc.1-1.8.2.7.2.1.1"><a href="#section-8.7.1" class="auto internal xref">8.7.1</a>.  <a href="#name-agent_token" class="internal xref">agent_token</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.7.2.2">
-                    <p id="section-toc.1-1.8.2.7.2.2.1"><a href="#section-8.7.2" class="auto internal xref">8.7.2</a>.  <a href="#name-resource_token" class="internal xref">resource_token</a></p>
-</li>
-                </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.8">
                 <p id="section-toc.1-1.8.2.8.1"><a href="#section-8.8" class="auto internal xref">8.8</a>.  <a href="#name-completion" class="internal xref">Completion</a></p>
@@ -1285,7 +1277,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
             <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-agent-person-binding-invari" class="internal xref">Agent-Person Binding Invariant</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
-            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-out-of-band-consent-updates" class="internal xref">Out-of-Band Consent Updates</a></p>
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-out-of-band-user-channel" class="internal xref">Out-of-Band User Channel</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
             <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-b2b-extensions" class="internal xref">B2B Extensions</a></p>
@@ -1378,18 +1370,19 @@ svg :is([fill="white"], [fill^="#fff"]) {
       </h2>
 <p id="section-1-1"><strong>Status: Exploratory Draft</strong><a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">The AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) defines agent identities of the form <code>aauth:local@domain</code>, each bound to a signing key and published under a well-known JWKS. For self-hosted agents, server workloads, and developer tools, an agent identity can be established from durable local material at deployment time. These cases do not need bootstrap.<a href="#section-1-2" class="pilcrow">¶</a></p>
-<p id="section-1-3">For SaaS browser agents, SaaS mobile agents, and B2B SaaS agents, the agent identity depends on which user opens the application. The identity cannot be pre-minted at build time because it is tied to a specific user, and the user's identity is vouched for by the user's PS rather than by the vendor. Bootstrap is the ceremony by which the user's PS conveys user identity to the vendor's agent server so that the agent server can mint an <code>aauth:local@domain</code> identity bound to that user.<a href="#section-1-3" class="pilcrow">¶</a></p>
-<p id="section-1-4">This document specifies that ceremony. It defines:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-3">For SaaS browser agents, SaaS mobile agents, and B2B SaaS agents, the agent identity depends on which user opens the application. The identity cannot be pre-minted at build time because it is tied to a specific user, and the user's identity is vouched for by the user's PS rather than by the vendor. Bootstrap is the ceremony by which the user's PS conveys a directed user identifier to the vendor's agent server so that the agent server can mint an <code>aauth:local@domain</code> identity bound to that user.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">Bootstrap is intentionally limited to establishing the identity binding. It does not carry <code>scope</code>, does not request identity claims, and does not issue a <code>resource_token</code>. Identity claims (email, profile, organizational membership, and so on) are obtained separately by the agent server running the standard three-party flow defined in AAuth Protocol. This separation keeps bootstrap focused on the binding, reuses existing protocol machinery for claims release, and lets the agent request claims incrementally rather than up front.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This document specifies that ceremony. It defines:<a href="#section-1-5" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-1-5.1">The <code>bootstrap_token</code>, a short-lived JWT issued by the PS and consumed by the agent server.<a href="#section-1-5.1" class="pilcrow">¶</a>
+<li class="compact" id="section-1-6.1">The <code>bootstrap_token</code>, a short-lived JWT issued by the PS and consumed by the agent server.<a href="#section-1-6.1" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-1-5.2">The <code>/bootstrap</code> endpoints on the PS and the agent server.<a href="#section-1-5.2" class="pilcrow">¶</a>
+        <li class="compact" id="section-1-6.2">The <code>/bootstrap</code> endpoints on the PS and the agent server.<a href="#section-1-6.2" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-1-5.3">Which signature schemes from <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span> are used at each step.<a href="#section-1-5.3" class="pilcrow">¶</a>
+        <li class="compact" id="section-1-6.3">Which signature schemes from <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span> are used at each step.<a href="#section-1-6.3" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-1-5.4">Renewal flows on the agent server that do not require re-involving the PS.<a href="#section-1-5.4" class="pilcrow">¶</a>
+        <li class="compact" id="section-1-6.4">Renewal flows on the agent server that do not require re-involving the PS.<a href="#section-1-6.4" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-1-5.5">B2B extensions that carry organizational identity from an enterprise directory through the PS to the agent server.<a href="#section-1-5.5" class="pilcrow">¶</a>
+        <li class="compact" id="section-1-6.5">B2B extensions that let the PS select an organizational identity when the user has more than one.<a href="#section-1-6.5" class="pilcrow">¶</a>
 </li>
       </ul>
 <div id="in-scope">
@@ -1502,7 +1495,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         </h3>
 <ul class="compact">
 <li class="compact" id="section-3.3-1.1">
-            <strong>Bootstrap</strong>: The PS-mediated ceremony defined in this document by which a SaaS or B2B agent obtains its initial agent token and resource token. Distinct from the developer-side ceremonies used by self-hosted agents and from platform attestation enrollment.<a href="#section-3.3-1.1" class="pilcrow">¶</a>
+            <strong>Bootstrap</strong>: The PS-mediated ceremony defined in this document by which a SaaS or B2B agent obtains its initial agent token. Distinct from the developer-side ceremonies used by self-hosted agents and from platform attestation enrollment.<a href="#section-3.3-1.1" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-3.3-1.2">
             <strong>Ephemeral Key</strong>: An HTTP signing key generated by the agent whose lifetime is bounded by the agent token. Typically hours to a day, not per-request.<a href="#section-3.3-1.2" class="pilcrow">¶</a>
@@ -1535,7 +1528,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </li>
         <li class="compact" id="section-4-2.2">The <strong>PS</strong>, which authenticates the user, collects consent, and issues the <code>bootstrap_token</code>.<a href="#section-4-2.2" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-4-2.3">The <strong>agent server</strong>, which verifies the <code>bootstrap_token</code>, performs attestation, records the <code>(user, agent)</code> binding, and issues the agent token and resource token.<a href="#section-4-2.3" class="pilcrow">¶</a>
+        <li class="compact" id="section-4-2.3">The <strong>agent server</strong>, which verifies the <code>bootstrap_token</code>, performs attestation, records the <code>(user, agent)</code> binding, and issues the agent token.<a href="#section-4-2.3" class="pilcrow">¶</a>
 </li>
       </ul>
 <p id="section-4-3">Resources and access servers (AS) are not involved in bootstrap. After bootstrap, the agent interacts with them using the tokens returned by the agent server following the flows defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
@@ -1554,7 +1547,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
   |                                 |                    |
   | HTTPSig (hwk, ephemeral)        |                    |
   | POST bootstrap_endpoint (PS)    |                    |
-  | { agent_server, scope, ... }    |                    |
+  | { agent_server }                |                    |
   |--------------------------------&gt;|                    |
   |                                 |                    |
   | 202 Accepted                    |                    |
@@ -1577,22 +1570,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
   |   &lt;attestation&gt; }               |                    |
   |-----------------------------------------------------&gt;|
   |                                 |                    |
-  | { agent_token, resource_token } |                    |
-  |&lt;-----------------------------------------------------|
-  |                                 |                    |
-  | HTTPSig w/ agent token          |                    |
-  | POST token_endpoint (PS)        |                    |
-  | w/ resource_token               |                    |
-  |--------------------------------&gt;|                    |
-  |                                 |                    |
-  | auth_token                      |                    |
-  |&lt;--------------------------------|                    |
-  |                                 |                    |
-  | HTTPSig w/ auth token           |                    |
-  | GET /api/...                    |                    |
-  |-----------------------------------------------------&gt;|
-  |                                 |                    |
-  | 200 OK                          |                    |
+  | { agent_token }                 |                    |
   |&lt;-----------------------------------------------------|
 
 </pre>
@@ -1601,10 +1579,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <a href="#name-bootstrap-ceremony" class="selfRef">Bootstrap Ceremony</a>
         </figcaption></figure>
 </div>
-<p id="section-5-3">The subsequent renewal flow skips the PS and uses the device credential recorded at bootstrap:<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-3">At this point the binding exists and the agent holds an <code>agent_token</code>. Further access to the agent server's APIs follows the AAuth Protocol: identity-based calls use the <code>agent_token</code> directly; calls that require user claims follow the three-party flow (authorization endpoint → resource_token → PS /token → auth_token), as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">The subsequent renewal flow skips the PS and uses the device credential recorded at bootstrap:<a href="#section-5-4" class="pilcrow">¶</a></p>
 <span id="name-renewal-ceremony"></span><div id="fig-renewal">
 <figure id="figure-2">
-        <div class="lang-ascii-art sourcecode" id="section-5-4.1">
+        <div class="lang-ascii-art sourcecode" id="section-5-5.1">
 <pre>Agent                                          Agent Server
   |                                                  |
   | [renewal attestation -- see (#attestation)]      |
@@ -1614,7 +1593,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
   | { &lt;attestation&gt; }                                |
   |-------------------------------------------------&gt;|
   |                                                  |
-  | { agent_token, resource_token } (new ephemeral)  |
+  | { agent_token } (new ephemeral)                  |
   |&lt;-------------------------------------------------|
 
 </pre>
@@ -1759,8 +1738,7 @@ Signature-Key: sig=hwk;kty="OKP";crv="Ed25519";x="&lt;ephemeral-pubkey&gt;"
 Content-Type: application/json
 
 {
-  "agent_server": "https://agent-server.example",
-  "scope": "openid profile email"
+  "agent_server": "https://agent-server.example"
 }
 
 </pre><a href="#section-8.2-2" class="pilcrow">¶</a>
@@ -1771,16 +1749,13 @@ Content-Type: application/json
             <strong><code>agent_server</code></strong> (REQUIRED). The HTTPS URL identifying the agent server that will mint the agent identity. This value is placed in the <code>aud</code> claim of the issued <code>bootstrap_token</code>. This document uses the parameter name <code>agent_server</code> to align with the <code>"Agent Server"</code> terminology of <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>; implementations MUST NOT use alternative names such as <code>audience</code> or <code>client_id</code> for this field.<a href="#section-8.2-4.1" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-8.2-4.2">
-            <strong><code>scope</code></strong> (REQUIRED). Space-separated list of identity scopes the agent server is requesting.<a href="#section-8.2-4.2" class="pilcrow">¶</a>
+            <strong><code>domain_hint</code></strong> (OPTIONAL). Identifies which of the user's identities at this PS should be used when the user has more than one (for example a personal identity and a work identity). The value is a DNS domain, as defined in <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>. When present, the PS SHOULD select the identity associated with the given domain without prompting the user to choose. When absent and more than one identity is available, the PS MAY prompt the user to choose.<a href="#section-8.2-4.2" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-8.2-4.3">
-            <strong><code>domain_hint</code></strong> (OPTIONAL). Identifies which of the user's identities at this PS should be used when the user has more than one (for example a personal identity and a work identity). The value is a DNS domain, as defined in <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>. When present, the PS SHOULD select the identity associated with the given domain without prompting the user to choose. When absent and more than one identity is available, the PS MAY prompt the user to choose.<a href="#section-8.2-4.3" class="pilcrow">¶</a>
+            <strong><code>login_hint</code></strong> (OPTIONAL). A hint as defined in <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> identifying the user (for example an email address) to help the PS select the appropriate identity.<a href="#section-8.2-4.3" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-8.2-4.4">
-            <strong><code>login_hint</code></strong> (OPTIONAL). A hint as defined in <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> identifying the user (for example an email address) to help the PS select the appropriate identity.<a href="#section-8.2-4.4" class="pilcrow">¶</a>
-</li>
-          <li class="compact" id="section-8.2-4.5">
-            <strong><code>tenant</code></strong> (OPTIONAL). Organizational tenant identifier from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>. See <a href="#b2b-extensions" class="auto internal xref">Section 14</a>.<a href="#section-8.2-4.5" class="pilcrow">¶</a>
+            <strong><code>tenant</code></strong> (OPTIONAL). Organizational tenant identifier from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>. See <a href="#b2b-extensions" class="auto internal xref">Section 14</a>.<a href="#section-8.2-4.4" class="pilcrow">¶</a>
 </li>
         </ul>
 <p id="section-8.2-5">Additional parameters from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> MAY be included to select an organizational identity context.<a href="#section-8.2-5" class="pilcrow">¶</a></p>
@@ -1799,7 +1774,7 @@ Location: /bootstrap/pending/&lt;id&gt;
 
 </pre><a href="#section-8.3-2" class="pilcrow">¶</a>
 </div>
-<p id="section-8.3-3">The agent directs the user to the interaction URL. The PS authenticates the user and presents a consent screen describing the agent server and the scopes being requested.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
+<p id="section-8.3-3">The agent directs the user to the interaction URL. The PS authenticates the user and presents a consent screen asking the user to allow the agent server to establish an account bound to the user's identity at this PS. No identity claims are released at this step; claims flow through the standard AAuth three-party flow after bootstrap completes.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
 <p id="section-8.3-4">The consent screen SHOULD display the agent server's domain, name, and logo as retrieved from the agent server's <code>/.well-known/aauth-agent.json</code> metadata document. The user approves or denies the request.<a href="#section-8.3-4" class="pilcrow">¶</a></p>
 <p id="section-8.3-5">The agent polls the pending URL indicated by <code>Location</code> until the interaction completes.<a href="#section-8.3-5" class="pilcrow">¶</a></p>
 </section>
@@ -1851,23 +1826,21 @@ Location: /bootstrap/pending/&lt;id&gt;
               <strong><code>cnf</code></strong> (REQUIRED). An object containing <code>jwk</code>, the agent's ephemeral public key. MUST match the <code>hwk</code> key used to sign the PS /bootstrap request.<a href="#section-8.4.2-1.5" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-8.4.2-1.6">
-              <strong><code>scope</code></strong> (REQUIRED). Space-separated list of identity scopes granted by the user.<a href="#section-8.4.2-1.6" class="pilcrow">¶</a>
+              <strong><code>jti</code></strong> (REQUIRED). A unique token identifier.<a href="#section-8.4.2-1.6" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-8.4.2-1.7">
-              <strong><code>jti</code></strong> (REQUIRED). A unique token identifier.<a href="#section-8.4.2-1.7" class="pilcrow">¶</a>
+              <strong><code>iat</code></strong> (REQUIRED). Issued-at time.<a href="#section-8.4.2-1.7" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-8.4.2-1.8">
-              <strong><code>iat</code></strong> (REQUIRED). Issued-at time.<a href="#section-8.4.2-1.8" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-8.4.2-1.9">
-              <strong><code>exp</code></strong> (REQUIRED). Expiration time. SHOULD NOT exceed 5 minutes after <code>iat</code>.<a href="#section-8.4.2-1.9" class="pilcrow">¶</a>
+              <strong><code>exp</code></strong> (REQUIRED). Expiration time. SHOULD NOT exceed 5 minutes after <code>iat</code>.<a href="#section-8.4.2-1.8" class="pilcrow">¶</a>
 </li>
           </ul>
-<p id="section-8.4.2-2">The <code>bootstrap_token</code> differs from a resource token defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>:<a href="#section-8.4.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.2-2">The <code>bootstrap_token</code> does not carry <code>scope</code>, <code>agent</code>, or any claim describing user attributes. Its sole purpose is to convey a directed user identifier (<code>sub</code>) bound to an agent-side ephemeral key (<code>cnf</code>). Identity claims are obtained separately via the AAuth Protocol three-party flow after bootstrap.<a href="#section-8.4.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.4.2-3">The <code>bootstrap_token</code> differs from a resource token defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>:<a href="#section-8.4.2-3" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-8.4.2-3.1">It omits the <code>agent</code> claim, because the agent identity does not yet exist at bootstrap time. The binding to the agent is carried solely by <code>cnf</code>.<a href="#section-8.4.2-3.1" class="pilcrow">¶</a>
+<li class="compact" id="section-8.4.2-4.1">It omits the <code>agent</code> claim, because the agent identity does not yet exist at bootstrap time. The binding to the agent is carried solely by <code>cnf</code>.<a href="#section-8.4.2-4.1" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-8.4.2-3.2">It is directed at an agent server (not an AS or a PS as recipient of a resource token).<a href="#section-8.4.2-3.2" class="pilcrow">¶</a>
+            <li class="compact" id="section-8.4.2-4.2">It is directed at an agent server (not an AS or a PS as recipient of a resource token).<a href="#section-8.4.2-4.2" class="pilcrow">¶</a>
 </li>
           </ul>
 </section>
@@ -1935,7 +1908,7 @@ Content-Type: application/json
 </li>
           <li id="section-8.5-9.8">Store the device credential derived from the attestation (a WebAuthn credential ID for browsers, or the enclave key thumbprint for mobile) on the binding.<a href="#section-8.5-9.8" class="pilcrow">¶</a>
 </li>
-          <li id="section-8.5-9.9">Issue the agent token and resource token <a href="#token-response" class="auto internal xref">Section 8.7</a>.<a href="#section-8.5-9.9" class="pilcrow">¶</a>
+          <li id="section-8.5-9.9">Issue the agent token <a href="#token-response" class="auto internal xref">Section 8.7</a>.<a href="#section-8.5-9.9" class="pilcrow">¶</a>
 </li>
         </ol>
 <p id="section-8.5-10">If <code>bootstrap_token</code> verification fails, the agent server MUST respond <code>400 Bad Request</code>. If attestation verification fails, the agent server MUST respond <code>401 Unauthorized</code>.<a href="#section-8.5-10" class="pilcrow">¶</a></p>
@@ -1961,71 +1934,39 @@ Content-Type: application/json
         <h3 id="name-token-response">
 <a href="#section-8.7" class="section-number selfRef">8.7. </a><a href="#name-token-response" class="section-name selfRef">Token Response</a>
         </h3>
-<p id="section-8.7-1">The agent server returns an agent token and a resource token:<a href="#section-8.7-1" class="pilcrow">¶</a></p>
+<p id="section-8.7-1">The agent server returns an agent token:<a href="#section-8.7-1" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-8.7-2">
 <pre>HTTP/1.1 200 OK
 Content-Type: application/json
 
 {
-  "agent_token": "&lt;jwt&gt;",
-  "resource_token": "&lt;jwt&gt;"
+  "agent_token": "&lt;jwt&gt;"
 }
 
 </pre><a href="#section-8.7-2" class="pilcrow">¶</a>
 </div>
-<div id="agent-token">
-<section id="section-8.7.1">
-          <h4 id="name-agent_token">
-<a href="#section-8.7.1" class="section-number selfRef">8.7.1. </a><a href="#name-agent_token" class="section-name selfRef">agent_token</a>
-          </h4>
-<p id="section-8.7.1-1">The <code>agent_token</code> is a JWT as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> with:<a href="#section-8.7.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.7-3">The <code>agent_token</code> is a JWT as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> with:<a href="#section-8.7-3" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-8.7.1-2.1">
-              <strong><code>typ</code></strong>: <code>aa-agent+jwt</code>.<a href="#section-8.7.1-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-8.7-4.1">
+            <strong><code>typ</code></strong>: <code>aa-agent+jwt</code>.<a href="#section-8.7-4.1" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-8.7.1-2.2">
-              <strong><code>iss</code></strong>: The agent server URL.<a href="#section-8.7.1-2.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-8.7-4.2">
+            <strong><code>iss</code></strong>: The agent server URL.<a href="#section-8.7-4.2" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-8.7.1-2.3">
-              <strong><code>dwk</code></strong>: <code>aauth-agent.json</code>.<a href="#section-8.7.1-2.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-8.7-4.3">
+            <strong><code>dwk</code></strong>: <code>aauth-agent.json</code>.<a href="#section-8.7-4.3" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-8.7.1-2.4">
-              <strong><code>sub</code></strong>: The <code>aauth:local@&lt;agent-server-domain&gt;</code> identity from the binding.<a href="#section-8.7.1-2.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-8.7-4.4">
+            <strong><code>sub</code></strong>: The <code>aauth:local@&lt;agent-server-domain&gt;</code> identity from the binding.<a href="#section-8.7-4.4" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-8.7.1-2.5">
-              <strong><code>ps</code></strong>: The PS URL (from <code>bootstrap_token.iss</code>).<a href="#section-8.7.1-2.5" class="pilcrow">¶</a>
+          <li class="compact" id="section-8.7-4.5">
+            <strong><code>ps</code></strong>: The PS URL (from <code>bootstrap_token.iss</code>).<a href="#section-8.7-4.5" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-8.7.1-2.6">
-              <strong><code>cnf.jwk</code></strong>: The agent's ephemeral public key.<a href="#section-8.7.1-2.6" class="pilcrow">¶</a>
+          <li class="compact" id="section-8.7-4.6">
+            <strong><code>cnf.jwk</code></strong>: The agent's ephemeral public key.<a href="#section-8.7-4.6" class="pilcrow">¶</a>
 </li>
-          </ul>
-</section>
-</div>
-<div id="resource-token">
-<section id="section-8.7.2">
-          <h4 id="name-resource_token">
-<a href="#section-8.7.2" class="section-number selfRef">8.7.2. </a><a href="#name-resource_token" class="section-name selfRef">resource_token</a>
-          </h4>
-<p id="section-8.7.2-1">The <code>resource_token</code> is a JWT as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> with:<a href="#section-8.7.2-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-8.7.2-2.1">
-              <strong><code>typ</code></strong>: <code>aa-resource+jwt</code>.<a href="#section-8.7.2-2.1" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-8.7.2-2.2">
-              <strong><code>iss</code></strong>: The agent server URL (acting as resource).<a href="#section-8.7.2-2.2" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-8.7.2-2.3">
-              <strong><code>aud</code></strong>: The PS URL.<a href="#section-8.7.2-2.3" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-8.7.2-2.4">
-              <strong><code>agent</code></strong>: The <code>aauth:local@&lt;agent-server-domain&gt;</code> identity.<a href="#section-8.7.2-2.4" class="pilcrow">¶</a>
-</li>
-            <li class="compact" id="section-8.7.2-2.5">
-              <strong><code>scope</code></strong>: The identity scopes granted by the PS.<a href="#section-8.7.2-2.5" class="pilcrow">¶</a>
-</li>
-          </ul>
-</section>
-</div>
+        </ul>
+<p id="section-8.7-5">The agent server does not issue a <code>resource_token</code> at bootstrap. If the agent server needs to release user identity claims to itself (for example to populate a user profile page), it follows the standard AAuth Protocol three-party flow after bootstrap completes.<a href="#section-8.7-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="completion">
@@ -2033,7 +1974,16 @@ Content-Type: application/json
         <h3 id="name-completion">
 <a href="#section-8.8" class="section-number selfRef">8.8. </a><a href="#name-completion" class="section-name selfRef">Completion</a>
         </h3>
-<p id="section-8.8-1">The agent exchanges the <code>resource_token</code> at the PS <code>/token</code> endpoint, as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>, to obtain an <code>auth_token</code> carrying identity claims. The agent then calls the agent server's APIs using that <code>auth_token</code>.<a href="#section-8.8-1" class="pilcrow">¶</a></p>
+<p id="section-8.8-1">Bootstrap is complete when the agent holds the <code>agent_token</code>. The agent then uses the <code>agent_token</code> to call the agent server's APIs:<a href="#section-8.8-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8.8-2.1">
+            <strong>Identity-based calls</strong>, where the agent server authorizes based solely on the agent's identity, use the <code>agent_token</code> directly per the identity-based mode of <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-8.8-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-8.8-2.2">
+            <strong>Calls requiring user claims</strong> follow the standard three-party flow defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>: the agent calls the agent server's <code>authorization_endpoint</code> to obtain a <code>resource_token</code>, exchanges that <code>resource_token</code> at the PS <code>/token</code> endpoint for an <code>auth_token</code> carrying the required claims, then calls the agent server's API with the <code>auth_token</code>.<a href="#section-8.8-2.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-8.8-3">Each claim-bearing call follows the same pattern, which lets the agent request claims incrementally rather than up front. The PS applies its own policy (including any user consent) when issuing each <code>auth_token</code>.<a href="#section-8.8-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2278,7 +2228,7 @@ Signature-Key: sig=jkt-jwt;jwt="&lt;jkt-jwt-token&gt;"
 
 </pre><a href="#section-9.3.2-2" class="pilcrow">¶</a>
 </div>
-<p id="section-9.3.2-3">The request body is empty. The agent server computes the enclave key thumbprint from the <code>jkt-jwt</code> header, looks up the binding, and issues fresh tokens. No <code>attestation</code> member appears in the body because the <code>jkt-jwt</code> signature itself is the proof.<a href="#section-9.3.2-3" class="pilcrow">¶</a></p>
+<p id="section-9.3.2-3">The request body is empty. The agent server computes the enclave key thumbprint from the <code>jkt-jwt</code> header, looks up the binding, and issues a fresh <code>agent_token</code>. No <code>attestation</code> member appears in the body because the <code>jkt-jwt</code> signature itself is the proof.<a href="#section-9.3.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2357,7 +2307,7 @@ Signature-Key: sig=jkt-jwt;jwt="&lt;jkt-jwt-token&gt;"
 <a href="#section-11" class="section-number selfRef">11. </a><a href="#name-renewal" class="section-name selfRef">Renewal</a>
       </h2>
 <p id="section-11-1">Agent tokens expire. Per <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span> the maximum lifetime is 24 hours. Renewal bypasses the PS because the agent server already holds the <code>(user, agent)</code> binding and the device credential recorded at bootstrap.<a href="#section-11-1" class="pilcrow">¶</a></p>
-<p id="section-11-2">Agent servers that support this specification MUST expose a <code>refresh_endpoint</code> as defined in <a href="#agent-server-metadata" class="auto internal xref">Section 6</a>. The endpoint issues a fresh agent token and resource token bound to a new ephemeral key.<a href="#section-11-2" class="pilcrow">¶</a></p>
+<p id="section-11-2">Agent servers that support this specification MUST expose a <code>refresh_endpoint</code> as defined in <a href="#agent-server-metadata" class="auto internal xref">Section 6</a>. The endpoint issues a fresh <code>agent_token</code> bound to a new ephemeral key.<a href="#section-11-2" class="pilcrow">¶</a></p>
 <div id="renewal-flow">
 <section id="section-11.1">
         <h3 id="name-renewal-flow">
@@ -2411,7 +2361,7 @@ Content-Type: application/json
 </li>
           <li id="section-11.1-8.3">Verify the renewal attestation per the rules of the indicated ceremony in <a href="#attestation" class="auto internal xref">Section 9</a>, including that any ceremony challenge matches one it issued and has not expired or been consumed. Mark the challenge as consumed.<a href="#section-11.1-8.3" class="pilcrow">¶</a>
 </li>
-          <li id="section-11.1-8.4">Issue a fresh agent token and resource token bound to the new ephemeral key.<a href="#section-11.1-8.4" class="pilcrow">¶</a>
+          <li id="section-11.1-8.4">Issue a fresh agent token bound to the new ephemeral key.<a href="#section-11.1-8.4" class="pilcrow">¶</a>
 </li>
         </ol>
 </section>
@@ -2427,13 +2377,12 @@ Content-Type: application/json
 Content-Type: application/json
 
 {
-  "agent_token": "&lt;jwt&gt;",
-  "resource_token": "&lt;jwt&gt;"
+  "agent_token": "&lt;jwt&gt;"
 }
 
 </pre><a href="#section-11.2-2" class="pilcrow">¶</a>
 </div>
-<p id="section-11.2-3">The tokens have the same structure as in <a href="#token-response" class="auto internal xref">Section 8.7</a> but bound to the new ephemeral key.<a href="#section-11.2-3" class="pilcrow">¶</a></p>
+<p id="section-11.2-3">The <code>agent_token</code> has the same structure as in <a href="#token-response" class="auto internal xref">Section 8.7</a> but bound to the new ephemeral key.<a href="#section-11.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="renewal-failure">
@@ -2449,7 +2398,7 @@ Content-Type: application/json
 </li>
           <li class="compact" id="section-11.3-2.3">The binding has been revoked at the agent server.<a href="#section-11.3-2.3" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-11.3-2.4">The PS has stopped vouching for the user (for example, B2B deprovisioning). In this case subsequent PS <code>/token</code> calls during bootstrap will fail, and the agent will be unable to obtain <code>auth_tokens</code>.<a href="#section-11.3-2.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-11.3-2.4">The PS has stopped vouching for the user (for example, B2B deprovisioning). In this case the subsequent PS <code>/bootstrap</code> call will fail at the interaction step, and the agent will be unable to re-establish the binding.<a href="#section-11.3-2.4" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
@@ -2484,24 +2433,14 @@ Content-Type: application/json
       </ul>
 </section>
 </div>
-<div id="out-of-band-consent-updates">
+<div id="out-of-band-user-channel">
 <section id="section-13">
-      <h2 id="name-out-of-band-consent-updates">
-<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-out-of-band-consent-updates" class="section-name selfRef">Out-of-Band Consent Updates</a>
+      <h2 id="name-out-of-band-user-channel">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-out-of-band-user-channel" class="section-name selfRef">Out-of-Band User Channel</a>
       </h2>
-<p id="section-13-1">After first bootstrap, the PS knows the <code>(user, agent_server)</code> consent state and holds a communication channel with the user.<a href="#section-13-1" class="pilcrow">¶</a></p>
-<p id="section-13-2">This enables scope changes without agent involvement:<a href="#section-13-2" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="compact type-1" id="section-13-3">
-<li id="section-13-3.1">The agent server requests additional scopes via a later interaction with the PS.<a href="#section-13-3.1" class="pilcrow">¶</a>
-</li>
-        <li id="section-13-3.2">The PS prompts the user via the established channel.<a href="#section-13-3.2" class="pilcrow">¶</a>
-</li>
-        <li id="section-13-3.3">On approval, the PS updates its consent state for the <code>(user, agent_server)</code> pair.<a href="#section-13-3.3" class="pilcrow">¶</a>
-</li>
-        <li id="section-13-3.4">The next <code>auth_token</code> issuance from the PS includes the new scopes.<a href="#section-13-3.4" class="pilcrow">¶</a>
-</li>
-      </ol>
-<p id="section-13-4">PS implementations that wish to support out-of-band consent updates SHOULD establish a direct user communication channel at first bootstrap.<a href="#section-13-4" class="pilcrow">¶</a></p>
+<p id="section-13-1">After first bootstrap, the PS knows the <code>(user, agent_server)</code> binding and MAY establish a communication channel with the user (push, email, or an authenticated session). PSes that establish such a channel at first bootstrap can use it to prompt the user for consent on subsequent <code>auth_token</code> requests from the agent server without requiring an in-app interaction.<a href="#section-13-1" class="pilcrow">¶</a></p>
+<p id="section-13-2">This does not change the bootstrap protocol itself; bootstrap produces only the binding. It enables a smoother user experience for the standard three-party flow by letting the PS reach the user out of band when a token request requires consent.<a href="#section-13-2" class="pilcrow">¶</a></p>
+<p id="section-13-3">PS implementations that wish to support out-of-band consent SHOULD establish a direct user communication channel at first bootstrap.<a href="#section-13-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="b2b-extensions">
@@ -2513,7 +2452,6 @@ Content-Type: application/json
 <div class="lang-json sourcecode" id="section-14-2">
 <pre>{
   "agent_server": "https://vendor.example",
-  "scope": "openid profile email org groups roles",
   "tenant": "acme-corp",
   "domain_hint": "acme.example",
   "login_hint": "employee@acme.example"
@@ -2521,8 +2459,8 @@ Content-Type: application/json
 
 </pre><a href="#section-14-2" class="pilcrow">¶</a>
 </div>
-<p id="section-14-3">These parameters are drawn from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> and tell the PS which organizational identity context to use.<a href="#section-14-3" class="pilcrow">¶</a></p>
-<p id="section-14-4">The <code>bootstrap_token</code> and the resulting <code>auth_tokens</code> carry enterprise claims such as <code>org</code>, <code>groups</code>, and <code>roles</code> from the organization's identity infrastructure. This allows the vendor to apply organization-based authorization without running a per-customer SAML or OIDC integration.<a href="#section-14-4" class="pilcrow">¶</a></p>
+<p id="section-14-3">These parameters are drawn from <span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span> and tell the PS which organizational identity context to use when creating the binding. They affect which pairwise <code>sub</code> the PS issues and which organizational identity subsequent token requests resolve against.<a href="#section-14-3" class="pilcrow">¶</a></p>
+<p id="section-14-4">No enterprise claims (<code>org</code>, <code>groups</code>, <code>roles</code>) are carried in the <code>bootstrap_token</code>. Those claims are released in the <code>auth_token</code> issued by the PS on subsequent three-party flows, per <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>. This lets the vendor apply organization-based authorization without running a per-customer SAML or OIDC integration, using the same claim-release machinery as any other AAuth flow.<a href="#section-14-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-considerations">
@@ -2764,7 +2702,7 @@ Content-Type: application/json
       </h2>
 <ul class="compact">
 <li class="compact" id="appendix-A-1.1">
-          <strong>AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</strong>: Bootstrap produces an <code>agent_token</code> and <code>resource_token</code> in the shapes defined by the main specification, and consumes the HTTP Message Signatures profile defined there.<a href="#appendix-A-1.1" class="pilcrow">¶</a>
+          <strong>AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)</strong>: Bootstrap produces an <code>agent_token</code> in the shape defined by the main specification, and consumes the HTTP Message Signatures profile defined there. Identity claims and scoped authorization use the three-party flow from the main specification; bootstrap does not duplicate it.<a href="#appendix-A-1.1" class="pilcrow">¶</a>
 </li>
         <li class="compact" id="appendix-A-1.2">
           <strong>HTTP Signature Keys (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)</strong>: Bootstrap uses the <code>hwk</code>, <code>jkt-jwt</code>, and <code>jwt</code> schemes defined there.<a href="#appendix-A-1.2" class="pilcrow">¶</a>
@@ -2773,7 +2711,7 @@ Content-Type: application/json
           <strong>OpenID Provider Commands (OPC)</strong>: A complementary protocol for lifecycle events. Bootstrap handles initial onboarding (user-initiated, pull). OPC handles lifecycle events (system-initiated, push). The two compose but operate independently.<a href="#appendix-A-1.3" class="pilcrow">¶</a>
 </li>
         <li class="compact" id="appendix-A-1.4">
-          <strong>OpenID Connect Enterprise Extensions (<span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>)</strong>: Source of the enterprise parameters (<code>tenant</code>, <code>domain_hint</code>, <code>login_hint</code>) and claims (<code>org</code>, <code>groups</code>, <code>roles</code>) used in B2B bootstrap.<a href="#appendix-A-1.4" class="pilcrow">¶</a>
+          <strong>OpenID Connect Enterprise Extensions (<span>[<a href="#OpenID.EnterpriseExtensions" class="cite xref">OpenID.EnterpriseExtensions</a>]</span>)</strong>: Source of the enterprise parameters (<code>tenant</code>, <code>domain_hint</code>, <code>login_hint</code>) used on the PS /bootstrap request to select an organizational identity. Enterprise claims (<code>org</code>, <code>groups</code>, <code>roles</code>) are released in <code>auth_tokens</code> through the standard three-party flow, not in the <code>bootstrap_token</code>.<a href="#appendix-A-1.4" class="pilcrow">¶</a>
 </li>
       </ul>
 </section>
