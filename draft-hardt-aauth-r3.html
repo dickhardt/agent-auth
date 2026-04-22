@@ -1657,7 +1657,6 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <p id="section-6-2">The document MUST be served over HTTPS. The resource MUST require a valid HTTP Message Signature on requests to R3 document URIs, and MUST reject requests that are not signed by the resource's AS. Agents cannot fetch R3 documents.<a href="#section-6-2" class="pilcrow">¶</a></p>
 <div class="lang-json sourcecode" id="section-6-3">
 <pre>{
-  "type": "urn:example:calendar:write",
   "version": "2",
   "vocabulary": "urn:aauth:vocabulary:mcp",
   "operations": [
@@ -1679,23 +1678,22 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
         <h3 id="name-fields">
 <a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-fields" class="section-name selfRef">Fields</a>
         </h3>
-<p id="section-6.1-1"><strong><code>type</code></strong> (REQUIRED). A URI identifying the class of authorization. SHOULD be a namespaced URI under the resource's authority.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
-<p id="section-6.1-2"><strong><code>version</code></strong> (RECOMMENDED). A string identifying the version of this authorization type definition. The combination of URI + SHA-256 hash provides content-addressing independent of this field; <code>version</code> is for human readability.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
-<p id="section-6.1-3"><strong><code>vocabulary</code></strong> (REQUIRED). The vocabulary URI identifying how operations are expressed. MUST match one of the vocabularies the resource advertises in <code>r3_vocabularies</code>.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
-<p id="section-6.1-4"><strong><code>operations</code></strong> (REQUIRED). An array of operations covered by this R3 document, using the vocabulary-specific structure defined in {{mcp-vocabulary}} through {{odata-vocabulary}}. This is the same format used in the agent's <code>r3_operations</code> request and in the auth token's <code>r3_granted</code> and <code>r3_conditional</code> claims.<a href="#section-6.1-4" class="pilcrow">¶</a></p>
-<p id="section-6.1-5"><strong><code>display</code></strong> (RECOMMENDED). Human-readable descriptions of the consequences of granting this access. The resource describes what <em>it</em> does, not what the agent intends:<a href="#section-6.1-5" class="pilcrow">¶</a></p>
+<p id="section-6.1-1"><strong><code>version</code></strong> (RECOMMENDED). A string identifying the version of this R3 document. The combination of <code>r3_uri</code> + SHA-256 hash provides content-addressing independent of this field; <code>version</code> is for human readability.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2"><strong><code>vocabulary</code></strong> (REQUIRED). The vocabulary URI identifying how operations are expressed. MUST match one of the vocabularies the resource advertises in <code>r3_vocabularies</code>.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.1-3"><strong><code>operations</code></strong> (REQUIRED). An array of operations covered by this R3 document, using the vocabulary-specific structure defined in {{mcp-vocabulary}} through {{odata-vocabulary}}. This is the same format used in the agent's <code>r3_operations</code> request and in the auth token's <code>r3_granted</code> and <code>r3_conditional</code> claims.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.1-4"><strong><code>display</code></strong> (RECOMMENDED). Human-readable descriptions of the consequences of granting this access. The resource describes what <em>it</em> does, not what the agent intends:<a href="#section-6.1-4" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-6.1-6.1">
-            <code>summary</code> (REQUIRED if <code>display</code> present). A short plain-language description suitable for a consent UI or auth agent.<a href="#section-6.1-6.1" class="pilcrow">¶</a>
+<li class="compact" id="section-6.1-5.1">
+            <code>summary</code> (REQUIRED if <code>display</code> present). A short plain-language description suitable for a consent UI or auth agent.<a href="#section-6.1-5.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-6.1-6.2">
-            <code>implications</code> (OPTIONAL). Side effects of granting this access: emails sent, records modified, costs incurred.<a href="#section-6.1-6.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-6.1-5.2">
+            <code>implications</code> (OPTIONAL). Side effects of granting this access: emails sent, records modified, costs incurred.<a href="#section-6.1-5.2" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-6.1-6.3">
-            <code>data_accessed</code> (OPTIONAL). What data becomes visible to the caller.<a href="#section-6.1-6.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-6.1-5.3">
+            <code>data_accessed</code> (OPTIONAL). What data becomes visible to the caller.<a href="#section-6.1-5.3" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-6.1-6.4">
-            <code>irreversible</code> (OPTIONAL). Plain-language description of actions that cannot be undone.<a href="#section-6.1-6.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-6.1-5.4">
+            <code>irreversible</code> (OPTIONAL). Plain-language description of actions that cannot be undone.<a href="#section-6.1-5.4" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
