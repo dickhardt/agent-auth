@@ -285,7 +285,6 @@ The document MUST be served over HTTPS. The resource MUST require a valid HTTP M
 
 ```json
 {
-  "type": "urn:example:calendar:write",
   "version": "2",
   "vocabulary": "urn:aauth:vocabulary:mcp",
   "operations": [
@@ -303,9 +302,7 @@ The document MUST be served over HTTPS. The resource MUST require a valid HTTP M
 
 ## Fields
 
-**`type`** (REQUIRED). A URI identifying the class of authorization. SHOULD be a namespaced URI under the resource's authority.
-
-**`version`** (RECOMMENDED). A string identifying the version of this authorization type definition. The combination of URI + SHA-256 hash provides content-addressing independent of this field; `version` is for human readability.
+**`version`** (RECOMMENDED). A string identifying the version of this R3 document. The combination of `r3_uri` + SHA-256 hash provides content-addressing independent of this field; `version` is for human readability.
 
 **`vocabulary`** (REQUIRED). The vocabulary URI identifying how operations are expressed. MUST match one of the vocabularies the resource advertises in `r3_vocabularies`.
 
