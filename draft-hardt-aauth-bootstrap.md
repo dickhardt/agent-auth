@@ -150,7 +150,7 @@ The following signature schemes are defined in [@!I-D.hardt-httpbis-signature-ke
 The bootstrap ceremony involves three parties:
 
 - The **agent**, which generates key material and initiates the ceremony.
-- The **PS**, which authenticates the user, collects consent, and issues the `bootstrap_token`.
+- The **PS**, which authenticates the user, collects consent, issues the `bootstrap_token`, and records the `aauth:local@domain` identifier of each agent the user bootstraps.
 - The **agent server**, which verifies the `bootstrap_token`, performs attestation, records the `(user, agent)` binding, and issues the agent token.
 
 Resources and access servers (AS) are not involved in bootstrap. After bootstrap, the agent interacts with them using the tokens returned by the agent server following the flows defined in [@!I-D.hardt-aauth-protocol].
@@ -189,10 +189,18 @@ Agent                              PS              Agent Server
   |                                 |                    |
   | { agent_token }                 |                    |
   |<-----------------------------------------------------|
+  |                                 |                    |
+  | HTTPSig (jwt, agent_token)      |                    |
+  | POST bootstrap_endpoint (PS)    |                    |
+  | (empty body)                    |                    |
+  |-------------------------------->|                    |
+  |                                 |                    |
+  | 204 No Content                  |                    |
+  |<--------------------------------|                    |
 ~~~
 Figure: Bootstrap Ceremony {#fig-bootstrap}
 
-At this point the binding exists and the agent holds an `agent_token`. Further access to the agent server's APIs follows the AAuth Protocol: identity-based calls use the `agent_token` directly; calls that require user claims follow the three-party flow (authorization endpoint → resource_token → PS /token → auth_token), as defined in [@!I-D.hardt-aauth-protocol].
+At this point the binding exists at both the agent server and the PS, and the agent holds an `agent_token`. Further access to the agent server's APIs follows the AAuth Protocol: identity-based calls use the `agent_token` directly; calls that require user claims follow the three-party flow (authorization endpoint → resource_token → PS /token → auth_token), as defined in [@!I-D.hardt-aauth-protocol].
 
 The subsequent renewal flow skips the PS and uses the device credential recorded at bootstrap:
 
@@ -452,9 +460,43 @@ The `agent_token` is a JWT as defined in [@!I-D.hardt-aauth-protocol] with:
 
 The agent server does not issue a `resource_token` at bootstrap. If the agent server needs to release user identity claims to itself (for example to populate a user profile page), it follows the standard AAuth Protocol three-party flow after bootstrap completes.
 
-## Completion
+## Bootstrap Completion {#bootstrap-completion}
 
-Bootstrap is complete when the agent holds the `agent_token`. The agent then uses the `agent_token` to call the agent server's APIs:
+Once the agent holds the `agent_token`, it SHOULD announce its new agent identity to the PS so the PS can bind the identity to the user within the PS's bootstrap record. The agent SHOULD perform this announcement before rotating its ephemeral key (that is, before any call to `refresh_endpoint`), because the PS correlates the announcement to the bootstrap record by the ephemeral key's thumbprint.
+
+### Announcement Request
+
+The agent sends an empty POST to the PS's `/bootstrap` endpoint, signed under the `jwt` scheme ([@!I-D.hardt-httpbis-signature-key]) with the `agent_token` as the naming JWT:
+
+```
+POST /bootstrap HTTP/1.1
+Host: ps.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=jwt;jwt="<agent_token>"
+Content-Length: 0
+```
+
+The PS distinguishes the announcement from the initial bootstrap by the signature scheme and the empty body: the initial call uses `hwk` with a JSON body, the announcement uses `jwt` with an empty body.
+
+### PS Processing
+
+On receiving the announcement, the PS MUST:
+
+1. Verify the HTTP Message Signature under the `jwt` scheme.
+2. Verify the `agent_token` by resolving the agent server's JWKS via `agent_token.iss` and `agent_token.dwk` per [@!I-D.hardt-httpbis-signature-key].
+3. Verify that `agent_token.ps` equals this PS's URL.
+4. Look up the bootstrap record by the thumbprint of `agent_token.cnf.jwk`.
+5. If a matching bootstrap record exists, record the binding between `agent_token.sub` (the `aauth:local@domain` identifier) and the `(user, agent_server)` tuple already on file, then respond `204 No Content`.
+6. If no matching record exists, respond `404 Not Found`.
+
+The announcement is idempotent: repeated calls for the same ephemeral thumbprint after a successful binding have no effect and respond `204 No Content`.
+
+The PS retains the bootstrap record at least until `bootstrap_token.exp`. After that time, an announcement MAY fail with `404`, and the PS MAY instead learn the binding lazily from the `agent` claim of a `resource_token` presented at the PS `/token` endpoint during the standard three-party flow.
+
+### Post-Bootstrap API Access
+
+With the `agent_token` in hand (and, typically, after announcing to the PS), the agent uses the `agent_token` to call the agent server's APIs:
 
 - **Identity-based calls**, where the agent server authorizes based solely on the agent's identity, use the `agent_token` directly per the identity-based mode of [@!I-D.hardt-aauth-protocol].
 - **Calls requiring user claims** follow the standard three-party flow defined in [@!I-D.hardt-aauth-protocol]: the agent calls the agent server's `authorization_endpoint` to obtain a `resource_token`, exchanges that `resource_token` at the PS `/token` endpoint for an `auth_token` carrying the required claims, then calls the agent server's API with the `auth_token`.
@@ -650,7 +692,8 @@ The following signature schemes from [@!I-D.hardt-httpbis-signature-key] are use
 
 | Context | Scheme | Key material |
 |---|---|---|
-| PS /bootstrap request | `hwk` | Ephemeral (inline) |
+| PS /bootstrap initial request | `hwk` | Ephemeral (inline) |
+| PS /bootstrap announcement request | `jwt` | Ephemeral (via agent_token) |
 | Agent Server webauthn_endpoint request (browser) | unsigned | (no signature) |
 | Agent Server bootstrap_endpoint request (browser) | `hwk` | Ephemeral (same as PS call) |
 | Agent Server bootstrap_endpoint request (mobile) | `jkt-jwt` | Enclave signs ephemeral |
@@ -792,6 +835,10 @@ Compromise of an agent server breaks all agent identities minted by that server.
 
 The PS is already a high-value target in [@!I-D.hardt-aauth-protocol]. Bootstrap does not change the risk profile, but makes the PS load-bearing for agent identity creation.
 
+## Bootstrap Completion Announcement
+
+The announcement POST to the PS (#bootstrap-completion) is bound to possession of the agent's ephemeral key plus a signed `agent_token` issued to that key. An attacker would need both the ephemeral private key and a valid `agent_token` for the target `aauth` identifier. These are the same credentials that protect the rest of bootstrap; the announcement introduces no new attack surface.
+
 # Privacy Considerations
 
 ## Directed User Identifiers
@@ -805,6 +852,10 @@ The PS sees only the ephemeral `hwk` key. The agent server sees the `jkt-jwt` ca
 ## Out-of-Band Consent Channel
 
 The user communication channel held by the PS after first bootstrap is privacy-sensitive. PS implementations SHOULD document their user communication practices.
+
+## Agent Identifier Registry at the PS
+
+After bootstrap completion (#bootstrap-completion), the PS knows the `aauth:local@domain` identifier of each agent the user has bootstrapped. This supports user-facing features such as a dashboard of connected agents and targeted revocation ("disconnect from agent X"). PS implementations SHOULD make this list visible to the user.
 
 # IANA Considerations
 
