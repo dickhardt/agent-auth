@@ -1053,7 +1053,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Hardt</td>
-<td class="center">Expires 22 October 2026</td>
+<td class="center">Expires 24 October 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1066,12 +1066,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-hardt-aauth-bootstrap-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-04-20" class="published">20 April 2026</time>
+<time datetime="2026-04-22" class="published">22 April 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-22">22 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-10-24">24 October 2026</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1112,7 +1112,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 22 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 24 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1222,7 +1222,18 @@ svg :is([fill="white"], [fill^="#fff"]) {
                 <p id="section-toc.1-1.8.2.7.1"><a href="#section-8.7" class="auto internal xref">8.7</a>.  <a href="#name-token-response" class="internal xref">Token Response</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.8">
-                <p id="section-toc.1-1.8.2.8.1"><a href="#section-8.8" class="auto internal xref">8.8</a>.  <a href="#name-completion" class="internal xref">Completion</a></p>
+                <p id="section-toc.1-1.8.2.8.1"><a href="#section-8.8" class="auto internal xref">8.8</a>.  <a href="#name-bootstrap-completion" class="internal xref">Bootstrap Completion</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.8.2.1">
+                    <p id="section-toc.1-1.8.2.8.2.1.1"><a href="#section-8.8.1" class="auto internal xref">8.8.1</a>.  <a href="#name-announcement-request" class="internal xref">Announcement Request</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.8.2.2">
+                    <p id="section-toc.1-1.8.2.8.2.2.1"><a href="#section-8.8.2" class="auto internal xref">8.8.2</a>.  <a href="#name-ps-processing" class="internal xref">PS Processing</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.8.2.3">
+                    <p id="section-toc.1-1.8.2.8.2.3.1"><a href="#section-8.8.3" class="auto internal xref">8.8.3</a>.  <a href="#name-post-bootstrap-api-access" class="internal xref">Post-Bootstrap API Access</a></p>
+</li>
+                </ul>
 </li>
             </ul>
 </li>
@@ -1303,6 +1314,9 @@ svg :is([fill="white"], [fill^="#fff"]) {
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.6">
                 <p id="section-toc.1-1.15.2.6.1"><a href="#section-15.6" class="auto internal xref">15.6</a>.  <a href="#name-ps-compromise" class="internal xref">PS Compromise</a></p>
 </li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.7">
+                <p id="section-toc.1-1.15.2.7.1"><a href="#section-15.7" class="auto internal xref">15.7</a>.  <a href="#name-bootstrap-completion-announ" class="internal xref">Bootstrap Completion Announcement</a></p>
+</li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
@@ -1316,6 +1330,9 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.3">
                 <p id="section-toc.1-1.16.2.3.1"><a href="#section-16.3" class="auto internal xref">16.3</a>.  <a href="#name-out-of-band-consent-channel" class="internal xref">Out-of-Band Consent Channel</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.4">
+                <p id="section-toc.1-1.16.2.4.1"><a href="#section-16.4" class="auto internal xref">16.4</a>.  <a href="#name-agent-identifier-registry-a" class="internal xref">Agent Identifier Registry at the PS</a></p>
 </li>
             </ul>
 </li>
@@ -1526,7 +1543,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <ul class="compact">
 <li class="compact" id="section-4-2.1">The <strong>agent</strong>, which generates key material and initiates the ceremony.<a href="#section-4-2.1" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="section-4-2.2">The <strong>PS</strong>, which authenticates the user, collects consent, and issues the <code>bootstrap_token</code>.<a href="#section-4-2.2" class="pilcrow">¶</a>
+        <li class="compact" id="section-4-2.2">The <strong>PS</strong>, which authenticates the user, collects consent, issues the <code>bootstrap_token</code>, and records the <code>aauth:local@domain</code> identifier of each agent the user bootstraps.<a href="#section-4-2.2" class="pilcrow">¶</a>
 </li>
         <li class="compact" id="section-4-2.3">The <strong>agent server</strong>, which verifies the <code>bootstrap_token</code>, performs attestation, records the <code>(user, agent)</code> binding, and issues the agent token.<a href="#section-4-2.3" class="pilcrow">¶</a>
 </li>
@@ -1572,6 +1589,14 @@ svg :is([fill="white"], [fill^="#fff"]) {
   |                                 |                    |
   | { agent_token }                 |                    |
   |&lt;-----------------------------------------------------|
+  |                                 |                    |
+  | HTTPSig (jwt, agent_token)      |                    |
+  | POST bootstrap_endpoint (PS)    |                    |
+  | (empty body)                    |                    |
+  |--------------------------------&gt;|                    |
+  |                                 |                    |
+  | 204 No Content                  |                    |
+  |&lt;--------------------------------|                    |
 
 </pre>
 </div>
@@ -1579,7 +1604,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <a href="#name-bootstrap-ceremony" class="selfRef">Bootstrap Ceremony</a>
         </figcaption></figure>
 </div>
-<p id="section-5-3">At this point the binding exists and the agent holds an <code>agent_token</code>. Further access to the agent server's APIs follows the AAuth Protocol: identity-based calls use the <code>agent_token</code> directly; calls that require user claims follow the three-party flow (authorization endpoint → resource_token → PS /token → auth_token), as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-3">At this point the binding exists at both the agent server and the PS, and the agent holds an <code>agent_token</code>. Further access to the agent server's APIs follows the AAuth Protocol: identity-based calls use the <code>agent_token</code> directly; calls that require user claims follow the three-party flow (authorization endpoint → resource_token → PS /token → auth_token), as defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-5-3" class="pilcrow">¶</a></p>
 <p id="section-5-4">The subsequent renewal flow skips the PS and uses the device credential recorded at bootstrap:<a href="#section-5-4" class="pilcrow">¶</a></p>
 <span id="name-renewal-ceremony"></span><div id="fig-renewal">
 <figure id="figure-2">
@@ -1969,21 +1994,72 @@ Content-Type: application/json
 <p id="section-8.7-5">The agent server does not issue a <code>resource_token</code> at bootstrap. If the agent server needs to release user identity claims to itself (for example to populate a user profile page), it follows the standard AAuth Protocol three-party flow after bootstrap completes.<a href="#section-8.7-5" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="completion">
+<div id="bootstrap-completion">
 <section id="section-8.8">
-        <h3 id="name-completion">
-<a href="#section-8.8" class="section-number selfRef">8.8. </a><a href="#name-completion" class="section-name selfRef">Completion</a>
+        <h3 id="name-bootstrap-completion">
+<a href="#section-8.8" class="section-number selfRef">8.8. </a><a href="#name-bootstrap-completion" class="section-name selfRef">Bootstrap Completion</a>
         </h3>
-<p id="section-8.8-1">Bootstrap is complete when the agent holds the <code>agent_token</code>. The agent then uses the <code>agent_token</code> to call the agent server's APIs:<a href="#section-8.8-1" class="pilcrow">¶</a></p>
+<p id="section-8.8-1">Once the agent holds the <code>agent_token</code>, it SHOULD announce its new agent identity to the PS so the PS can bind the identity to the user within the PS's bootstrap record. The agent SHOULD perform this announcement before rotating its ephemeral key (that is, before any call to <code>refresh_endpoint</code>), because the PS correlates the announcement to the bootstrap record by the ephemeral key's thumbprint.<a href="#section-8.8-1" class="pilcrow">¶</a></p>
+<div id="announcement-request">
+<section id="section-8.8.1">
+          <h4 id="name-announcement-request">
+<a href="#section-8.8.1" class="section-number selfRef">8.8.1. </a><a href="#name-announcement-request" class="section-name selfRef">Announcement Request</a>
+          </h4>
+<p id="section-8.8.1-1">The agent sends an empty POST to the PS's <code>/bootstrap</code> endpoint, signed under the <code>jwt</code> scheme (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) with the <code>agent_token</code> as the naming JWT:<a href="#section-8.8.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8.8.1-2">
+<pre>POST /bootstrap HTTP/1.1
+Host: ps.example
+Signature-Input: sig=...
+Signature: sig=...
+Signature-Key: sig=jwt;jwt="&lt;agent_token&gt;"
+Content-Length: 0
+
+</pre><a href="#section-8.8.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.8.1-3">The PS distinguishes the announcement from the initial bootstrap by the signature scheme and the empty body: the initial call uses <code>hwk</code> with a JSON body, the announcement uses <code>jwt</code> with an empty body.<a href="#section-8.8.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ps-processing">
+<section id="section-8.8.2">
+          <h4 id="name-ps-processing">
+<a href="#section-8.8.2" class="section-number selfRef">8.8.2. </a><a href="#name-ps-processing" class="section-name selfRef">PS Processing</a>
+          </h4>
+<p id="section-8.8.2-1">On receiving the announcement, the PS MUST:<a href="#section-8.8.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-8.8.2-2">
+<li id="section-8.8.2-2.1">Verify the HTTP Message Signature under the <code>jwt</code> scheme.<a href="#section-8.8.2-2.1" class="pilcrow">¶</a>
+</li>
+            <li id="section-8.8.2-2.2">Verify the <code>agent_token</code> by resolving the agent server's JWKS via <code>agent_token.iss</code> and <code>agent_token.dwk</code> per <span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>.<a href="#section-8.8.2-2.2" class="pilcrow">¶</a>
+</li>
+            <li id="section-8.8.2-2.3">Verify that <code>agent_token.ps</code> equals this PS's URL.<a href="#section-8.8.2-2.3" class="pilcrow">¶</a>
+</li>
+            <li id="section-8.8.2-2.4">Look up the bootstrap record by the thumbprint of <code>agent_token.cnf.jwk</code>.<a href="#section-8.8.2-2.4" class="pilcrow">¶</a>
+</li>
+            <li id="section-8.8.2-2.5">If a matching bootstrap record exists, record the binding between <code>agent_token.sub</code> (the <code>aauth:local@domain</code> identifier) and the <code>(user, agent_server)</code> tuple already on file, then respond <code>204 No Content</code>.<a href="#section-8.8.2-2.5" class="pilcrow">¶</a>
+</li>
+            <li id="section-8.8.2-2.6">If no matching record exists, respond <code>404 Not Found</code>.<a href="#section-8.8.2-2.6" class="pilcrow">¶</a>
+</li>
+          </ol>
+<p id="section-8.8.2-3">The announcement is idempotent: repeated calls for the same ephemeral thumbprint after a successful binding have no effect and respond <code>204 No Content</code>.<a href="#section-8.8.2-3" class="pilcrow">¶</a></p>
+<p id="section-8.8.2-4">The PS retains the bootstrap record at least until <code>bootstrap_token.exp</code>. After that time, an announcement MAY fail with <code>404</code>, and the PS MAY instead learn the binding lazily from the <code>agent</code> claim of a <code>resource_token</code> presented at the PS <code>/token</code> endpoint during the standard three-party flow.<a href="#section-8.8.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="post-bootstrap-api-access">
+<section id="section-8.8.3">
+          <h4 id="name-post-bootstrap-api-access">
+<a href="#section-8.8.3" class="section-number selfRef">8.8.3. </a><a href="#name-post-bootstrap-api-access" class="section-name selfRef">Post-Bootstrap API Access</a>
+          </h4>
+<p id="section-8.8.3-1">With the <code>agent_token</code> in hand (and, typically, after announcing to the PS), the agent uses the <code>agent_token</code> to call the agent server's APIs:<a href="#section-8.8.3-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-8.8-2.1">
-            <strong>Identity-based calls</strong>, where the agent server authorizes based solely on the agent's identity, use the <code>agent_token</code> directly per the identity-based mode of <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-8.8-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-8.8.3-2.1">
+              <strong>Identity-based calls</strong>, where the agent server authorizes based solely on the agent's identity, use the <code>agent_token</code> directly per the identity-based mode of <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>.<a href="#section-8.8.3-2.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-8.8-2.2">
-            <strong>Calls requiring user claims</strong> follow the standard three-party flow defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>: the agent calls the agent server's <code>authorization_endpoint</code> to obtain a <code>resource_token</code>, exchanges that <code>resource_token</code> at the PS <code>/token</code> endpoint for an <code>auth_token</code> carrying the required claims, then calls the agent server's API with the <code>auth_token</code>.<a href="#section-8.8-2.2" class="pilcrow">¶</a>
+            <li class="compact" id="section-8.8.3-2.2">
+              <strong>Calls requiring user claims</strong> follow the standard three-party flow defined in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>: the agent calls the agent server's <code>authorization_endpoint</code> to obtain a <code>resource_token</code>, exchanges that <code>resource_token</code> at the PS <code>/token</code> endpoint for an <code>auth_token</code> carrying the required claims, then calls the agent server's API with the <code>auth_token</code>.<a href="#section-8.8.3-2.2" class="pilcrow">¶</a>
 </li>
-        </ul>
-<p id="section-8.8-3">Each claim-bearing call follows the same pattern, which lets the agent request claims incrementally rather than up front. The PS applies its own policy (including any user consent) when issuing each <code>auth_token</code>.<a href="#section-8.8-3" class="pilcrow">¶</a></p>
+          </ul>
+<p id="section-8.8.3-3">Each claim-bearing call follows the same pattern, which lets the agent request claims incrementally rather than up front. The PS applies its own policy (including any user consent) when issuing each <code>auth_token</code>.<a href="#section-8.8.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
 </section>
 </div>
 </section>
@@ -2252,11 +2328,18 @@ Signature-Key: sig=jkt-jwt;jwt="&lt;jkt-jwt-token&gt;"
         </thead>
         <tbody>
           <tr>
-            <td class="text-left" rowspan="1" colspan="1">PS /bootstrap request</td>
+            <td class="text-left" rowspan="1" colspan="1">PS /bootstrap initial request</td>
             <td class="text-left" rowspan="1" colspan="1">
               <code>hwk</code>
 </td>
             <td class="text-left" rowspan="1" colspan="1">Ephemeral (inline)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">PS /bootstrap announcement request</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>jwt</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Ephemeral (via agent_token)</td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">Agent Server webauthn_endpoint request (browser)</td>
@@ -2516,6 +2599,14 @@ Content-Type: application/json
 <p id="section-15.6-1">The PS is already a high-value target in <span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>. Bootstrap does not change the risk profile, but makes the PS load-bearing for agent identity creation.<a href="#section-15.6-1" class="pilcrow">¶</a></p>
 </section>
 </div>
+<div id="bootstrap-completion-announcement">
+<section id="section-15.7">
+        <h3 id="name-bootstrap-completion-announ">
+<a href="#section-15.7" class="section-number selfRef">15.7. </a><a href="#name-bootstrap-completion-announ" class="section-name selfRef">Bootstrap Completion Announcement</a>
+        </h3>
+<p id="section-15.7-1">The announcement POST to the PS <a href="#bootstrap-completion" class="auto internal xref">Section 8.8</a> is bound to possession of the agent's ephemeral key plus a signed <code>agent_token</code> issued to that key. An attacker would need both the ephemeral private key and a valid <code>agent_token</code> for the target <code>aauth</code> identifier. These are the same credentials that protect the rest of bootstrap; the announcement introduces no new attack surface.<a href="#section-15.7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
 </section>
 </div>
 <div id="privacy-considerations">
@@ -2545,6 +2636,14 @@ Content-Type: application/json
 <a href="#section-16.3" class="section-number selfRef">16.3. </a><a href="#name-out-of-band-consent-channel" class="section-name selfRef">Out-of-Band Consent Channel</a>
         </h3>
 <p id="section-16.3-1">The user communication channel held by the PS after first bootstrap is privacy-sensitive. PS implementations SHOULD document their user communication practices.<a href="#section-16.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="agent-identifier-registry-at-the-ps">
+<section id="section-16.4">
+        <h3 id="name-agent-identifier-registry-a">
+<a href="#section-16.4" class="section-number selfRef">16.4. </a><a href="#name-agent-identifier-registry-a" class="section-name selfRef">Agent Identifier Registry at the PS</a>
+        </h3>
+<p id="section-16.4-1">After bootstrap completion <a href="#bootstrap-completion" class="auto internal xref">Section 8.8</a>, the PS knows the <code>aauth:local@domain</code> identifier of each agent the user has bootstrapped. This supports user-facing features such as a dashboard of connected agents and targeted revocation ("disconnect from agent X"). PS implementations SHOULD make this list visible to the user.<a href="#section-16.4-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
