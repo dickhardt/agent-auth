@@ -2,6 +2,11 @@
 
 **Author:** Dick Hardt (dick.hardt@gmail.com)
 
+## Learn More & Get Involved
+
+- **[aauth.dev](https://www.aauth.dev)** — the project website, including the **AAuth Explorer** for walking through the protocol flows interactively, along with explainers, diagrams, and the latest news.
+- **[lu.ma/aauth](https://lu.ma/aauth)** — calendar for upcoming AAuth office hours and community events. Subscribe to get notified about the next session.
+
 ## HTTP Clients Need Their Own Identity
 
 In [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) and [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html), the client has no independent identity. Client identifiers are issued by each authorization server or OpenID provider — a `client_id` at Google is meaningless at GitHub. The client's identity exists only in the context of each server it has pre-registered with. This made sense when the web had a manageable number of integrations and a human developer could visit each portal to register.
@@ -36,8 +41,6 @@ Agents don't work this way. They discover resources at runtime. They execute lon
 - Does not use shared secrets or bearer tokens — every credential is bound to a signing key and useless without it
 - Does not require coordination to adopt — each party adds support independently
 - Does not replace OAuth — complements it for browser-based user login
-
-For the full story, see [aauth.dev](https://www.aauth.dev).
 
 ## Specifications
 
@@ -86,6 +89,7 @@ Bootstrap ceremony for SaaS browser, SaaS mobile, and B2B SaaS agents. Defines t
 | Resource | Link |
 |----------|------|
 | **Website** | https://www.aauth.dev |
+| **Office Hours Calendar** | https://lu.ma/aauth |
 | **GitHub Repository** | https://github.com/dickhardt/AAuth |
 
 ## Building
