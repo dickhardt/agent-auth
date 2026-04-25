@@ -200,7 +200,7 @@ Agent                              PS              Agent Server
 ~~~
 Figure: Bootstrap Ceremony {#fig-bootstrap}
 
-At this point the binding exists at both the agent server and the PS, and the agent holds an `agent_token`. Further access to the agent server's APIs follows the AAuth Protocol: identity-based calls use the `agent_token` directly; calls that require user claims follow the three-party flow (authorization endpoint → resource_token → PS /token → auth_token), as defined in [@!I-D.hardt-aauth-protocol].
+At this point the PS has bound the user to the agent identifier and the agent holds an `agent_token`.
 
 The subsequent renewal flow skips the PS and uses the device credential recorded at bootstrap:
 
@@ -223,6 +223,15 @@ Figure: Renewal Ceremony {#fig-renewal}
 
 This specification extends the `/.well-known/aauth-agent.json` document defined in [@!I-D.hardt-aauth-protocol] with the following fields:
 
+Fields:
+
+- **`bootstrap_endpoint`** (REQUIRED for agent servers that support this specification). The URL where the agent POSTs the `bootstrap_token` and attestation result per (#request-to-agent-server-bootstrap). MUST be an HTTPS URL within the agent server's origin.
+- **`refresh_endpoint`** (REQUIRED for agent servers that support this specification). The URL where the agent POSTs renewal requests per (#renewal). MUST be an HTTPS URL within the agent server's origin.
+- **`webauthn_endpoint`** (REQUIRED for agent servers that support browser-based clients). The URL from which the agent fetches a WebAuthn challenge and, for registration, WebAuthn ceremony options. Defined in (#webauthn-endpoint). MUST be an HTTPS URL within the agent server's origin.
+
+Agents MUST NOT assume a fixed path for these endpoints; the agent MUST discover them from agent-server metadata. Agents MUST verify that all endpoint URLs share the origin of the `issuer` field.
+
+Example aauth-agent.json file:
 ```json
 {
   "issuer": "https://agent-server.example",
@@ -235,13 +244,6 @@ This specification extends the `/.well-known/aauth-agent.json` document defined 
 }
 ```
 
-Fields:
-
-- **`bootstrap_endpoint`** (REQUIRED for agent servers that support this specification). The URL where the agent POSTs the `bootstrap_token` and attestation result per (#request-to-agent-server-bootstrap). MUST be an HTTPS URL within the agent server's origin.
-- **`refresh_endpoint`** (REQUIRED for agent servers that support this specification). The URL where the agent POSTs renewal requests per (#renewal). MUST be an HTTPS URL within the agent server's origin.
-- **`webauthn_endpoint`** (REQUIRED for agent servers that support browser-based clients). The URL from which the agent fetches a WebAuthn challenge and, for registration, WebAuthn ceremony options. Defined in (#webauthn-endpoint). MUST be an HTTPS URL within the agent server's origin.
-
-Agents MUST NOT assume a fixed path for these endpoints; the agent MUST discover them from agent-server metadata. Agents MUST verify that all endpoint URLs share the origin of the `issuer` field.
 
 # WebAuthn Endpoint {#webauthn-endpoint}
 
