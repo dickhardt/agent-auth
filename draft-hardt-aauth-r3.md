@@ -346,7 +346,7 @@ R3 extension claims:
 ```json
 {
   "typ": "resource+jwt",
-  "alg": "ES256",
+  "alg": "EdDSA",
   "kid": "resource-key-1"
 }
 ```
@@ -418,7 +418,7 @@ R3 extension claims:
 ```json
 {
   "typ": "auth+jwt",
-  "alg": "ES256",
+  "alg": "EdDSA",
   "kid": "as-key-1"
 }
 ```
