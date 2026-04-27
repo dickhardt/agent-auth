@@ -317,7 +317,9 @@ The document MUST be served over HTTPS. The resource MUST require a valid HTTP M
 
 ## Content Addressing
 
-The R3 hash (`r3_s256`) is computed as the SHA-256 hash of the canonical JSON serialization ([@!RFC8785]) of the R3 document, base64url-encoded without padding.
+The R3 hash (`r3_s256`) is computed as the SHA-256 hash of the bytes of the R3 document as served by the resource, base64url-encoded without padding.
+
+The resource's serialization is the document. There is no canonicalization step — verifiers hash the bytes received over the wire, not a normalized form. Resources MUST serialize the R3 document once and serve those exact bytes verbatim on every request for the same `r3_uri`. Re-serialization between hash computation and serving (e.g. middleware that parses and re-stringifies JSON, CDN minification, response framework helpers that reorder keys) will produce different bytes and break hash verification. Resources that build R3 documents on the fly SHOULD persist the serialized bytes (e.g. in a key-value store keyed by `r3_uri` or `r3_s256`) rather than re-build the document per request.
 
 The `r3_s256` hash is the document's identity, not the URI. The AS caches documents by hash. If a resource updates the document at the same URI, existing auth tokens still reference the previous hash (which the AS has cached). New resource tokens reference the new hash. This enables:
 
@@ -383,7 +385,7 @@ When the AS receives a resource token containing `r3_uri` and `r3_s256`, it MUST
 
 1. Validate the resource token signature per AAuth Protocol ([@!I-D.hardt-aauth-protocol]).
 2. Fetch the R3 document at `r3_uri`. The AS MAY use a cached copy if the cache entry was stored with the same `r3_s256` value.
-3. Compute the SHA-256 hash of the fetched document using canonical JSON serialization ([@!RFC8785]) and compare it to `r3_s256`. If the hashes do not match, the AS MUST reject the resource token.
+3. Compute the SHA-256 hash of the bytes received and compare it to `r3_s256`. If the hashes do not match, the AS MUST reject the resource token.
 4. Record `r3_uri` and `r3_s256` in its audit log alongside the token issuance event, the agent identifier, and the timestamp.
 5. Use the `operations` section for policy evaluation.
 6. Include `r3_uri`, `r3_s256`, `r3_granted`, and (if applicable) `r3_conditional` in the issued auth token.
