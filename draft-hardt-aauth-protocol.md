@@ -2120,6 +2120,14 @@ The `jwks_uri`, `tos_uri`, `policy_uri`, `logo_uri`, and `logo_dark_uri` values 
 
 Participants publish metadata at well-known URLs ([@!RFC8615]) to enable discovery.
 
+### Following Redirects {#metadata-redirects}
+
+When fetching a metadata document, implementations MUST follow HTTP redirects ([@!RFC9110], Section 15.4) to a target host within the same effective top-level domain plus one (eTLD+1) as the original URL. Implementations SHOULD NOT follow redirects to a different eTLD+1.
+
+This permits a deployment where the user-facing entry point and the canonical metadata host differ within the same registrable domain. For example, `https://example.com/.well-known/aauth-person.json` MAY redirect to `https://person.example.com/.well-known/aauth-person.json`, allowing either URL to serve as a valid discovery entry point.
+
+When a redirect has been followed, validation of the metadata document is performed against the **final** URL (after redirects), not the original. In particular, the `issuer` value in the document MUST match the post-redirect URL minus the `/.well-known/{dwk}` suffix. The `iss` claim in tokens issued by the server is also the post-redirect URL.
+
 ### Agent Server Metadata
 
 Published at `/.well-known/aauth-agent.json`:
