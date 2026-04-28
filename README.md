@@ -86,11 +86,13 @@ Bootstrap ceremony for SaaS browser, SaaS mobile, and B2B SaaS agents. Defines t
 
 ## Links
 
-| Resource | Link |
-|----------|------|
-| **Website** | https://www.aauth.dev |
-| **Office Hours Calendar** | https://lu.ma/aauth |
-| **GitHub Repository** | https://github.com/dickhardt/AAuth |
+| Resource | Link | Description |
+|----------|------|-------------|
+| **Website** | https://www.aauth.dev | |
+| **Office Hours Calendar** | https://lu.ma/aauth | |
+| **GitHub Repository** | https://github.com/dickhardt/AAuth | |
+| **IETF Slack** | https://join.slack.com/t/ietf/shared_invite/zt-3wlnl6g9t-UF~rAQwk06nNJUM6QtaaPg | IETF `#aauth` channel for AAuth specification discussion and feedback. |
+| **AAuth Slack** | https://join.slack.com/t/aauth/shared_invite/zt-3wsxbrzfk-oYb3xNWVPLZICkXwuJpaDg | AAuth community Slack for implementation discussion and questions. |
 
 ## Building
 
