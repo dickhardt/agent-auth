@@ -12,7 +12,7 @@ name = "Internet-Draft"
 value = "draft-hardt-aauth-protocol-latest"
 stream = "IETF"
 
-date = 2026-04-13T00:00:00Z
+date = 2026-04-29T00:00:00Z
 
 [[author]]
 initials = "D."
@@ -2528,6 +2528,9 @@ The following implementations are known:
 # Document History
 
 *Note: This section is to be removed before publishing as an RFC.*
+
+- draft-hardt-aauth-protocol-02
+  - Move agent token acquisition patterns to the companion AAuth Bootstrap specification [@!I-D.hardt-aauth-bootstrap]; remove the corresponding appendix.
 
 - draft-hardt-aauth-protocol-01
   - Complete rework of specification
