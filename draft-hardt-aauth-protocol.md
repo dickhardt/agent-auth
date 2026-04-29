@@ -72,6 +72,16 @@ organization = "Hellō"
   </front>
 </reference>
 
+<reference anchor="I-D.hardt-aauth-bootstrap" target="https://github.com/dickhardt/AAuth">
+  <front>
+    <title>AAuth Bootstrap</title>
+    <author initials="D." surname="Hardt" fullname="Dick Hardt">
+      <organization>Hellō</organization>
+    </author>
+    <date year="2026"/>
+  </front>
+</reference>
+
 <reference anchor="CommonMark" target="https://spec.commonmark.org/0.31.2/">
   <front>
     <title>CommonMark Spec</title>
@@ -439,7 +449,7 @@ The PS provides three governance endpoints. The **permission** (#permission-endp
 
 ## Obtaining an Agent Token
 
-The agent obtains an agent token from its agent server. The agent generates a signing key pair, proves its identity to the agent server through a platform-specific mechanism, and receives an agent token binding the signing key to the agent's identifier. The agent token MAY include a `ps` claim identifying the agent's person server. Agent token acquisition is platform-dependent — see (#agent-token-acquisition) for common patterns and (#agent-tokens) for token structure and normative requirements.
+The agent obtains an agent token from its agent server. The agent generates a signing key pair, proves its identity to the agent server through a platform-specific mechanism, and receives an agent token binding the signing key to the agent's identifier. The agent token MAY include a `ps` claim identifying the agent's person server. Agent token structure and normative requirements are defined in (#agent-tokens). Acquisition is platform-dependent; see [@!I-D.hardt-aauth-bootstrap] for common patterns.
 
 ## Bootstrapping
 
@@ -447,7 +457,7 @@ Before protocol flows begin, each entity must be established with its identity, 
 
 **All modes:**
 
-- Agent obtains an agent token from its agent server, binding its signing key to its identifier (`aauth:local@domain`). See (#agent-token-acquisition).
+- Agent obtains an agent token from its agent server, binding its signing key to its identifier (`aauth:local@domain`). See [@!I-D.hardt-aauth-bootstrap].
 - Agent servers publish metadata at `/.well-known/aauth-agent.json` (#agent-server-metadata).
 
 **Resource-managed access (two-party) and above:**
@@ -499,7 +509,7 @@ An agent MUST obtain an agent token from its agent server before participating i
 2. The agent proves its identity to the agent server through a platform-specific mechanism.
 3. The agent server verifies the agent's identity and issues an agent token binding the agent's ephemeral public key to the agent's identifier.
 
-The mechanism for proving identity is platform-dependent. See (#agent-token-acquisition) for common patterns including server workloads (platform attestation), mobile applications (app attestation), desktop and CLI applications (user login or managed desktop attestation), and browser-based applications (WebAuthn).
+The mechanism for proving identity is platform-dependent. See [@!I-D.hardt-aauth-bootstrap] for common patterns including self-hosted agents, browser-based applications, mobile applications, and B2B SaaS agents.
 
 ### Agent Token Structure
 
@@ -2527,242 +2537,13 @@ The following implementations are known:
 
 # Acknowledgments
 
-The author would like to thank reviewers for their feedback on concepts and earlier drafts: Aaron Pareki, Christian Posta, Frederik Krogsdal Jacobsen, Jared Hanson, Karl McGuinness, Nate Barbettini, Wils Dawson.
+The author would like to thank reviewers for their feedback on concepts and earlier drafts: Aaron Pareki, Christian Posta, Frederik Krogsdal Jacobsen, Jared Hanson, Karl McGuinness, Mark Hendrickson, Nate Barbettini, Scott Motte, Wils Dawson.
 
 {backmatter}
 
-# Agent Token Acquisition Patterns {#agent-token-acquisition}
-
-This appendix describes common patterns for how agents obtain agent tokens from their agent server. In all patterns, the agent generates a signing key pair, proves its identity to the agent server, and receives an agent token binding the key to an agent identifier. Each pattern differs in how the agent proves its identity and what trust assumption the agent server relies on.
-
-## Self-Hosted Agents
-
-A user publishes agent metadata and a JWKS at a domain they control (e.g., `username.github.io/.well-known/aauth-agent.json`) — no active server is required, only static files. The agent's public key is included in the published JWKS. The corresponding private key is held on the user's machine — potentially in a secure enclave or hardware token. The agent creates its own agent token, signed by the private key. Verifiers resolve the agent token against the published JWKS.
-
-This is the simplest deployment model — a developer or user publishes static files and runs software that signs its own requests. When the agent calls a new resource for the first time, the resource can verify the agent's identity from the published metadata and kick off registration, account creation, or consent — all without any prior relationship.
-
-**Trust assumption:** The trust anchor is the published JWKS and the private key held by the user. No server-side logic is involved — verification relies entirely on the static metadata and key material.
-
-## User Login
-
-1. The agent opens a browser and redirects the user to the agent server's web interface.
-2. The user authenticates at the agent server.
-3. The agent generates an ephemeral signing key pair, stores the private key in a platform vault (macOS Keychain, Windows TPM, Linux Secret Service, iOS Secure Enclave, Android Keystore), and sends the public key to the agent server.
-4. The agent server issues an agent token binding the ephemeral key to an agent identifier and returns it to the agent (e.g., via localhost callback or app redirect).
-
-This pattern applies to desktop apps, CLI tools, mobile apps, and browser-based apps — any context where a user can authenticate interactively.
-
-The agent may also hold a stable key in hardware (TPM, secure enclave) or a platform keychain. During the initial user login flow, the agent server records the stable public key alongside the agent identity. When the agent token expires, the agent can renew it by sending its new ephemeral public key in a `scheme=jkt-jwt` request signed by the stable key, without requiring the user to log in again.
-
-**Trust assumption:** The agent server trusts the user's authentication but cannot verify which software is running — only that the user authorized the agent. For renewal via stable key, the agent server trusts that the key registered at enrollment continues to represent the same agent.
-
-## Desktop and CLI Applications
-
-Desktop platforms generally do not provide application-level attestation comparable to mobile platforms. The user login pattern above is the most common approach. The agent stores its key in a platform vault (macOS Keychain, Windows TPM, Linux Secret Service).
-
-## Mobile Applications
-
-1. The app generates an ephemeral signing key pair, optionally backed by the device's secure enclave (iOS Secure Enclave, Android StrongBox).
-2. The app obtains a platform attestation — iOS App Attest assertion or Android Play Integrity verdict — binding the app identity and the ephemeral public key.
-3. The app sends the attestation and public key to the agent server.
-4. The agent server verifies the attestation against Apple's or Google's attestation service and issues an agent token.
-
-The platform attestation proves the app is a genuine installation from the app store, running on a real device, and has not been tampered with. If the key is hardware-backed, the attestation also proves the key cannot be exported. Mobile apps MAY also use the user login pattern when platform attestation is not available.
-
-**Trust assumption:** The agent server trusts the platform's attestation that the app is a genuine, untampered installation running on a real device.
-
-## Browser-Based Applications
-
-1. The web server — which acts as the agent server — authenticates the user. The recommended mechanism is WebAuthn, which binds authentication to the device and origin, preventing scripts or headless browsers from impersonating the web page to obtain an agent token.
-2. The web app generates an ephemeral signing key pair using the Web Crypto API (non-extractable if supported) and sends it to the web server.
-3. The web server issues an agent token binding the web app's ephemeral public key to an agent identifier and returns it.
-
-The key pair and agent token exist only for the lifetime of the browser session. The web server controls both the agent identity and the issuance.
-
-**Trust assumption:** The web server is the agent server and controls the entire lifecycle. The agent token lifetime is tied to the browser session. When WebAuthn is used, authentication is bound to the device and origin rather than relying solely on session credentials.
-
-## Server Workloads
-
-1. The agent generates an ephemeral signing key pair (e.g., Ed25519).
-2. The agent obtains a platform attestation from its runtime environment — such as a SPIFFE SVID from a SPIRE agent, a WIMSE workload identity token, or a cloud provider instance identity document (AWS IMDSv2, GCP metadata, Azure IMDS).
-3. The agent presents the attestation and its ephemeral public key to the agent server.
-4. The agent server verifies the attestation against the platform's trust root and issues an agent token with the ephemeral key in the `cnf` claim.
-
-On managed infrastructure, the platform may additionally attest the software identity (container image hash, binary signature) alongside the workload identity, allowing the agent server to restrict tokens to known software.
-
-**Trust assumption:** The agent server trusts the platform's attestation that the workload is what it claims to be.
-
-## Managed Desktops
-
-On managed desktops (e.g., corporate MDM-enrolled devices), the management platform may provide device and software attestation similar to server workloads. The agent presents the platform attestation alongside its ephemeral key, and the agent server verifies the device is managed and the software is approved.
-
-**Trust assumption:** The agent server trusts the management platform's attestation that the device is managed and the software is approved.
-
 # Detailed Flows {#detailed-flows}
 
-This appendix provides complete end-to-end flows for each adoption mode.
-
-## Two-Party: Resource-Managed with Interaction
-
-The agent calls a resource that requires user interaction for authorization. The resource returns a deferred response, the user completes interaction, and the agent receives an AAuth-Access token for subsequent calls.
-
-~~~ ascii-art
-Agent                            Resource              User
-  |                                 |                    |
-  | HTTPSig w/ agent token          |                    |
-  |-------------------------------->|                    |
-  |                                 |                    |
-  | 202 Accepted                    |                    |
-  | AAuth-Requirement:              |                    |
-  |   requirement=interaction;      |                    |
-  |   url=...; code=...            |                    |
-  | Location: /pending/abc          |                    |
-  |<--------------------------------|                    |
-  |                                 |                    |
-  | direct user to {url}?code={code}|                    |
-  |                                 |                    |
-  |                                 | authenticate       |
-  |                                 | and consent        |
-  |                                 |<------------------>|
-  |                                 |                    |
-  | GET /pending/abc                |                    |
-  |-------------------------------->|                    |
-  |                                 |                    |
-  | 200 OK                          |                    |
-  | AAuth-Access: opaque-token      |                    |
-  |<--------------------------------|                    |
-  |                                 |                    |
-  | HTTPSig w/ agent token          |                    |
-  | Authorization: AAuth opaque-tok |                    |
-  |-------------------------------->|                    |
-  |                                 |                    |
-  | 200 OK                          |                    |
-  |<--------------------------------|                    |
-~~~
-
-## Four-Party: 401 Resource Challenge
-
-A machine-to-machine agent calls a resource directly. The resource challenges with a `401` containing a resource token. The PS federates with the AS without user interaction.
-
-~~~ ascii-art
-Agent                          Resource               PS
-  |                               |                    |
-  | HTTPSig w/ agent token        |                    |
-  | AAuth-Mission                 |                    |
-  |------------------------------>|                    |
-  |                               |                    |
-  | 401 + resource_token          |                    |
-  |<------------------------------|                    |
-  |                               |                    |
-  | HTTPSig w/ agent token        |                    |
-  | POST token_endpoint           |                    |
-  | w/ resource_token             |                    |
-  |----------------------------------------------->|
-  |                               |                    |
-  |                               | [PS federates     |
-  |                               |  with AS]         |
-  |                               |                    |
-  | auth_token                    |                    |
-  |<-----------------------------------------------|
-  |                               |                    |
-  | HTTPSig w/ auth token         |                    |
-  |------------------------------>|                    |
-  |                               |                    |
-  | 200 OK                        |                    |
-  |<------------------------------|                    |
-~~~
-
-## Four-Party: User Authorization
-
-The agent obtains a resource token from the resource's `authorization_endpoint`, then requests authorization from the PS. The PS requires user consent via interaction.
-
-~~~ ascii-art
-User        Agent                Resource             PS
-  |           |                     |                  |
-  |           | HTTPSig w/ agent token                 |
-  |           | POST authorize_ep   |                  |
-  |           |-------------------->|                  |
-  |           |                     |                  |
-  |           | resource_token      |                  |
-  |           |<--------------------|                  |
-  |           |                     |                  |
-  |           | HTTPSig w/ agent token                 |
-  |           | POST token_endpoint |                  |
-  |           | w/ resource_token   |                  |
-  |           |----------------------------------->|
-  |           |                     |                  |
-  |           | 202 Accepted        |                  |
-  |           | requirement=interaction                |
-  |           | code="ABCD1234"     |                  |
-  |           |<-----------------------------------|
-  |           |                     |                  |
-  | direct to |                     |                  |
-  | {url}?code={code}              |                  |
-  |<----------|                     |                  |
-  |           |                     |                  |
-  | authenticate and consent        |                  |
-  |-------------------------------------------------->|
-  |           |                     |                  |
-  | redirect to callback_url       |                  |
-  |<--------------------------------------------------|
-  |           |                     |                  |
-  | callback  |                     |                  |
-  |---------->|                     |                  |
-  |           |                     |                  |
-  |           | GET /pending/abc    |                  |
-  |           |----------------------------------->|
-  |           |                     |                  |
-  |           | 200 OK, auth_token  |                  |
-  |           |<-----------------------------------|
-  |           |                     |                  |
-  |           | HTTPSig w/ auth token                  |
-  |           |-------------------->|                  |
-  |           |                     |                  |
-  |           | 200 OK              |                  |
-  |           |<--------------------|                  |
-~~~
-
-## Four-Party: Direct Approval
-
-The PS obtains approval directly — via push notification, existing session, or email — without the agent facilitating a redirect.
-
-~~~ ascii-art
-Agent                 Resource       PS              User
-  |                      |            |                |
-  | HTTPSig w/ agent token            |                |
-  | POST authorize_ep    |            |                |
-  |--------------------->|            |                |
-  |                      |            |                |
-  | resource_token       |            |                |
-  |<---------------------|            |                |
-  |                      |            |                |
-  | HTTPSig w/ agent token            |                |
-  | POST token_endpoint  |            |                |
-  | w/ resource_token    |            |                |
-  |----------------------------------->|                |
-  |                      |            |                |
-  | 202 Accepted         |            |                |
-  | requirement=approval |            |                |
-  |<-----------------------------------|                |
-  |                      |            |                |
-  |                      |            | push / email   |
-  |                      |            |--------------->|
-  |                      |            |                |
-  |                      |            | approve        |
-  |                      |            |<---------------|
-  |                      |            |                |
-  | GET /pending/jkl     |            |                |
-  |----------------------------------->|                |
-  |                      |            |                |
-  | 200 OK, auth_token   |            |                |
-  |<-----------------------------------|                |
-  |                      |            |                |
-  | HTTPSig w/ auth token|            |                |
-  |--------------------->|            |                |
-  |                      |            |                |
-  | 200 OK               |            |                |
-  |<---------------------|            |                |
-~~~
+This appendix provides flow diagrams for the chaining patterns defined in the main specification, where the choreography is hard to follow from prose alone.
 
 ## Four-Party: Call Chaining
 
@@ -2788,13 +2569,13 @@ Agent        Resource 1       Resource 2          PS
   |              | resource_token from R2           |
   |              | upstream_token                   |
   |              | agent_token (R1's)               |
-  |              |------------------------------>|
+  |              |--------------------------------->|
   |              |                |                 |
   |              |                | [PS federates   |
   |              |                |  with R2's AS]  |
   |              |                |                 |
   |              | auth_token for R2                |
-  |              |<------------------------------|
+  |              |<---------------------------------|
   |              |                |                 |
   |              | HTTPSig w/     |                 |
   |              | auth token     |                 |
@@ -2841,19 +2622,19 @@ User      Agent       Resource 1      Resource 2    PS
   |         | code="MNOP"  |               |          |
   |         |<-------------|               |          |
   |         |              |               |          |
-  | direct to R1 {url}    |               |          |
+  | direct to R1 {url}     |               |          |
   |<--------|              |               |          |
   |         |              |               |          |
-  | R1 redirects to PS    |               |          |
+  | R1 redirects to PS     |               |          |
   |----------------------->|               |          |
-  | PS {url}?code={code}  |               |          |
+  | PS {url}?code={code}   |               |          |
   |<-----------------------|               |          |
   |         |              |               |          |
   | authenticate and consent               |          |
-  |---------------------------------------------->|
+  |-------------------------------------------------->|
   |         |              |               |          |
-  | redirect to R1 callback               |          |
-  |<----------------------------------------------|
+  | redirect to R1 callback                |          |
+  |<--------------------------------------------------|
   |         |              |               |          |
   |         |         [R1 polls PS,        |          |
   |         |          gets auth_token]    |          |
@@ -2902,7 +2683,7 @@ Resources need to discover the agent's PS to issue resource tokens in three-part
 
 ### Why `.json` in Well-Known URIs
 
-AAuth well-known metadata URIs use the `.json` extension (e.g., `/.well-known/aauth-agent.json`) rather than the extensionless convention used by OAuth and OpenID Connect. The `.json` extension makes the content type immediately obvious — no content negotiation is needed. More importantly, it enables static file hosting: a `.json` file served from GitHub Pages, S3, or a CDN works without server-side configuration. This aligns with AAuth's self-hosted agent model (#agent-token-acquisition), where an agent's metadata can be published as static files with no active server.
+AAuth well-known metadata URIs use the `.json` extension (e.g., `/.well-known/aauth-agent.json`) rather than the extensionless convention used by OAuth and OpenID Connect. The `.json` extension makes the content type immediately obvious — no content negotiation is needed. More importantly, it enables static file hosting: a `.json` file served from GitHub Pages, S3, or a CDN works without server-side configuration. This aligns with AAuth's self-hosted agent model (see [@!I-D.hardt-aauth-bootstrap]), where an agent's metadata can be published as static files with no active server.
 
 ### Why Standard HTTP Async Pattern
 
