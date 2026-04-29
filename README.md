@@ -57,10 +57,10 @@ A standalone HTTP specification that AAuth builds on. Defines well-known key dis
 
 The authorization protocol for agent-to-resource access. Defines four resource access modes (identity-based, resource-managed, PS-managed, federated), three proof-of-possession token types (agent, resource, auth), agent governance (missions, permissions, audit), deferred responses with clarification chat, and call chaining for multi-hop resource access.
 
-* [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-aauth-protocol.html)
-* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol)
-* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-aauth-protocol)
-* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/AAuth/#go.draft-hardt-aauth-protocol.diff)
+* [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-oauth-aauth-protocol.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-oauth-aauth-protocol)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-oauth-aauth-protocol)
+* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/AAuth/#go.draft-hardt-oauth-aauth-protocol.diff)
 
 #### Implementations
 

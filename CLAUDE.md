@@ -16,7 +16,7 @@ The `archive/` folder contains historical and superseded documents. Do NOT modif
 
 All new work happens in these documents:
 
-- `draft-hardt-aauth-protocol.md` — AAuth Protocol specification (four-party protocol: Agent, Resource, PS, AS; includes missions, authorization endpoint, PS-AS federation)
+- `draft-hardt-oauth-aauth-protocol.md` — AAuth Protocol specification (four-party protocol: Agent, Resource, PS, AS; includes missions, authorization endpoint, PS-AS federation). Filename includes `oauth` to signal targeting the IETF OAuth WG; previously named `draft-hardt-aauth-protocol`.
 - `draft-hardt-aauth-r3.md` — R3 (Rich Resource Requests) specification
 
 ## Building

@@ -9,7 +9,7 @@ keyword = ["agent", "authentication", "authorization", "http", "signatures"]
 [seriesInfo]
 status = "standard"
 name = "Internet-Draft"
-value = "draft-hardt-aauth-protocol-latest"
+value = "draft-hardt-oauth-aauth-protocol-latest"
 stream = "IETF"
 
 date = 2026-04-29T00:00:00Z
@@ -2529,14 +2529,8 @@ The following implementations are known:
 
 *Note: This section is to be removed before publishing as an RFC.*
 
-- draft-hardt-aauth-protocol-02
-  - Move agent token acquisition patterns to the companion AAuth Bootstrap specification [@!I-D.hardt-aauth-bootstrap]; remove the corresponding appendix.
-
-- draft-hardt-aauth-protocol-01
-  - Complete rework of specification
-
-- draft-hardt-aauth-protocol-00
-  - Initial submission
+- draft-hardt-oauth-aauth-protocol-00
+  - Initial draft. Replaces [draft-hardt-aauth-protocol-02](https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol/02/); no technical changes.
 
 # Acknowledgments
 
