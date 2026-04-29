@@ -2130,6 +2130,10 @@ The `jwks_uri`, `tos_uri`, `policy_uri`, `logo_uri`, and `logo_dark_uri` values 
 
 Participants publish metadata at well-known URLs ([@!RFC8615]) to enable discovery.
 
+When fetching a metadata document, implementations MUST verify that the `issuer` value in the document matches the URL the document was retrieved from (the URL minus the `/.well-known/{dwk}` suffix). If the values do not match, the metadata document MUST be rejected.
+
+This check prevents host-poisoned metadata: an attacker hosting a metadata document at one domain that claims an `issuer` of a different domain. Without it, a permissive verifier following the `jwks_uri` in such a document could end up trusting attacker-controlled keys for tokens claiming the impersonated issuer.
+
 ### Agent Server Metadata
 
 Published at `/.well-known/aauth-agent.json`:
