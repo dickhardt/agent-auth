@@ -7,7 +7,7 @@
 <title>AAuth Protocol</title>
 <meta content="Dick Hardt" name="author">
 <meta content="
-       This document defines the AAuth authorization protocol for agent-to-resource authorization and identity claim retrieval. The protocol supports four resource access modes — identity-based, resource-managed (two-party), PS-managed (three-party), and federated (four-party) — with agent governance as an orthogonal layer. It builds on the HTTP Signature Keys specification ( ) for HTTP Message Signatures and key discovery. 
+       This document defines the AAuth authorization protocol for agent-to-resource authorization and identity claim retrieval. The protocol supports four resource access modes — identity-based, resource-managed (two-party), PS-asserted (three-party), and federated (four-party) — with agent governance as an orthogonal layer. It builds on the HTTP Signature Keys specification ( ) for HTTP Message Signatures and key discovery. 
     " name="description">
 <meta content="xml2rfc 3.33.0" name="generator">
 <meta content="agent" name="keyword">
@@ -27,8 +27,8 @@
     platformdirs 4.9.6
     pycountry 24.6.1
     PyYAML 6.0.3
-    requests 2.32.5
-    wcwidth 0.6.0
+    requests 2.33.1
+    wcwidth 0.7.0
 -->
 <link href="draft-hardt-oauth-aauth-protocol.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
@@ -1049,11 +1049,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">AAuth-Protocol</td>
-<td class="right">April 2026</td>
+<td class="right">May 2026</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Hardt</td>
-<td class="center">Expires 31 October 2026</td>
+<td class="center">Expires 7 November 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1066,12 +1066,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-hardt-oauth-aauth-protocol-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-04-29" class="published">29 April 2026</time>
+<time datetime="2026-05-06" class="published">6 May 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-31">31 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-11-07">7 November 2026</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1084,7 +1084,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <h1 id="title">AAuth Protocol</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This document defines the AAuth authorization protocol for agent-to-resource authorization and identity claim retrieval. The protocol supports four resource access modes — identity-based, resource-managed (two-party), PS-managed (three-party), and federated (four-party) — with agent governance as an orthogonal layer. It builds on the HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) for HTTP Message Signatures and key discovery.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document defines the AAuth authorization protocol for agent-to-resource authorization and identity claim retrieval. The protocol supports four resource access modes — identity-based, resource-managed (two-party), PS-asserted (three-party), and federated (four-party) — with agent governance as an orthogonal layer. It builds on the HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) for HTTP Message Signatures and key discovery.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note" id="section-note.1">
       <h2 id="name-discussion-venues">
@@ -1112,7 +1112,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 31 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 7 November 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1180,32 +1180,35 @@ svg :is([fill="white"], [fill^="#fff"]) {
                     <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-resource-managed-access-two" class="internal xref">Resource-Managed Access (Two-Party)</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.3">
-                    <p id="section-toc.1-1.4.2.1.2.3.1"><a href="#section-4.1.3" class="auto internal xref">4.1.3</a>.  <a href="#name-ps-managed-access-three-par" class="internal xref">PS-Managed Access (Three-Party)</a></p>
+                    <p id="section-toc.1-1.4.2.1.2.3.1"><a href="#section-4.1.3" class="auto internal xref">4.1.3</a>.  <a href="#name-ps-asserted-access-three-pa" class="internal xref">PS-Asserted Access (Three-Party)</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.4">
                     <p id="section-toc.1-1.4.2.1.2.4.1"><a href="#section-4.1.4" class="auto internal xref">4.1.4</a>.  <a href="#name-federated-access-four-party" class="internal xref">Federated Access (Four-Party)</a></p>
 </li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.5">
-                    <p id="section-toc.1-1.4.2.1.2.5.1"><a href="#section-4.1.5" class="auto internal xref">4.1.5</a>.  <a href="#name-agent-server-as-resource" class="internal xref">Agent Server as Resource</a></p>
-</li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
-                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-agent-governance" class="internal xref">Agent Governance</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
-                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-missions" class="internal xref">Missions</a></p>
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-roles" class="internal xref">Roles</a></p>
 </li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
-                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-ps-governance-endpoints" class="internal xref">PS Governance Endpoints</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-policy-evaluation-points" class="internal xref">Policy Evaluation Points</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-agent-governance" class="internal xref">Agent Governance</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.1">
+                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-missions" class="internal xref">Missions</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.2">
+                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="auto internal xref">4.4.2</a>.  <a href="#name-ps-governance-endpoints" class="internal xref">PS Governance Endpoints</a></p>
 </li>
                 </ul>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
-                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-obtaining-an-agent-token" class="internal xref">Obtaining an Agent Token</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-obtaining-an-agent-token" class="internal xref">Obtaining an Agent Token</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
-                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-bootstrapping" class="internal xref">Bootstrapping</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
+                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-bootstrapping" class="internal xref">Bootstrapping</a></p>
 </li>
             </ul>
 </li>
@@ -1415,6 +1418,9 @@ svg :is([fill="white"], [fill^="#fff"]) {
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3.2.3">
                     <p id="section-toc.1-1.9.2.3.2.3.1"><a href="#section-9.3.3" class="auto internal xref">9.3.3</a>.  <a href="#name-organization-visibility" class="internal xref">Organization Visibility</a></p>
 </li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3.2.4">
+                    <p id="section-toc.1-1.9.2.3.2.4.1"><a href="#section-9.3.4" class="auto internal xref">9.3.4</a>.  <a href="#name-ps-as-collapse" class="internal xref">PS-AS Collapse</a></p>
+</li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.4">
@@ -1565,7 +1571,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
                 <p id="section-toc.1-1.12.2.10.1"><a href="#section-12.10" class="auto internal xref">12.10</a>. <a href="#name-metadata-documents" class="internal xref">Metadata Documents</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.10.2.1">
-                    <p id="section-toc.1-1.12.2.10.2.1.1"><a href="#section-12.10.1" class="auto internal xref">12.10.1</a>.  <a href="#name-agent-server-metadata" class="internal xref">Agent Server Metadata</a></p>
+                    <p id="section-toc.1-1.12.2.10.2.1.1"><a href="#section-12.10.1" class="auto internal xref">12.10.1</a>.  <a href="#name-agent-provider-metadata" class="internal xref">Agent Provider Metadata</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.10.2.2">
                     <p id="section-toc.1-1.12.2.10.2.2.1"><a href="#section-12.10.2" class="auto internal xref">12.10.2</a>.  <a href="#name-person-server-metadata" class="internal xref">Person Server Metadata</a></p>
@@ -1616,13 +1622,13 @@ svg :is([fill="white"], [fill^="#fff"]) {
                 <p id="section-toc.1-1.14.2.6.1"><a href="#section-14.6" class="auto internal xref">14.6</a>.  <a href="#name-interaction-code-misdirecti" class="internal xref">Interaction Code Misdirection</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.7">
-                <p id="section-toc.1-1.14.2.7.1"><a href="#section-14.7" class="auto internal xref">14.7</a>.  <a href="#name-as-discovery" class="internal xref">AS Discovery</a></p>
+                <p id="section-toc.1-1.14.2.7.1"><a href="#section-14.7" class="auto internal xref">14.7</a>.  <a href="#name-token-issuer-discovery" class="internal xref">Token Issuer Discovery</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.8">
                 <p id="section-toc.1-1.14.2.8.1"><a href="#section-14.8" class="auto internal xref">14.8</a>.  <a href="#name-aauth-access-security" class="internal xref">AAuth-Access Security</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.9">
-                <p id="section-toc.1-1.14.2.9.1"><a href="#section-14.9" class="auto internal xref">14.9</a>.  <a href="#name-ps-as-auth-token-issuer" class="internal xref">PS as Auth Token Issuer</a></p>
+                <p id="section-toc.1-1.14.2.9.1"><a href="#section-14.9" class="auto internal xref">14.9</a>.  <a href="#name-trust-posture-in-ps-asserte" class="internal xref">Trust Posture in PS-Asserted Access</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.10">
                 <p id="section-toc.1-1.14.2.10.1"><a href="#section-14.10" class="auto internal xref">14.10</a>. <a href="#name-agent-person-binding" class="internal xref">Agent-Person Binding</a></p>
@@ -1694,7 +1700,10 @@ svg :is([fill="white"], [fill^="#fff"]) {
                 <p id="section-toc.1-1.16.2.8.1"><a href="#section-16.8" class="auto internal xref">16.8</a>.  <a href="#name-aauth-capability-value-regi" class="internal xref">AAuth Capability Value Registry</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.9">
-                <p id="section-toc.1-1.16.2.9.1"><a href="#section-16.9" class="auto internal xref">16.9</a>.  <a href="#name-uri-scheme-registration" class="internal xref">URI Scheme Registration</a></p>
+                <p id="section-toc.1-1.16.2.9.1"><a href="#section-16.9" class="auto internal xref">16.9</a>.  <a href="#name-aauth-platform-value-regist" class="internal xref">AAuth Platform Value Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.10">
+                <p id="section-toc.1-1.16.2.10.1"><a href="#section-16.10" class="auto internal xref">16.10</a>. <a href="#name-uri-scheme-registration" class="internal xref">URI Scheme Registration</a></p>
 </li>
             </ul>
 </li>
@@ -1868,7 +1877,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
             <strong>Per-instance identity</strong>: Each agent instance gets its own identifier (<code>aauth:local@domain</code>) and signing key.<a href="#section-1.3-1.2" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-1.3-1.3">
-            <strong>Proof-of-possession on every request</strong>: HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) bind every request to the agent's key — a stolen token is useless without the private key.<a href="#section-1.3-1.3" class="pilcrow">¶</a>
+            <strong>Proof-of-possession on every request</strong>: HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) bind every request the agent makes to the agent's key — a stolen token is useless without the private key.<a href="#section-1.3-1.3" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-1.3-1.4">
             <strong>Two-party mode with first-call registration</strong>: An agent calls a resource it has never contacted before; the resource returns <code>AAuth-Requirement</code>; a browser interaction handles account creation, payment, and consent. The first API call is the registration.<a href="#section-1.3-1.4" class="pilcrow">¶</a>
@@ -1924,7 +1933,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </li>
         </ul>
 <p id="section-1.5-3">The HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) defines how signing keys are bound to JWTs and discovered via well-known metadata, and how agents present cryptographic identity using HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>). This specification defines the <code>AAuth-Requirement</code>, <code>AAuth-Access</code>, and <code>AAuth-Capabilities</code> headers, and the authorization protocol across four resource access modes.<a href="#section-1.5-3" class="pilcrow">¶</a></p>
-<p id="section-1.5-4">Because agent identity is independent and self-contained, AAuth is designed for incremental adoption — each party can add support independently, and rollout does not need to be coordinated. A resource that verifies an agent's signature can manage access by identity alone, with no other infrastructure. When a resource manages its own authorization — via interaction, consent, or existing infrastructure — it operates in resource-managed access (two-party). Issuing resource tokens to the agent's person server enables PS-managed access (three-party), where auth tokens carry user identity, organization membership, and group information. Deploying an access server enables federated access (four-party) with cross-domain policy enforcement. Agent governance — missions, permissions, audit — is an orthogonal layer that any agent with a PS can add, from a simple prompt to full autonomous agent oversight. See <a href="#incremental-adoption" class="auto internal xref">Section 13</a> for details.<a href="#section-1.5-4" class="pilcrow">¶</a></p>
+<p id="section-1.5-4">Because agent identity is independent and self-contained, AAuth is designed for incremental adoption — each party can add support independently, and rollout does not need to be coordinated. A resource that verifies an agent's signature can manage access by identity alone, with no other infrastructure. When a resource manages its own authorization — via interaction, consent, or existing infrastructure — it operates in resource-managed access (two-party). Issuing resource tokens to the agent's person server enables PS-asserted access (three-party): the PS asserts identity claims about the user (<code>sub</code>, optionally <code>email</code>, <code>tenant</code>, <code>groups</code>, <code>roles</code>) and confirms user consent for the scope the resource requested; the resource applies its own policy on the resulting claims. Any PS can assert identity claims to any resource without bilateral setup; the resource namespaces those claims by the asserting PS. Deploying an access server enables federated access (four-party) with cross-domain policy enforcement. Agent governance — missions, plus per-action permission, audit, and interaction relay through a PS — is an orthogonal layer that any agent with a PS can add, from a simple prompt to full autonomous agent oversight. See <a href="#incremental-adoption" class="auto internal xref">Section 13</a> for details.<a href="#section-1.5-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1952,7 +1961,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
           <strong>Agent</strong>: An HTTP client (<span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>, Section 3.5) acting on behalf of a person. Identified by an agent identifier URIs using the <code>aauth</code> scheme, of the form <code>aauth:local@domain</code> <a href="#agent-identifiers" class="auto internal xref">Section 5.1</a>. An agent MAY have a person server, declared via the <code>ps</code> claim in the agent token.<a href="#section-3-2.2" class="pilcrow">¶</a>
 </li>
         <li class="compact" id="section-3-2.3">
-          <strong>Agent Server</strong>: A server that manages agent identity and issues agent tokens to agents. Trusted by the person to issue agent tokens only to authorized agents. Identified by an HTTPS URL <a href="#server-identifiers" class="auto internal xref">Section 12.9.1</a> and publishes metadata at <code>/.well-known/aauth-agent.json</code>.<a href="#section-3-2.3" class="pilcrow">¶</a>
+          <strong>Agent Provider (AP)</strong>: A server that manages agent identity and issues agent tokens to agents. Trusted by the person to issue agent tokens only to authorized agents. Identified by an HTTPS URL <a href="#server-identifiers" class="auto internal xref">Section 12.9.1</a> and publishes metadata at <code>/.well-known/aauth-agent.json</code>.<a href="#section-3-2.3" class="pilcrow">¶</a>
 </li>
         <li class="compact" id="section-3-2.4">
           <strong>Resource</strong>: A server that requires authentication and/or authorization to protect access to its APIs and data. A resource MAY enforce access policy itself or delegate policy evaluation to an access server. Identified by an HTTPS URL <a href="#server-identifiers" class="auto internal xref">Section 12.9.1</a> and publishes metadata at <code>/.well-known/aauth-resource.json</code>. A mission-aware resource includes the mission object from the <code>AAuth-Mission</code> header in the resource tokens it issues.<a href="#section-3-2.4" class="pilcrow">¶</a>
@@ -1967,7 +1976,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <p id="section-3-3">Tokens:<a href="#section-3-3" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-3-4.1">
-          <strong>Agent Token</strong>: Issued by an agent server to establish the agent's identity. MAY declare the agent's person server <a href="#agent-tokens" class="auto internal xref">Section 5.2</a>.<a href="#section-3-4.1" class="pilcrow">¶</a>
+          <strong>Agent Token</strong>: Issued by an agent provider to establish the agent's identity. MAY declare the agent's person server <a href="#agent-tokens" class="auto internal xref">Section 5.2</a>.<a href="#section-3-4.1" class="pilcrow">¶</a>
 </li>
         <li class="compact" id="section-3-4.2">
           <strong>Resource Token</strong>: Issued by a resource to describe the access the agent needs <a href="#resource-tokens" class="auto internal xref">Section 6</a>.<a href="#section-3-4.2" class="pilcrow">¶</a>
@@ -2008,7 +2017,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <a href="#section-4" class="section-number selfRef">4. </a><a href="#name-protocol-overview" class="section-name selfRef">Protocol Overview</a>
       </h2>
 <p id="section-4-1">All AAuth tokens are JWTs verified using a JWK retrieved from the <code>jwks_uri</code> in the issuer's well-known metadata, binding each token to the server that issued it.<a href="#section-4-1" class="pilcrow">¶</a></p>
-<p id="section-4-2">AAuth has two dimensions: <strong>resource access modes</strong> and <strong>agent governance</strong>. Resource access modes define how an agent gets authorized at a resource. Agent governance — missions, permissions, audit — is an orthogonal layer that any agent with a person server can add, independent of which access mode the resource supports.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-2">AAuth has two dimensions: <strong>resource access modes</strong> and <strong>agent governance</strong>. Resource access modes define how an agent gets authorized at a resource. Agent governance — missions, plus per-action permission, audit, and interaction relay through a person server — is an orthogonal layer that any agent with a person server can add, independent of which access mode the resource supports.<a href="#section-4-2" class="pilcrow">¶</a></p>
 <div id="resource-access-modes">
 <section id="section-4.1">
         <h3 id="name-resource-access-modes">
@@ -2039,13 +2048,14 @@ svg :is([fill="white"], [fill^="#fff"]) {
               <td class="text-left" rowspan="1" colspan="1">Resource manages authorization with interaction, consent, or existing auth infrastructure</td>
             </tr>
             <tr>
-              <td class="text-left" rowspan="1" colspan="1">PS-managed access <br>
+              <td class="text-left" rowspan="1" colspan="1">PS-asserted access <br>
 (three-party)</td>
               <td class="text-left" rowspan="1" colspan="1">Agent <br>
  Resource <br>
  PS</td>
               <td class="text-left" rowspan="1" colspan="1">Resource issues resource token to PS; <br>
- PS issues auth token</td>
+ PS asserts identity and consent for the requested scope; <br>
+ resource applies its own policy</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">Federated access <br>
@@ -2081,8 +2091,8 @@ svg :is([fill="white"], [fill^="#fff"]) {
                       |          | v
               agent  +--------------+  signed request  +--------------+
 +-----------+ token  |              |-----------------&gt;|              |
-|   Agent   |-------&gt;|    Agent     |                  |   Resource   |
-|   Server  |        |              |&lt;-----------------|              |
+|  Agent    |-------&gt;|    Agent     |                  |   Resource   |
+|  Provider |        |              |&lt;-----------------|              |
 +-----------+        +--------------+     resource     +--------------+
 
 
@@ -2094,10 +2104,10 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </div>
 <ul class="compact">
 <li class="compact" id="section-4.1-5.1">
-            <strong>Agent Server → Agent</strong>: Issues an agent token binding the agent's signing key to its identity.<a href="#section-4.1-5.1" class="pilcrow">¶</a>
+            <strong>Agent Provider → Agent</strong>: Issues an agent token binding the agent's signing key to its identity.<a href="#section-4.1-5.1" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-4.1-5.2">
-            <strong>Agent ↔ Resource</strong>: Agent sends signed requests; resource returns responses. In PS-managed and federated modes, the resource also returns resource tokens at its authorization endpoint.<a href="#section-4.1-5.2" class="pilcrow">¶</a>
+            <strong>Agent ↔ Resource</strong>: Agent sends signed requests; resource returns responses. In PS-asserted and federated modes, the resource also returns resource tokens at its authorization endpoint.<a href="#section-4.1-5.2" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-4.1-5.3">
             <strong>Agent ↔ PS</strong>: Agent sends resource tokens to obtain auth tokens. With governance, agent also creates missions and requests permissions.<a href="#section-4.1-5.3" class="pilcrow">¶</a>
@@ -2176,13 +2186,13 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </div>
 </section>
 </div>
-<div id="ps-managed-access-three-party">
+<div id="ps-asserted-access-three-party">
 <section id="section-4.1.3">
-          <h4 id="name-ps-managed-access-three-par">
-<a href="#section-4.1.3" class="section-number selfRef">4.1.3. </a><a href="#name-ps-managed-access-three-par" class="section-name selfRef">PS-Managed Access (Three-Party)</a>
+          <h4 id="name-ps-asserted-access-three-pa">
+<a href="#section-4.1.3" class="section-number selfRef">4.1.3. </a><a href="#name-ps-asserted-access-three-pa" class="section-name selfRef">PS-Asserted Access (Three-Party)</a>
           </h4>
-<p id="section-4.1.3-1">The resource discovers the agent's PS from the <code>ps</code> claim in the agent token and issues a resource token <a href="#resource-tokens" class="auto internal xref">Section 6</a> with <code>aud</code> = PS URL. The agent obtains the resource token either by calling the resource's <code>authorization_endpoint</code> (if published in resource metadata) or by receiving a <code>401</code> challenge with <code>requirement=auth-token</code> when calling the resource directly <a href="#requirement-auth-token" class="auto internal xref">Section 6.5</a>. The agent sends the resource token to the PS's token endpoint <a href="#ps-token-endpoint" class="auto internal xref">Section 7.1</a>, and the PS issues an auth token <a href="#auth-tokens" class="auto internal xref">Section 9.4</a> directly. The auth token can carry user identity, organization membership, and group information — enabling the resource to get rich authorization context from the PS without building its own identity infrastructure.<a href="#section-4.1.3-1" class="pilcrow">¶</a></p>
-<span id="name-ps-managed-access-three-part"></span><div id="fig-ps-managed">
+<p id="section-4.1.3-1">The resource has no separate access server — it accepts identity claims from whichever PS the agent declares, and applies its own policy on the resulting claims. The resource discovers the agent's PS from the <code>ps</code> claim in the agent token and issues a resource token <a href="#resource-tokens" class="auto internal xref">Section 6</a> with <code>aud</code> = PS URL. The agent obtains the resource token either by calling the resource's <code>authorization_endpoint</code> (if published in resource metadata) or by receiving a <code>401</code> challenge with <code>requirement=auth-token</code> when calling the resource directly <a href="#requirement-auth-token" class="auto internal xref">Section 6.5</a>. The agent sends the resource token to the PS's token endpoint <a href="#ps-token-endpoint" class="auto internal xref">Section 7.1</a>, and the PS returns an auth token <a href="#auth-tokens" class="auto internal xref">Section 9.4</a> asserting identity claims about the user (<code>sub</code>, optionally <code>email</code>, <code>tenant</code>, <code>groups</code>, <code>roles</code>) and confirming user consent for the scope the resource requested. The resource applies its own access policy on the resulting claims. Any agent's PS can assert identity claims to any resource without bilateral setup; the resource namespaces those claims by the asserting PS — the same <code>sub</code> value from a different PS is a different subject. As in many OIDC deployments, registration and login share a single flow: the resource follows the same flow whether the user is new or returning, and creates or matches a user record based on whether it has seen this <code>(iss, sub)</code> before.<a href="#section-4.1.3-1" class="pilcrow">¶</a></p>
+<span id="name-ps-asserted-access-three-par"></span><div id="fig-ps-asserted">
 <figure id="figure-4">
             <div class="lang-ascii-art sourcecode" id="section-4.1.3-2.1">
 <pre>Agent                                 Resource       PS
@@ -2212,7 +2222,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </pre>
 </div>
 <figcaption><a href="#figure-4" class="selfRef">Figure 4</a>:
-<a href="#name-ps-managed-access-three-part" class="selfRef">PS-Managed Access (Three-Party)</a>
+<a href="#name-ps-asserted-access-three-par" class="selfRef">PS-Asserted Access (Three-Party)</a>
             </figcaption></figure>
 </div>
 </section>
@@ -2266,37 +2276,79 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </div>
 </section>
 </div>
-<div id="agent-server-as-resource">
-<section id="section-4.1.5">
-          <h4 id="name-agent-server-as-resource">
-<a href="#section-4.1.5" class="section-number selfRef">4.1.5. </a><a href="#name-agent-server-as-resource" class="section-name selfRef">Agent Server as Resource</a>
-          </h4>
-<p id="section-4.1.5-1">An agent server MAY also act as a resource — publishing metadata at <code>/.well-known/aauth-resource.json</code> and issuing resource tokens. This enables the agent to obtain auth tokens from its PS for the agent server's own services or infrastructure, using the standard resource token flow. How the agent obtains the resource token from the agent server is out of scope of this specification. No mission is required.<a href="#section-4.1.5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
+<div id="roles">
+<section id="section-4.2">
+        <h3 id="name-roles">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-roles" class="section-name selfRef">Roles</a>
+        </h3>
+<p id="section-4.2-1">Agent, AP, Resource, PS, and AS are <strong>roles</strong>, not deployment units. Each role has its own protocol identity — the Agent by an <code>aauth:local@domain</code> URI attested by an agent token, and AP, Resource, PS, and AS each by a distinct HTTPS URL with metadata published at a distinct well-known path. A single deployment unit MAY fill multiple roles, by hosting metadata for multiple server roles under a shared origin and/or by holding an agent token in addition to acting as a server. The protocol treats each role independently regardless of collocation — every interaction is a normal protocol exchange between role identifiers, even when the underlying servers are the same.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">Common collocations:<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2-3.1">
+            <strong>PS + AS</strong>: One server brokers user consent and evaluates resource policy. Federation collapses to a single internal evaluation. See <a href="#ps-as-collapse" class="auto internal xref">Section 9.3.4</a>.<a href="#section-4.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.2-3.2">
+            <strong>Resource + Agent</strong>: A resource acts as an agent for downstream calls, publishing agent metadata at <code>/.well-known/aauth-agent.json</code> so downstream parties can verify its identity. See <a href="#call-chaining" class="auto internal xref">Section 10.1</a>.<a href="#section-4.2-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.2-3.3">
+            <strong>AP + Resource</strong>: An agent provider exposes its own services to the agents it issues tokens to — publishing metadata at <code>/.well-known/aauth-resource.json</code> and issuing resource tokens. This enables the agent to obtain auth tokens from its PS for the agent provider's own services or infrastructure, using the standard resource token flow. How the agent obtains the resource token from the agent provider is out of scope of this specification. No mission is required.<a href="#section-4.2-3.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.2-3.4">
+            <strong>Agent + AP</strong>: A self-hosted agent is its own agent provider, self-issuing agent tokens signed by a JWKS-published key the user controls. See <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span>.<a href="#section-4.2-3.4" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.2-3.5">
+            <strong>Org-wide bundle</strong>: A single organizational server may operate AP + PS + AS for employees and internal resources, with federation incurred only at the boundary when an internal agent accesses an external resource.<a href="#section-4.2-3.5" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.2-4">These are deployment choices that do not change the wire protocol. A receiver verifies each role's tokens and metadata identically whether the role is on its own server or collocated with others.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="policy-evaluation-points">
+<section id="section-4.3">
+        <h3 id="name-policy-evaluation-points">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-policy-evaluation-points" class="section-name selfRef">Policy Evaluation Points</a>
+        </h3>
+<p id="section-4.3-1">Policy decisions in AAuth evaluate what the agent is doing. The Agent is the subject of every decision; the four server roles (AP, PS, AS, Resource) each evaluate the agent's activity from their own vantage point, in their own scope. No single party is the policy decision point — and token lifetimes give every server role a natural re-evaluation cadence.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.3-2.1">
+            <strong>Agent Provider</strong> decides whether to continue treating the agent as authorized — based on device posture, attestation freshness, network location, account status, or any other AP-internal criteria — and enforces that decision by issuing or refusing fresh agent tokens.<a href="#section-4.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.3-2.2">
+            <strong>Person Server</strong> decides whether to issue an auth token for a given resource and scope — based on user consent and, when the agent is operating under a mission, the mission's intent and prior log entries against the PS's governance policy.<a href="#section-4.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.3-2.3">
+            <strong>Access Server</strong> decides whether to issue an auth token on behalf of the resource — based on resource policy, the claims the PS has provided, and any further requirements (interaction, payment, claims) gathered via deferred responses.<a href="#section-4.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-4.3-2.4">
+            <strong>Resource</strong> plays two roles in policy: it <em>decides what is required</em> to access the resource at the moment it issues a resource token (audience, scope, mission requirement), and it <em>enforces</em> the resulting auth token at the moment of access (signature verification, proof-of-possession, access rules).<a href="#section-4.3-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-4.3-3">All AAuth tokens have limited lifetimes, so each issuance is a natural re-evaluation point. An auth token that lives for an hour means every party that contributed to its issuance gets a fresh decision opportunity every hour — combined with real-time revocation <a href="#token-revocation" class="auto internal xref">Section 12.6</a>, this produces layered control without any single party needing to coordinate with the others.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="agent-governance">
-<section id="section-4.2">
+<section id="section-4.4">
         <h3 id="name-agent-governance">
-<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-agent-governance" class="section-name selfRef">Agent Governance</a>
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-agent-governance" class="section-name selfRef">Agent Governance</a>
         </h3>
-<p id="section-4.2-1">Agent governance is orthogonal to resource access modes. Any agent with a person server (<code>ps</code> claim in agent token) can use the PS for governance, regardless of which access modes the resources it accesses support.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.4-1">Agent governance is orthogonal to resource access modes. Any agent with a person server (<code>ps</code> claim in agent token) can use the PS for governance, regardless of which access modes the resources it accesses support.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
 <div id="missions-overview">
-<section id="section-4.2.1">
+<section id="section-4.4.1">
           <h4 id="name-missions">
-<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-missions" class="section-name selfRef">Missions</a>
+<a href="#section-4.4.1" class="section-number selfRef">4.4.1. </a><a href="#name-missions" class="section-name selfRef">Missions</a>
           </h4>
-<p id="section-4.2.1-1">When the person's PS requires governance over the agent's actions, the agent creates a mission — a Markdown description of what it intends to accomplish. The PS and user review, clarify, and approve the mission. The approved mission is immutable — bound by its <code>s256</code> hash. Missions evolve through the <strong>mission log</strong> <a href="#mission-log" class="auto internal xref">Section 8.3</a>: the ordered record of all agent↔PS interactions within the mission. Missions are not required for all PS interactions — an agent can get auth tokens without a mission. See <a href="#missions" class="auto internal xref">Section 8</a> for normative requirements.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.1-1">When the person's PS requires governance over the agent's actions, the agent creates a mission — a Markdown description of what it intends to accomplish. The PS and user review, clarify, and approve the mission. The approved mission is immutable — bound by its <code>s256</code> hash. Missions evolve through the <strong>mission log</strong> <a href="#mission-log" class="auto internal xref">Section 8.3</a>: the ordered record of all agent↔PS interactions within the mission. Missions are not required for all PS interactions — an agent can get auth tokens without a mission. See <a href="#missions" class="auto internal xref">Section 8</a> for normative requirements.<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
 <div id="mission-creation">
-<section id="section-4.2.1.1">
+<section id="section-4.4.1.1">
             <h5 id="name-mission-creation">
-<a href="#section-4.2.1.1" class="section-number selfRef">4.2.1.1. </a><a href="#name-mission-creation" class="section-name selfRef">Mission Creation</a>
+<a href="#section-4.4.1.1" class="section-number selfRef">4.4.1.1. </a><a href="#name-mission-creation" class="section-name selfRef">Mission Creation</a>
             </h5>
-<p id="section-4.2.1.1-1">The agent proposes a mission at the PS. The PS and user may clarify and refine before approving.<a href="#section-4.2.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.1.1-1">The agent proposes a mission at the PS. The PS and user may clarify and refine before approving.<a href="#section-4.4.1.1-1" class="pilcrow">¶</a></p>
 <span id="name-mission-creation-and-approv"></span><div id="fig-mission">
 <figure id="figure-6">
-              <div class="lang-ascii-art sourcecode" id="section-4.2.1.1-2.1">
+              <div class="lang-ascii-art sourcecode" id="section-4.4.1.1-2.1">
 <pre>Agent                                     PS                        User
   |                                        |                          |
   | HTTPSig w/ agent token                 |                          |
@@ -2321,14 +2373,14 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </section>
 </div>
 <div id="mission-context-at-resources">
-<section id="section-4.2.1.2">
+<section id="section-4.4.1.2">
             <h5 id="name-mission-context-at-resource">
-<a href="#section-4.2.1.2" class="section-number selfRef">4.2.1.2. </a><a href="#name-mission-context-at-resource" class="section-name selfRef">Mission Context at Resources</a>
+<a href="#section-4.4.1.2" class="section-number selfRef">4.4.1.2. </a><a href="#name-mission-context-at-resource" class="section-name selfRef">Mission Context at Resources</a>
             </h5>
-<p id="section-4.2.1.2-1">The agent includes the <code>AAuth-Mission</code> header when sending requests to resources, unless the mission is already conveyed in an auth token. The resource includes the mission object in the resource token it issues:<a href="#section-4.2.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.1.2-1">The agent includes the <code>AAuth-Mission</code> header when sending requests to resources, unless the mission is already conveyed in an auth token. The resource includes the mission object in the resource token it issues:<a href="#section-4.4.1.2-1" class="pilcrow">¶</a></p>
 <span id="name-mission-context-at-resource-2"></span><div id="fig-mission-context">
 <figure id="figure-7">
-              <div class="lang-ascii-art sourcecode" id="section-4.2.1.2-2.1">
+              <div class="lang-ascii-art sourcecode" id="section-4.4.1.2-2.1">
 <pre>Agent                                        Resource
   |                                             |
   | HTTPSig w/ agent token                      |
@@ -2348,15 +2400,15 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </div>
 </section>
 </div>
-<div id="mission-completion">
-<section id="section-4.2.1.3">
+<div id="mission-completion-overview">
+<section id="section-4.4.1.3">
             <h5 id="name-mission-completion">
-<a href="#section-4.2.1.3" class="section-number selfRef">4.2.1.3. </a><a href="#name-mission-completion" class="section-name selfRef">Mission Completion</a>
+<a href="#section-4.4.1.3" class="section-number selfRef">4.4.1.3. </a><a href="#name-mission-completion" class="section-name selfRef">Mission Completion</a>
             </h5>
-<p id="section-4.2.1.3-1">When the agent believes the mission is complete, it proposes completion via the interaction endpoint with a summary. The PS presents the summary to the user. The user either accepts (mission terminates) or responds with follow-up questions (mission continues).<a href="#section-4.2.1.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.1.3-1">When the agent believes the mission is complete, it proposes completion via the interaction endpoint with a summary. The PS presents the summary to the user. The user either accepts (mission terminates) or responds with follow-up questions (mission continues).<a href="#section-4.4.1.3-1" class="pilcrow">¶</a></p>
 <span id="name-mission-completion-2"></span><div id="fig-mission-completion">
 <figure id="figure-8">
-              <div class="lang-ascii-art sourcecode" id="section-4.2.1.3-2.1">
+              <div class="lang-ascii-art sourcecode" id="section-4.4.1.3-2.1">
 <pre>Agent                                     PS                        User
   |                                        |                          |
   | HTTPSig w/ agent token                 |                          |
@@ -2385,20 +2437,20 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </section>
 </div>
 <div id="ps-governance-endpoints">
-<section id="section-4.2.2">
+<section id="section-4.4.2">
           <h4 id="name-ps-governance-endpoints">
-<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-ps-governance-endpoints" class="section-name selfRef">PS Governance Endpoints</a>
+<a href="#section-4.4.2" class="section-number selfRef">4.4.2. </a><a href="#name-ps-governance-endpoints" class="section-name selfRef">PS Governance Endpoints</a>
           </h4>
-<p id="section-4.2.2-1">The PS provides three governance endpoints. The <strong>permission</strong> <a href="#permission-endpoint" class="auto internal xref">Section 7.4</a> and <strong>interaction</strong> <a href="#interaction-endpoint" class="auto internal xref">Section 7.6</a> endpoints work with or without a mission. The <strong>audit</strong> endpoint <a href="#audit-endpoint" class="auto internal xref">Section 7.5</a> requires a mission.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.2-1">The PS provides three governance endpoints. The <strong>permission</strong> <a href="#permission-endpoint" class="auto internal xref">Section 7.4</a> and <strong>interaction</strong> <a href="#interaction-endpoint" class="auto internal xref">Section 7.6</a> endpoints work with or without a mission. The <strong>audit</strong> endpoint <a href="#audit-endpoint" class="auto internal xref">Section 7.5</a> requires a mission.<a href="#section-4.4.2-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-4.2.2-2.1">
-              <strong>Permission endpoint</strong>: Request permission for actions not governed by a remote resource — tool calls, file writes, sending messages.<a href="#section-4.2.2-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-4.4.2-2.1">
+              <strong>Permission endpoint</strong>: Request permission for actions not governed by a remote resource — tool calls, file writes, sending messages.<a href="#section-4.4.2-2.1" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-4.2.2-2.2">
-              <strong>Audit endpoint</strong>: Log actions performed, providing the PS with a complete record for the mission log.<a href="#section-4.2.2-2.2" class="pilcrow">¶</a>
+            <li class="compact" id="section-4.4.2-2.2">
+              <strong>Audit endpoint</strong>: Log actions performed, providing the PS with a complete record for the mission log.<a href="#section-4.4.2-2.2" class="pilcrow">¶</a>
 </li>
-            <li class="compact" id="section-4.2.2-2.3">
-              <strong>Interaction endpoint</strong>: Reach the user through the PS — relay interactions, ask questions, forward payment approvals, or propose mission completion.<a href="#section-4.2.2-2.3" class="pilcrow">¶</a>
+            <li class="compact" id="section-4.4.2-2.3">
+              <strong>Interaction endpoint</strong>: Reach the user through the PS — relay interactions, ask questions, forward payment approvals, or propose mission completion.<a href="#section-4.4.2-2.3" class="pilcrow">¶</a>
 </li>
           </ul>
 </section>
@@ -2406,51 +2458,51 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </section>
 </div>
 <div id="obtaining-an-agent-token">
-<section id="section-4.3">
+<section id="section-4.5">
         <h3 id="name-obtaining-an-agent-token">
-<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-obtaining-an-agent-token" class="section-name selfRef">Obtaining an Agent Token</a>
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-obtaining-an-agent-token" class="section-name selfRef">Obtaining an Agent Token</a>
         </h3>
-<p id="section-4.3-1">The agent obtains an agent token from its agent server. The agent generates a signing key pair, proves its identity to the agent server through a platform-specific mechanism, and receives an agent token binding the signing key to the agent's identifier. The agent token MAY include a <code>ps</code> claim identifying the agent's person server. Agent token structure and normative requirements are defined in <a href="#agent-tokens" class="auto internal xref">Section 5.2</a>. Acquisition is platform-dependent; see <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span> for common patterns.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-1">The agent obtains an agent token from its agent provider. The agent generates a signing key pair, proves its identity to the agent provider through a platform-specific mechanism, and receives an agent token binding the signing key to the agent's identifier. The agent token MAY include a <code>ps</code> claim identifying the agent's person server. Agent token structure and normative requirements are defined in <a href="#agent-tokens" class="auto internal xref">Section 5.2</a>. Acquisition is platform-dependent; see <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span> for common patterns.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="bootstrapping">
-<section id="section-4.4">
+<section id="section-4.6">
         <h3 id="name-bootstrapping">
-<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-bootstrapping" class="section-name selfRef">Bootstrapping</a>
+<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-bootstrapping" class="section-name selfRef">Bootstrapping</a>
         </h3>
-<p id="section-4.4-1">Before protocol flows begin, each entity must be established with its identity, keys, and relationships. The requirements build incrementally.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
-<p id="section-4.4-2"><strong>All modes:</strong><a href="#section-4.4-2" class="pilcrow">¶</a></p>
+<p id="section-4.6-1">Before protocol flows begin, each entity must be established with its identity, keys, and relationships. The requirements build incrementally.<a href="#section-4.6-1" class="pilcrow">¶</a></p>
+<p id="section-4.6-2"><strong>All modes:</strong><a href="#section-4.6-2" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-4.4-3.1">Agent obtains an agent token from its agent server, binding its signing key to its identifier (<code>aauth:local@domain</code>). See <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span>.<a href="#section-4.4-3.1" class="pilcrow">¶</a>
+<li class="compact" id="section-4.6-3.1">Agent obtains an agent token from its agent provider, binding its signing key to its identifier (<code>aauth:local@domain</code>). See <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span>.<a href="#section-4.6-3.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-3.2">Agent servers publish metadata at <code>/.well-known/aauth-agent.json</code> <a href="#agent-server-metadata" class="auto internal xref">Section 12.10.1</a>.<a href="#section-4.4-3.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-3.2">Agent providers publish metadata at <code>/.well-known/aauth-agent.json</code> <a href="#agent-provider-metadata" class="auto internal xref">Section 12.10.1</a>.<a href="#section-4.6-3.2" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-4.4-4"><strong>Resource-managed access (two-party) and above:</strong><a href="#section-4.4-4" class="pilcrow">¶</a></p>
+<p id="section-4.6-4"><strong>Resource-managed access (two-party) and above:</strong><a href="#section-4.6-4" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-4.4-5.1">Resources MAY publish metadata at <code>/.well-known/aauth-resource.json</code> <a href="#resource-metadata" class="auto internal xref">Section 12.10.4</a>. Resources that do not publish metadata can still issue resource tokens and interaction requirements via <code>401</code> responses.<a href="#section-4.4-5.1" class="pilcrow">¶</a>
+<li class="compact" id="section-4.6-5.1">Resources MAY publish metadata at <code>/.well-known/aauth-resource.json</code> <a href="#resource-metadata" class="auto internal xref">Section 12.10.4</a>. Resources that do not publish metadata can still issue resource tokens and interaction requirements via <code>401</code> responses.<a href="#section-4.6-5.1" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-4.4-6"><strong>PS-managed access (three-party) and above:</strong><a href="#section-4.4-6" class="pilcrow">¶</a></p>
+<p id="section-4.6-6"><strong>PS-asserted access (three-party) and above:</strong><a href="#section-4.6-6" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-4.4-7.1">The agent's agent token includes the <code>ps</code> claim identifying its person server. This is configured during agent setup (e.g., set by the agent server or chosen by the person deploying the agent).<a href="#section-4.4-7.1" class="pilcrow">¶</a>
+<li class="compact" id="section-4.6-7.1">The agent's agent token MUST include the <code>ps</code> claim identifying its person server. This is configured during agent setup (e.g., set by the agent provider or chosen by the person deploying the agent).<a href="#section-4.6-7.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-7.2">The PS maintains the association between an agent and its person. This association is typically established when the person first authorizes the agent at the PS via the interaction flow. An organization administrator may also pre-authorize agents for the organization.<a href="#section-4.4-7.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-7.2">The PS maintains the association between an agent and its person. This association is typically established when the person first authorizes the agent at the PS via the interaction flow. An organization administrator may also pre-authorize agents for the organization.<a href="#section-4.6-7.2" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-7.3">The PS MAY establish a direct communication channel with the user (e.g., email, push notification, or messaging) to support out-of-band authorization, approval notifications, and revocation alerts.<a href="#section-4.4-7.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-7.3">The PS MAY establish a direct communication channel with the user (e.g., email, push notification, or messaging) to support out-of-band authorization, approval notifications, and revocation alerts.<a href="#section-4.6-7.3" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-7.4">Person servers publish metadata at <code>/.well-known/aauth-person.json</code> <a href="#ps-metadata" class="auto internal xref">Section 12.10.2</a>.<a href="#section-4.4-7.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-7.4">Person servers publish metadata at <code>/.well-known/aauth-person.json</code> <a href="#ps-metadata" class="auto internal xref">Section 12.10.2</a>.<a href="#section-4.6-7.4" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-7.5">The resource discovers the agent's PS from the <code>ps</code> claim in the agent token and issues resource tokens with <code>aud</code> = PS URL.<a href="#section-4.4-7.5" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-7.5">The resource discovers the agent's PS from the <code>ps</code> claim in the agent token and issues resource tokens with <code>aud</code> = PS URL.<a href="#section-4.6-7.5" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-4.4-8"><strong>Federated access (four-party):</strong><a href="#section-4.4-8" class="pilcrow">¶</a></p>
+<p id="section-4.6-8"><strong>Federated access (four-party):</strong><a href="#section-4.6-8" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-4.4-9.1">Access servers publish metadata at <code>/.well-known/aauth-access.json</code> <a href="#access-server-metadata" class="auto internal xref">Section 12.10.3</a>.<a href="#section-4.4-9.1" class="pilcrow">¶</a>
+<li class="compact" id="section-4.6-9.1">Access servers publish metadata at <code>/.well-known/aauth-access.json</code> <a href="#access-server-metadata" class="auto internal xref">Section 12.10.3</a>.<a href="#section-4.6-9.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-9.2">The resource issues resource tokens with <code>aud</code> = AS URL.<a href="#section-4.4-9.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-9.2">The resource issues resource tokens with <code>aud</code> = AS URL.<a href="#section-4.6-9.2" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-4.4-9.3">The PS and the resource's AS must have a trust relationship before the AS will issue auth tokens. This trust may be pre-established (through a business relationship) or established dynamically through the AS's token endpoint responses — interaction, payment, or claims. When an organization controls both the PS and AS, trust is implicit. See <a href="#ps-as-federation" class="auto internal xref">Section 9.3</a> for details.<a href="#section-4.4-9.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-4.6-9.3">The PS and the resource's AS must have a trust relationship before the AS will issue auth tokens. This trust may be pre-established (through a business relationship) or established dynamically through the AS's token endpoint responses — interaction, payment, or claims. When an organization controls both the PS and AS, trust is implicit. See <a href="#ps-as-federation" class="auto internal xref">Section 9.3</a> for details.<a href="#section-4.6-9.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
@@ -2462,13 +2514,13 @@ svg :is([fill="white"], [fill^="#fff"]) {
       <h2 id="name-agent-identity">
 <a href="#section-5" class="section-number selfRef">5. </a><a href="#name-agent-identity" class="section-name selfRef">Agent Identity</a>
       </h2>
-<p id="section-5-1">This section defines agent identity — how agents are identified and how that identity is bound to signing keys via agent tokens. Agent identity is the foundation of AAuth: every signed request an agent makes carries its agent token, enabling any party to verify who the agent is and that the request was signed by the key bound to that identity.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-1">This section defines agent identity — how agents are identified and how that identity is bound to signing keys via agent tokens. Agent identity is the foundation of AAuth: the agent token binds the agent's identifier to its signing key, and every other token the agent obtains (resource tokens, auth tokens) is issued in response to a request signed by that key. When an agent presents an auth token to a resource, the auth token's <code>cnf</code> claim binds it to the same key — so the agent's identity, established by the agent token, ultimately authorizes every signed request whether the <code>Signature-Key</code> header carries the agent token or an auth token.<a href="#section-5-1" class="pilcrow">¶</a></p>
 <div id="agent-identifiers">
 <section id="section-5.1">
         <h3 id="name-agent-identifiers">
 <a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-agent-identifiers" class="section-name selfRef">Agent Identifiers</a>
         </h3>
-<p id="section-5.1-1">Agent identifiers are URIs using the <code>aauth</code> scheme, of the form <code>aauth:local@domain</code> where <code>domain</code> is the agent server's domain. The <code>local</code> part MUST consist of lowercase ASCII letters (<code>a-z</code>), digits (<code>0-9</code>), hyphen (<code>-</code>), underscore (<code>_</code>), plus (<code>+</code>), and period (<code>.</code>). The <code>local</code> part MUST NOT be empty and MUST NOT exceed 255 characters. The <code>domain</code> part MUST be a valid domain name conforming to the server identifier requirements <a href="#server-identifiers" class="auto internal xref">Section 12.9.1</a> (without scheme).<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-1">Agent identifiers are URIs using the <code>aauth</code> scheme, of the form <code>aauth:local@domain</code> where <code>domain</code> is the agent provider's domain. The <code>local</code> part MUST consist of lowercase ASCII letters (<code>a-z</code>), digits (<code>0-9</code>), hyphen (<code>-</code>), underscore (<code>_</code>), plus (<code>+</code>), and period (<code>.</code>). The <code>local</code> part MUST NOT be empty and MUST NOT exceed 255 characters. The <code>domain</code> part MUST be a valid domain name conforming to the server identifier requirements <a href="#server-identifiers" class="auto internal xref">Section 12.9.1</a> (without scheme).<a href="#section-5.1-1" class="pilcrow">¶</a></p>
 <p id="section-5.1-2">Valid agent identifiers:<a href="#section-5.1-2" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-5.1-3.1">
@@ -2503,16 +2555,16 @@ svg :is([fill="white"], [fill^="#fff"]) {
           <h4 id="name-agent-token-acquisition">
 <a href="#section-5.2.1" class="section-number selfRef">5.2.1. </a><a href="#name-agent-token-acquisition" class="section-name selfRef">Agent Token Acquisition</a>
           </h4>
-<p id="section-5.2.1-1">An agent MUST obtain an agent token from its agent server before participating in the AAuth protocol. The acquisition process follows these steps:<a href="#section-5.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.2.1-1">An agent MUST obtain an agent token from its agent provider before participating in the AAuth protocol. The acquisition process follows these steps:<a href="#section-5.2.1-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-5.2.1-2">
-<li id="section-5.2.1-2.1">The agent generates an ephemeral signing key pair (EdDSA is RECOMMENDED).<a href="#section-5.2.1-2.1" class="pilcrow">¶</a>
+<li id="section-5.2.1-2.1">The agent generates a signing key pair (EdDSA is RECOMMENDED).<a href="#section-5.2.1-2.1" class="pilcrow">¶</a>
 </li>
-            <li id="section-5.2.1-2.2">The agent proves its identity to the agent server through a platform-specific mechanism.<a href="#section-5.2.1-2.2" class="pilcrow">¶</a>
+            <li id="section-5.2.1-2.2">The agent proves its identity to the agent provider through a platform-specific mechanism.<a href="#section-5.2.1-2.2" class="pilcrow">¶</a>
 </li>
-            <li id="section-5.2.1-2.3">The agent server verifies the agent's identity and issues an agent token binding the agent's ephemeral public key to the agent's identifier.<a href="#section-5.2.1-2.3" class="pilcrow">¶</a>
+            <li id="section-5.2.1-2.3">The agent provider verifies the agent's identity and issues an agent token binding the agent's public key to the agent's identifier.<a href="#section-5.2.1-2.3" class="pilcrow">¶</a>
 </li>
           </ol>
-<p id="section-5.2.1-3">The mechanism for proving identity is platform-dependent. See <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span> for common patterns including self-hosted agents, browser-based applications, mobile applications, and B2B SaaS agents.<a href="#section-5.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.2.1-3">The mechanism for proving identity is platform-dependent. See <span>[<a href="#I-D.hardt-aauth-bootstrap" class="cite xref">I-D.hardt-aauth-bootstrap</a>]</span> for common patterns including self-hosted agents, browser-based applications, and mobile applications.<a href="#section-5.2.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="agent-token-structure">
@@ -2526,7 +2578,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 - <code>typ</code>: <code>aa-agent+jwt</code>
 - <code>kid</code>: Key identifier<a href="#section-5.2.2-2" class="pilcrow">¶</a></p>
 <p id="section-5.2.2-3">Required payload claims:
-- <code>iss</code>: Agent server URL
+- <code>iss</code>: Agent provider URL
 - <code>dwk</code>: <code>aauth-agent.json</code> — the well-known metadata document name for key discovery (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>)
 - <code>sub</code>: Agent identifier (stable across key rotations)
 - <code>jti</code>: Unique token identifier for replay detection, audit, and revocation
@@ -2534,8 +2586,8 @@ svg :is([fill="white"], [fill^="#fff"]) {
 - <code>iat</code>: Issued at timestamp
 - <code>exp</code>: Expiration timestamp. Agent tokens SHOULD NOT have a lifetime exceeding 24 hours.<a href="#section-5.2.2-3" class="pilcrow">¶</a></p>
 <p id="section-5.2.2-4">Optional payload claims:
-- <code>ps</code>: The HTTPS URL of the agent's person server. Configured per agent instance. When present, resources can discover the agent's PS from the agent token. This claim is distinct from <code>iss</code> (which identifies the agent server that issued the token).<a href="#section-5.2.2-4" class="pilcrow">¶</a></p>
-<p id="section-5.2.2-5">Agent servers MAY include additional claims in the agent token. Companion specifications may define additional claims for use by PSes or ASes in policy evaluation — for example, software attestation, platform integrity, secure enclave status, workload identity assertions, or software publisher identity. PSes and ASes MUST ignore unrecognized claims.<a href="#section-5.2.2-5" class="pilcrow">¶</a></p>
+- <code>ps</code>: The HTTPS URL of the agent's person server. Configured per agent instance. When present, resources can discover the agent's PS from the agent token. This claim is distinct from <code>iss</code> (which identifies the agent provider that issued the token).<a href="#section-5.2.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2.2-5">Agent providers MAY include additional claims in the agent token. Companion specifications may define additional claims for use by PSes or ASes in policy evaluation — for example, software attestation, platform integrity, secure enclave status, workload identity assertions, or software publisher identity. PSes and ASes MUST ignore unrecognized claims.<a href="#section-5.2.2-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="agent-token-usage">
@@ -2943,16 +2995,16 @@ AAuth-Requirement: requirement=auth-token; resource-token="eyJ..."
             </thead>
             <tbody>
               <tr>
-                <td class="text-left" rowspan="1" colspan="1">Direct issuance</td>
+                <td class="text-left" rowspan="1" colspan="1">PS-asserted</td>
                 <td class="text-left" rowspan="1" colspan="1">
                   <code>resource_token</code> (<code>aud</code> = PS)</td>
-                <td class="text-left" rowspan="1" colspan="1">PS issues auth token directly (three-party)</td>
+                <td class="text-left" rowspan="1" colspan="1">PS asserts identity and consent; resource applies its own policy (three-party)</td>
               </tr>
               <tr>
-                <td class="text-left" rowspan="1" colspan="1">Federated issuance</td>
+                <td class="text-left" rowspan="1" colspan="1">AS-federated</td>
                 <td class="text-left" rowspan="1" colspan="1">
                   <code>resource_token</code> (<code>aud</code> = AS)</td>
-                <td class="text-left" rowspan="1" colspan="1">PS federates with AS for auth token (four-party)</td>
+                <td class="text-left" rowspan="1" colspan="1">PS federates with the resource's AS, which evaluates resource policy (four-party)</td>
               </tr>
               <tr>
                 <td class="text-left" rowspan="1" colspan="1">Call chaining</td>
@@ -2999,6 +3051,12 @@ AAuth-Requirement: requirement=auth-token; resource-token="eyJ..."
             <li class="compact" id="section-7.1.3-3.6">
               <code>domain_hint</code> (OPTIONAL): Domain hint, per OpenID Connect Enterprise Extensions 1.0 <span>[<a href="#OpenID.Enterprise" class="cite xref">OpenID.Enterprise</a>]</span>.<a href="#section-7.1.3-3.6" class="pilcrow">¶</a>
 </li>
+            <li class="compact" id="section-7.1.3-3.7">
+              <code>platform</code> (OPTIONAL): Identifier for the runtime platform the agent runs on. The value MUST be from the AAuth Platform Value Registry <a href="#aauth-platform-value-registry" class="auto internal xref">Section 16.9</a>. Describes the runtime context (where the agent runs) but does not by itself convey what security measures were applied within that context. Used for display at the PS consent screen and the PS's connected-agents dashboard. Agent-attested.<a href="#section-7.1.3-3.7" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-7.1.3-3.8">
+              <code>device</code> (OPTIONAL): Short human-readable string identifying the specific device or browser, intended for display so users can distinguish entries in their connected-agents dashboard (e.g., <code>Chrome on macOS</code>, <code>Pixel 8 (App)</code>). The string is opaque to receivers — they display it but do not parse it. The string MUST consist of UTF-8 printable characters only (no control characters) and MUST NOT exceed 64 characters. Agents MUST NOT include personally identifying information beyond what the user has chosen (e.g., user-supplied nicknames). Agent-attested.<a href="#section-7.1.3-3.8" class="pilcrow">¶</a>
+</li>
           </ul>
 <p id="section-7.1.3-4"><strong>Example request:</strong><a href="#section-7.1.3-4" class="pilcrow">¶</a></p>
 <div class="lang-http sourcecode" id="section-7.1.3-5">
@@ -3025,7 +3083,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
           <h4 id="name-ps-response">
 <a href="#section-7.1.4" class="section-number selfRef">7.1.4. </a><a href="#name-ps-response" class="section-name selfRef">PS Response</a>
           </h4>
-<p id="section-7.1.4-1">When the resource token's <code>aud</code> matches the PS's own identifier (three-party), the PS evaluates the request and issues the auth token directly — no AS federation is needed. When <code>aud</code> identifies a different server (four-party), the PS federates with the AS per <a href="#ps-as-federation" class="auto internal xref">Section 9.3</a>.<a href="#section-7.1.4-1" class="pilcrow">¶</a></p>
+<p id="section-7.1.4-1">When the resource token's <code>aud</code> matches the PS's own identifier (three-party), the PS handles user consent for the requested scope and issues an auth token asserting identity and consent — no AS federation is needed. When <code>aud</code> identifies a different server (four-party), the PS federates with the AS per <a href="#ps-as-federation" class="auto internal xref">Section 9.3</a>.<a href="#section-7.1.4-1" class="pilcrow">¶</a></p>
 <p id="section-7.1.4-2">In both cases, the PS handles user consent if needed and returns one of:<a href="#section-7.1.4-2" class="pilcrow">¶</a></p>
 <p id="section-7.1.4-3"><strong>Direct grant response</strong> (<code>200</code>):<a href="#section-7.1.4-3" class="pilcrow">¶</a></p>
 <div class="lang-json sourcecode" id="section-7.1.4-4">
@@ -3623,7 +3681,7 @@ AAuth-Mission: approver="https://ps.example";
 <p id="section-8.3-3">The agent includes the mission context in all resource interactions via the <code>AAuth-Mission</code> header. When the agent sends a resource token to its PS, the PS evaluates the request against the mission context and log history before federating with the resource's AS.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="mission-completion-1">
+<div id="mission-completion">
 <section id="section-8.4">
         <h3 id="name-mission-completion-3">
 <a href="#section-8.4" class="section-number selfRef">8.4. </a><a href="#name-mission-completion-3" class="section-name selfRef">Mission Completion</a>
@@ -3854,7 +3912,7 @@ Content-Type: application/json
 
 {
   "status": "pending",
-  "required_claims": ["email", "org"]
+  "required_claims": ["email", "tenant"]
 }
 
 </pre><a href="#section-9.2-2" class="pilcrow">¶</a>
@@ -3867,13 +3925,13 @@ Content-Type: application/json
         <h3 id="name-ps-as-federation">
 <a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-ps-as-federation" class="section-name selfRef">PS-AS Federation</a>
         </h3>
-<p id="section-9.3-1">The PS is the only entity that calls AS token endpoints. When the PS receives a resource token from an agent, the resource token's <code>aud</code> claim identifies where to send the token request. If <code>aud</code> matches the PS's own identifier, the PS issues the auth token directly (three-party). If <code>aud</code> identifies a different server (an AS), the PS discovers the AS's metadata at <code>{aud}/.well-known/aauth-access.json</code> <a href="#access-server-metadata" class="auto internal xref">Section 12.10.3</a> and calls the AS's <code>token_endpoint</code> <a href="#as-token-endpoint" class="auto internal xref">Section 9.1</a> (four-party).<a href="#section-9.3-1" class="pilcrow">¶</a></p>
+<p id="section-9.3-1">The PS is the only entity that calls AS token endpoints. When the PS receives a resource token from an agent, the resource token's <code>aud</code> claim identifies where to send the token request. If <code>aud</code> matches the PS's own identifier, the PS issues an auth token asserting identity and consent for the requested scope (three-party). If <code>aud</code> identifies a different server (an AS), the PS discovers the AS's metadata at <code>{aud}/.well-known/aauth-access.json</code> <a href="#access-server-metadata" class="auto internal xref">Section 12.10.3</a> and calls the AS's <code>token_endpoint</code> <a href="#as-token-endpoint" class="auto internal xref">Section 9.1</a> (four-party).<a href="#section-9.3-1" class="pilcrow">¶</a></p>
 <div id="ps-as-trust-establishment">
 <section id="section-9.3.1">
           <h4 id="name-ps-as-trust-establishment">
 <a href="#section-9.3.1" class="section-number selfRef">9.3.1. </a><a href="#name-ps-as-trust-establishment" class="section-name selfRef">PS-AS Trust Establishment</a>
           </h4>
-<p id="section-9.3.1-1">Trust between the PS and AS is not a separate registration step — it emerges from the AS's response to the PS's first token request. The AS evaluates the token request and responds based on its current policy:<a href="#section-9.3.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.3.1-1">Trust between the PS and AS may be pre-established out of band or emerge dynamically from the AS's response to the PS's first token request — AAuth does not require a separate registration step before the protocol can be used. The AS evaluates the token request and responds based on its current policy:<a href="#section-9.3.1-1" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-9.3.1-2.1">
               <strong>Pre-established</strong>: A business relationship configured between the PS and AS, potentially including payment terms, SLA, and compliance requirements. The AS recognizes the PS and processes the token request directly.<a href="#section-9.3.1-2.1" class="pilcrow">¶</a>
@@ -3924,7 +3982,7 @@ Content-Type: application/json
   |&lt;------------------------------------------------|
   |                         |                       |
   |  POST /token/pending/xyz|                       |
-  |  {sub, email, org}      |                       |
+  |  {sub, email, tenant}   |                       |
   |------------------------------------------------&gt;|
   |                         |                       |
   |  200 OK (auth_token)    |                       |
@@ -3944,7 +4002,7 @@ Content-Type: application/json
 <p id="section-9.3.2-1">The following is a non-normative description of how an AS might evaluate a token request:<a href="#section-9.3.2-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-9.3.2-2">
 <li id="section-9.3.2-2.1">
-              <strong>PS = AS (same entity)</strong>: Grant directly. When an organization controls both the PS and AS, the federation call is internal and trust is implicit.<a href="#section-9.3.2-2.1" class="pilcrow">¶</a>
+              <strong>PS = AS (same entity)</strong>: Grant directly. The federation call is internal and trust is implicit. See <a href="#ps-as-collapse" class="auto internal xref">Section 9.3.4</a>.<a href="#section-9.3.2-2.1" class="pilcrow">¶</a>
 </li>
             <li id="section-9.3.2-2.2">
               <strong>User has bound this PS at the AS</strong>: Apply the user's configured policy for this PS.<a href="#section-9.3.2-2.2" class="pilcrow">¶</a>
@@ -3976,7 +4034,24 @@ Content-Type: application/json
           <h4 id="name-organization-visibility">
 <a href="#section-9.3.3" class="section-number selfRef">9.3.3. </a><a href="#name-organization-visibility" class="section-name selfRef">Organization Visibility</a>
           </h4>
-<p id="section-9.3.3-1">Organizations benefit from the trust model: an organization's agents share a single PS, and internal resources may share a single AS. The PS provides centralized audit across all agents and missions. Federation is only incurred at the boundary, when an internal agent accesses an external resource. When an organization controls both the PS and AS, the federation call is internal and trust is implicit — this is the degenerate case of the four-party model collapsing to fewer parties.<a href="#section-9.3.3-1" class="pilcrow">¶</a></p>
+<p id="section-9.3.3-1">Organizations benefit from the trust model: an organization's agents share a single PS, and internal resources may share a single AS. The PS provides centralized audit across all agents and missions. Federation is only incurred at the boundary, when an internal agent accesses an external resource. When the same server fills both the PS and AS roles, federation collapses to a single internal evaluation — see <a href="#ps-as-collapse" class="auto internal xref">Section 9.3.4</a>.<a href="#section-9.3.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ps-as-collapse">
+<section id="section-9.3.4">
+          <h4 id="name-ps-as-collapse">
+<a href="#section-9.3.4" class="section-number selfRef">9.3.4. </a><a href="#name-ps-as-collapse" class="section-name selfRef">PS-AS Collapse</a>
+          </h4>
+<p id="section-9.3.4-1">When the agent's PS and the resource's chosen AS are the same server (an instance of role collocation, see <a href="#roles" class="auto internal xref">Section 4.2</a>), federation collapses to a single internal evaluation. This is operationally similar to three-party access — no cross-server hop — but structurally different:<a href="#section-9.3.4-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-9.3.4-2.1">
+              <strong>Three-party (PS-asserted)</strong>: the resource has no AS; the resource token's <code>aud</code> is the PS, and the auth token has <code>dwk: aauth-person.json</code>. The resource trusts identity claims and applies its own policy.<a href="#section-9.3.4-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-9.3.4-2.2">
+              <strong>PS-AS collapse</strong>: the resource has chosen an AS that also operates as the agent's PS; the resource token's <code>aud</code> is the AS, and the auth token has <code>dwk: aauth-access.json</code>. The resource trusts the AS's policy verdict.<a href="#section-9.3.4-2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-9.3.4-3">The server applies user consent (its PS responsibility) and resource policy (its AS responsibility) in a single evaluation. Trust between PS and AS is implicit because they are the same entity.<a href="#section-9.3.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -3997,7 +4072,7 @@ Content-Type: application/json
 - <code>typ</code>: <code>aa-auth+jwt</code>
 - <code>kid</code>: Key identifier<a href="#section-9.4.1-2" class="pilcrow">¶</a></p>
 <p id="section-9.4.1-3">Required payload claims:
-- <code>iss</code>: The URL of the server that issued the auth token — an AS (four-party) or a PS (three-party)
+- <code>iss</code>: The URL of the server that issued the auth token — an AS (four-party) or a PS asserting identity (three-party)
 - <code>dwk</code>: The well-known metadata document name for key discovery (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). <code>aauth-access.json</code> when issued by an AS, <code>aauth-person.json</code> when issued by a PS.
 - <code>aud</code>: The URL of the resource the agent is authorized to access.
 - <code>jti</code>: Unique token identifier for replay detection, audit, and revocation
@@ -4013,7 +4088,8 @@ Content-Type: application/json
 <p id="section-9.4.1-6">Optional payload claims:
 - <code>mission</code>: Mission object. Present when the auth token was issued in the context of a mission. Contains:
   - <code>approver</code>: HTTPS URL of the entity that approved the mission
-  - <code>s256</code>: SHA-256 hash of the approved mission JSON (base64url)<a href="#section-9.4.1-6" class="pilcrow">¶</a></p>
+  - <code>s256</code>: SHA-256 hash of the approved mission JSON (base64url)
+- <code>tenant</code>: Tenant identifier per OpenID Connect Enterprise Extensions 1.0 <span>[<a href="#OpenID.Enterprise" class="cite xref">OpenID.Enterprise</a>]</span>. When present, <code>(iss, tenant, sub)</code> identifies a user within an organization, and <code>(iss, tenant)</code> identifies the organization itself.<a href="#section-9.4.1-6" class="pilcrow">¶</a></p>
 <p id="section-9.4.1-7">The auth token MAY include additional claims registered in the IANA JSON Web Token Claims Registry <span>[<a href="#RFC7519" class="cite xref">RFC7519</a>]</span> or defined in OpenID Connect Core 1.0 <span>[<a href="#OpenID.Core" class="cite xref">OpenID.Core</a>]</span> Section 5.1.<a href="#section-9.4.1-7" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -4029,6 +4105,7 @@ Content-Type: application/json
 
 </pre><a href="#section-9.4.2-2" class="pilcrow">¶</a>
 </div>
+<p id="section-9.4.2-3">Once an auth token has been issued for a resource, the agent presents the auth token (not the agent token) via <code>Signature-Key</code> on subsequent requests to that resource. The auth token's <code>cnf.jwk</code> is the same key that signed the request, so HTTP Message Signature verification proceeds identically to the agent-token case.<a href="#section-9.4.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="auth-token-verification">
@@ -4040,7 +4117,7 @@ Content-Type: application/json
 <ol start="1" type="1" class="compact type-1" id="section-9.4.3-2">
 <li id="section-9.4.3-2.1">Decode the JWT header. Verify <code>typ</code> is <code>aa-auth+jwt</code>.<a href="#section-9.4.3-2.1" class="pilcrow">¶</a>
 </li>
-            <li id="section-9.4.3-2.2">Verify <code>dwk</code> is <code>aauth-access.json</code> (AS-issued) or <code>aauth-person.json</code> (PS-issued). Discover the issuer's JWKS via <code>{iss}/.well-known/{dwk}</code> per the HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). Locate the key matching the JWT header <code>kid</code> and verify the JWT signature.<a href="#section-9.4.3-2.2" class="pilcrow">¶</a>
+            <li id="section-9.4.3-2.2">Verify <code>dwk</code> is <code>aauth-access.json</code> (auth token from an AS) or <code>aauth-person.json</code> (auth token from a PS asserting identity). Discover the issuer's JWKS via <code>{iss}/.well-known/{dwk}</code> per the HTTP Signature Keys specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). Locate the key matching the JWT header <code>kid</code> and verify the JWT signature.<a href="#section-9.4.3-2.2" class="pilcrow">¶</a>
 </li>
             <li id="section-9.4.3-2.3">Verify <code>exp</code> is in the future and <code>iat</code> is not in the future.<a href="#section-9.4.3-2.3" class="pilcrow">¶</a>
 </li>
@@ -4096,7 +4173,7 @@ Content-Type: application/json
 </li>
             <li id="section-9.4.5-2.4">The PS constructs the <code>act</code> claim for the downstream auth token by nesting the upstream token's <code>act</code> claim inside a new <code>act</code> object identifying the intermediary resource's agent identity. This preserves the complete delegation chain.<a href="#section-9.4.5-2.4" class="pilcrow">¶</a>
 </li>
-            <li id="section-9.4.5-2.5">The PS evaluates its own policy based on the upstream token's claims and mission context. The resulting downstream authorization is not required to be a subset of the upstream scopes — see <a href="#call-chaining" class="auto internal xref">Section 10.1</a>.<a href="#section-9.4.5-2.5" class="pilcrow">¶</a>
+            <li id="section-9.4.5-2.5">The PS evaluates its mission and governance policy based on the upstream token's claims and mission context. The resulting downstream authorization is not required to be a subset of the upstream scopes — see <a href="#call-chaining" class="auto internal xref">Section 10.1</a>.<a href="#section-9.4.5-2.5" class="pilcrow">¶</a>
 </li>
           </ol>
 </section>
@@ -4110,7 +4187,7 @@ Content-Type: application/json
       <h2 id="name-multi-hop-resource-access">
 <a href="#section-10" class="section-number selfRef">10. </a><a href="#name-multi-hop-resource-access" class="section-name selfRef">Multi-Hop Resource Access</a>
       </h2>
-<p id="section-10-1">This section defines how resources act as agents to access downstream resources on behalf of the original caller. In multi-hop scenarios, a resource that receives an authorized request needs to access another resource to fulfill that request. The resource acts as an agent — it has its own agent identity and signing key — and routes the downstream authorization to obtain an auth token for the downstream resource.<a href="#section-10-1" class="pilcrow">¶</a></p>
+<p id="section-10-1">This section defines how resources act as agents (an instance of role collocation, see <a href="#roles" class="auto internal xref">Section 4.2</a>) to access downstream resources on behalf of the original caller. In multi-hop scenarios, a resource that receives an authorized request needs to access another resource to fulfill that request. The resource acts as an agent — it has its own agent identity and signing key — and routes the downstream authorization to obtain an auth token for the downstream resource.<a href="#section-10-1" class="pilcrow">¶</a></p>
 <div id="call-chaining">
 <section id="section-10.1">
         <h3 id="name-call-chaining">
@@ -4318,7 +4395,7 @@ Content-Type: application/json
             </tr>
           </tbody>
         </table>
-<p id="section-12.1-6">The agent determines its capabilities by combining what it can do directly with what its PS can do on its behalf. When the agent has a PS and has created a mission, the mission approval response includes a <code>capabilities</code> array listing what the PS can handle for this user/session <a href="#mission-approval" class="auto internal xref">Section 8.2</a>. The agent unions its own capabilities with the PS's capabilities to produce the <code>AAuth-Capabilities</code> header value.<a href="#section-12.1-6" class="pilcrow">¶</a></p>
+<p id="section-12.1-6">The agent determines its capabilities by combining what it can do directly with what its PS can do on its behalf. When the agent has a PS and has created a mission, the mission approval response MAY include a <code>capabilities</code> array listing what the PS can handle for this user/session <a href="#mission-approval" class="auto internal xref">Section 8.2</a>. When present, the agent unions those capabilities with its own to produce the <code>AAuth-Capabilities</code> header value.<a href="#section-12.1-6" class="pilcrow">¶</a></p>
 <p id="section-12.1-7">Agents SHOULD include the <code>AAuth-Capabilities</code> header on signed requests to resources. The header is not used on requests to PS endpoints — the PS learns the agent's capabilities through the mission approval flow. Recipients MUST ignore unrecognized capability values. When the header is absent, recipients MUST NOT assume any capabilities — the agent may not support interaction, clarification, or payment flows.<a href="#section-12.1-7" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -4333,7 +4410,7 @@ Content-Type: application/json
             <strong>Resource scopes</strong>: Resource-specific authorization grants (e.g., <code>data.read</code>, <code>data.write</code>, <code>data.delete</code>). Each resource defines its own scope values and publishes human-readable descriptions in its metadata (<code>scope_descriptions</code>). Resources that already define OAuth scopes SHOULD use the same scope values in AAuth.<a href="#section-12.2-2.1" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-12.2-2.2">
-            <strong>Identity scopes</strong>: Requests for user identity claims following <span>[<a href="#OpenID.Core" class="cite xref">OpenID.Core</a>]</span> (e.g., <code>openid</code>, <code>profile</code>, <code>email</code>, <code>address</code>, <code>phone</code>). When identity scopes are present, the auth token includes the corresponding identity claims. Enterprise identity extensions (e.g., <code>org</code>, <code>groups</code>, <code>roles</code>) follow <span>[<a href="#OpenID.Enterprise" class="cite xref">OpenID.Enterprise</a>]</span>.<a href="#section-12.2-2.2" class="pilcrow">¶</a>
+            <strong>Identity scopes</strong>: Requests for user identity claims following <span>[<a href="#OpenID.Core" class="cite xref">OpenID.Core</a>]</span> (e.g., <code>openid</code>, <code>profile</code>, <code>email</code>, <code>address</code>, <code>phone</code>). When identity scopes are present, the auth token includes the corresponding identity claims. Enterprise extensions include the <code>tenant</code> claim from <span>[<a href="#OpenID.Enterprise" class="cite xref">OpenID.Enterprise</a>]</span> and the <code>groups</code> and <code>roles</code> claims from <span>[<a href="#RFC9068" class="cite xref">RFC9068</a>]</span> (originally defined by SCIM <span>[<a href="#RFC7643" class="cite xref">RFC7643</a>]</span>).<a href="#section-12.2-2.2" class="pilcrow">¶</a>
 </li>
         </ul>
 <p id="section-12.2-3">A resource token MUST only include resource scopes that the resource has defined in its <code>scope_descriptions</code> metadata, and identity scopes that the PS has declared in its <code>scopes_supported</code> metadata. This ensures all parties can interpret and present the requested scopes.<a href="#section-12.2-3" class="pilcrow">¶</a></p>
@@ -4877,7 +4954,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
             <strong>PS revokes a mission</strong>: The PS marks the mission as revoked. All subsequent token requests referencing that mission's <code>s256</code> are denied. The PS SHOULD revoke outstanding auth tokens issued under the mission.<a href="#section-12.6-6.4" class="pilcrow">¶</a>
 </li>
           <li class="compact" id="section-12.6-6.5">
-            <strong>Agent server stops issuing agent tokens</strong>: The agent server decides not to issue new agent tokens to the agent. Existing agent tokens expire naturally. This is part of the regular token lifecycle — all tokens have limited lifetimes and require periodic re-issuance, which provides a natural policy re-evaluation point.<a href="#section-12.6-6.5" class="pilcrow">¶</a>
+            <strong>Agent provider stops issuing agent tokens</strong>: The agent provider decides not to issue new agent tokens to the agent. Existing agent tokens expire naturally. This is part of the regular token lifecycle — all tokens have limited lifetimes and require periodic re-issuance, which provides a natural policy re-evaluation point.<a href="#section-12.6-6.5" class="pilcrow">¶</a>
 </li>
         </ul>
 <p id="section-12.6-7">Revocation endpoints are advertised in server metadata as <code>revocation_endpoint</code>. Resources that accept revocation requests MUST verify the caller's identity via HTTP Message Signatures and MUST only accept revocation from the issuer of the token being revoked or from a trusted PS.<a href="#section-12.6-7" class="pilcrow">¶</a></p>
@@ -5011,7 +5088,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
           <h4 id="name-server-identifiers">
 <a href="#section-12.9.1" class="section-number selfRef">12.9.1. </a><a href="#name-server-identifiers" class="section-name selfRef">Server Identifiers</a>
           </h4>
-<p id="section-12.9.1-1">The <code>issuer</code> values in metadata documents that identify agent servers, resources, access servers, and person servers MUST conform to the following:<a href="#section-12.9.1-1" class="pilcrow">¶</a></p>
+<p id="section-12.9.1-1">The <code>issuer</code> values in metadata documents that identify agent providers, resources, access servers, and person servers MUST conform to the following:<a href="#section-12.9.1-1" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-12.9.1-2.1">MUST use the <code>https</code> scheme<a href="#section-12.9.1-2.1" class="pilcrow">¶</a>
 </li>
@@ -5087,10 +5164,10 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <a href="#section-12.10" class="section-number selfRef">12.10. </a><a href="#name-metadata-documents" class="section-name selfRef">Metadata Documents</a>
         </h3>
 <p id="section-12.10-1">Participants publish metadata at well-known URLs (<span>[<a href="#RFC8615" class="cite xref">RFC8615</a>]</span>) to enable discovery.<a href="#section-12.10-1" class="pilcrow">¶</a></p>
-<div id="agent-server-metadata">
+<div id="agent-provider-metadata">
 <section id="section-12.10.1">
-          <h4 id="name-agent-server-metadata">
-<a href="#section-12.10.1" class="section-number selfRef">12.10.1. </a><a href="#name-agent-server-metadata" class="section-name selfRef">Agent Server Metadata</a>
+          <h4 id="name-agent-provider-metadata">
+<a href="#section-12.10.1" class="section-number selfRef">12.10.1. </a><a href="#name-agent-provider-metadata" class="section-name selfRef">Agent Provider Metadata</a>
           </h4>
 <p id="section-12.10.1-1">Published at <code>/.well-known/aauth-agent.json</code>:<a href="#section-12.10.1-1" class="pilcrow">¶</a></p>
 <div class="lang-json sourcecode" id="section-12.10.1-2">
@@ -5111,10 +5188,10 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <p id="section-12.10.1-3">Fields:<a href="#section-12.10.1-3" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-12.10.1-4.1">
-              <code>issuer</code> (REQUIRED): The agent server's HTTPS URL (the <code>domain</code> in agent identifiers it issues). This is the value placed in the <code>iss</code> claim of agent tokens.<a href="#section-12.10.1-4.1" class="pilcrow">¶</a>
+              <code>issuer</code> (REQUIRED): The agent provider's HTTPS URL (the <code>domain</code> in agent identifiers it issues). This is the value placed in the <code>iss</code> claim of agent tokens.<a href="#section-12.10.1-4.1" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-12.10.1-4.2">
-              <code>jwks_uri</code> (REQUIRED): URL to the agent server's JSON Web Key Set<a href="#section-12.10.1-4.2" class="pilcrow">¶</a>
+              <code>jwks_uri</code> (REQUIRED): URL to the agent provider's JSON Web Key Set<a href="#section-12.10.1-4.2" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-12.10.1-4.3">
               <code>client_name</code> (OPTIONAL): Human-readable agent name (per <span>[<a href="#RFC7591" class="cite xref">RFC7591</a>]</span>)<a href="#section-12.10.1-4.3" class="pilcrow">¶</a>
@@ -5193,10 +5270,10 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
               <code>jwks_uri</code> (REQUIRED): URL to the PS's JSON Web Key Set<a href="#section-12.10.2-4.9" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-12.10.2-4.10">
-              <code>scopes_supported</code> (RECOMMENDED): Array of scope values the PS supports, including identity scopes (e.g., <code>openid</code>, <code>profile</code>, <code>email</code>) and enterprise scopes (e.g., <code>org</code>, <code>groups</code>, <code>roles</code>)<a href="#section-12.10.2-4.10" class="pilcrow">¶</a>
+              <code>scopes_supported</code> (RECOMMENDED): Array of scope values the PS supports, including identity scopes (e.g., <code>openid</code>, <code>profile</code>, <code>email</code>) and enterprise scopes (e.g., <code>tenant</code>, <code>groups</code>, <code>roles</code>)<a href="#section-12.10.2-4.10" class="pilcrow">¶</a>
 </li>
             <li class="compact" id="section-12.10.2-4.11">
-              <code>claims_supported</code> (RECOMMENDED): Array of identity claim names the PS can provide (e.g., <code>sub</code>, <code>email</code>, <code>name</code>, <code>org</code>)<a href="#section-12.10.2-4.11" class="pilcrow">¶</a>
+              <code>claims_supported</code> (RECOMMENDED): Array of identity claim names the PS can provide (e.g., <code>sub</code>, <code>email</code>, <code>name</code>, <code>tenant</code>)<a href="#section-12.10.2-4.11" class="pilcrow">¶</a>
 </li>
           </ul>
 </section>
@@ -5313,16 +5390,13 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <p id="section-13.1-1">Each step builds on the previous one. An agent that adopts any step gains immediate value.<a href="#section-13.1-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="compact type-1" id="section-13.1-2">
 <li id="section-13.1-2.1">
-            <strong>Sign requests with HTTP Message Signatures</strong>: The agent signs requests using the Signature-Key specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>). Resources that recognize signatures can verify the agent's key and respond with <code>Accept-Signature</code> headers. Resources that don't recognize signatures ignore the headers — existing auth mechanisms continue to work.<a href="#section-13.1-2.1" class="pilcrow">¶</a>
+            <strong>Obtain an agent token and sign requests</strong> (<code>scheme=jwt</code>, <code>typ: aa-agent+jwt</code>): The agent has a full AAuth identity with an <code>aauth:local@domain</code> identifier issued by an agent provider. It signs requests using HTTP Message Signatures (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) per the Signature-Key specification (<span>[<a href="#I-D.hardt-httpbis-signature-key" class="cite xref">I-D.hardt-httpbis-signature-key</a>]</span>) and presents its agent token via the <code>Signature-Key</code> header using <code>scheme=jwt</code>. Resources that recognize signatures can verify the agent's identity and apply access control. Resources that don't ignore the signature and <code>Signature-Key</code> headers — existing auth mechanisms continue to work. This enables identity-based access.<a href="#section-13.1-2.1" class="pilcrow">¶</a>
 </li>
           <li id="section-13.1-2.2">
-            <strong>Obtain an agent token</strong> (<code>scheme=jwt</code>, <code>typ: aa-agent+jwt</code>): The agent has a full AAuth identity with an <code>aauth:local@domain</code> identifier issued by an agent server, providing a stable, managed identity lifecycle. The agent token is presented via the <code>Signature-Key</code> header using <code>scheme=jwt</code>.<a href="#section-13.1-2.2" class="pilcrow">¶</a>
+            <strong>Add a person server</strong> (include <code>ps</code> claim in agent token): The agent can obtain auth tokens from its PS directly. Resources in three-party and four-party modes can issue resource tokens targeting the PS. Enables PS-issued auth tokens with user identity, <code>tenant</code>, <code>groups</code>, and <code>roles</code> claims.<a href="#section-13.1-2.2" class="pilcrow">¶</a>
 </li>
           <li id="section-13.1-2.3">
-            <strong>Add a person server</strong> (include <code>ps</code> claim in agent token): The agent can obtain auth tokens from its PS directly. Resources in three-party and four-party modes can issue resource tokens targeting the PS. Enables PS-issued auth tokens with user identity, organization membership, and group information.<a href="#section-13.1-2.3" class="pilcrow">¶</a>
-</li>
-          <li id="section-13.1-2.4">
-            <strong>Add governance</strong> (create a mission): The agent creates a mission at its PS, gaining permissions, audit, PS-relayed interactions, and consent-managed resource access. The mission can be as simple as the user's prompt.<a href="#section-13.1-2.4" class="pilcrow">¶</a>
+            <strong>Add governance</strong> (create a mission): The agent creates a mission at its PS, gaining permissions, audit, PS-relayed interactions, and consent-managed resource access. The mission can be as simple as the user's prompt.<a href="#section-13.1-2.3" class="pilcrow">¶</a>
 </li>
         </ol>
 </section>
@@ -5341,7 +5415,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
             <strong>Manage authorization</strong>: Handle authorization with interaction, consent, or existing infrastructure — via <code>401</code> responses, an authorization endpoint, or both. Return <code>AAuth-Access</code> headers <a href="#aauth-access" class="auto internal xref">Section 6.3</a> for subsequent calls. This is resource-managed access (two-party).<a href="#section-13.2-2.2" class="pilcrow">¶</a>
 </li>
           <li id="section-13.2-2.3">
-            <strong>Issue resource tokens to PS</strong>: Read the <code>ps</code> claim from the agent token and issue resource tokens with <code>aud</code> = PS URL. This is PS-managed access (three-party).<a href="#section-13.2-2.3" class="pilcrow">¶</a>
+            <strong>Accept identity claims from any PS</strong>: Read the <code>ps</code> claim from the agent token and issue resource tokens with <code>aud</code> = PS URL. The agent's PS returns an auth token asserting identity claims about the user and consent for the requested scope; the resource applies its own policy. This is PS-asserted access (three-party).<a href="#section-13.2-2.3" class="pilcrow">¶</a>
 </li>
           <li id="section-13.2-2.4">
             <strong>Deploy an access server</strong>: Issue resource tokens with <code>aud</code> = AS URL. The PS federates with the AS. This is federated access (four-party).<a href="#section-13.2-2.4" class="pilcrow">¶</a>
@@ -5366,7 +5440,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
           </thead>
           <tbody>
             <tr>
-              <td class="text-left" rowspan="1" colspan="1">Signed requests</td>
+              <td class="text-left" rowspan="1" colspan="1">Agent token</td>
               <td class="text-left" rowspan="1" colspan="1">Recognizes signatures</td>
               <td class="text-left" rowspan="1" colspan="1">Identity-based</td>
               <td class="text-left" rowspan="1" colspan="1">Identity verification, access control by agent identity</td>
@@ -5382,8 +5456,8 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
               <td class="text-left" rowspan="1" colspan="1">Agent token + <code>ps</code>
 </td>
               <td class="text-left" rowspan="1" colspan="1">Issues resource tokens</td>
-              <td class="text-left" rowspan="1" colspan="1">PS-managed</td>
-              <td class="text-left" rowspan="1" colspan="1">PS-issued auth tokens with user identity, org, groups</td>
+              <td class="text-left" rowspan="1" colspan="1">PS-asserted</td>
+              <td class="text-left" rowspan="1" colspan="1">PS asserts user identity, <code>tenant</code>, <code>groups</code>, <code>roles</code>; resource applies its own policy</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">Agent token + <code>ps</code>
@@ -5478,12 +5552,12 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <p id="section-14.6-1">An attacker could attempt to trick a user into approving an authorization request by directing them to an interaction URL with the attacker's code. The PS mitigates this by displaying the full request context — the agent's identity, the resource being accessed, and the requested scope — so the user can recognize requests they did not initiate. A stronger mitigation is for the PS to interact directly with the user via a pre-established channel (push notification, email, or existing session) using <code>requirement=approval</code>, which eliminates the possibility of misdirection through attacker-supplied links entirely.<a href="#section-14.6-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="as-discovery">
+<div id="token-issuer-discovery">
 <section id="section-14.7">
-        <h3 id="name-as-discovery">
-<a href="#section-14.7" class="section-number selfRef">14.7. </a><a href="#name-as-discovery" class="section-name selfRef">AS Discovery</a>
+        <h3 id="name-token-issuer-discovery">
+<a href="#section-14.7" class="section-number selfRef">14.7. </a><a href="#name-token-issuer-discovery" class="section-name selfRef">Token Issuer Discovery</a>
         </h3>
-<p id="section-14.7-1">The resource's AS is identified by the <code>aud</code> claim in the resource token. In three-party mode, <code>aud</code> identifies the PS; in four-party mode, it identifies the AS. Federation mechanics are described in <a href="#ps-as-federation" class="auto internal xref">Section 9.3</a>.<a href="#section-14.7-1" class="pilcrow">¶</a></p>
+<p id="section-14.7-1">The recipient of the resource token — and thus the issuer of the auth token — is identified by the <code>aud</code> claim. In three-party mode, <code>aud</code> identifies the agent's PS, which asserts identity and consent. In four-party mode, <code>aud</code> identifies the resource's AS, which evaluates resource policy. Federation mechanics for four-party are described in <a href="#ps-as-federation" class="auto internal xref">Section 9.3</a>.<a href="#section-14.7-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="aauth-access-security">
@@ -5494,12 +5568,14 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <p id="section-14.8-1">The <code>AAuth-Access</code> header carries an opaque wrapped token that is meaningful only to the issuing resource. The token MUST NOT be usable as a standalone bearer token — the resource wraps its internal authorization state so that the token is meaningless without a valid AAuth signature from the agent. The agent MUST include <code>authorization</code> in the signed components when presenting the token, binding it to the signed request.<a href="#section-14.8-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="ps-as-auth-token-issuer">
+<div id="trust-posture-in-ps-asserted-access">
 <section id="section-14.9">
-        <h3 id="name-ps-as-auth-token-issuer">
-<a href="#section-14.9" class="section-number selfRef">14.9. </a><a href="#name-ps-as-auth-token-issuer" class="section-name selfRef">PS as Auth Token Issuer</a>
+        <h3 id="name-trust-posture-in-ps-asserte">
+<a href="#section-14.9" class="section-number selfRef">14.9. </a><a href="#name-trust-posture-in-ps-asserte" class="section-name selfRef">Trust Posture in PS-Asserted Access</a>
         </h3>
-<p id="section-14.9-1">In three-party mode, the PS issues auth tokens directly without AS federation. The PS MUST protect its signing keys with the same rigor as an AS. Resources that accept PS-issued auth tokens are trusting the agent's PS — the trust basis differs from four-party mode where the resource trusts its own AS.<a href="#section-14.9-1" class="pilcrow">¶</a></p>
+<p id="section-14.9-1">In three-party mode, the resource has no AS of its own — it accepts identity claims and consent from whichever PS the agent declares. This is a deliberate trust posture: the resource externalizes identity claim issuance while retaining policy enforcement. Resources MUST apply their own policy on the resulting claims rather than treating the PS-issued auth token as a bearer authorization. Resources that need policy decisions made externally (per-resource scope enforcement, organizational gating, billing) should deploy an AS and use four-party mode.<a href="#section-14.9-1" class="pilcrow">¶</a></p>
+<p id="section-14.9-2">Because identity assertion does not require pre-registration, the resource follows the same protocol flow whether it is meeting the user for the first time or recognizing a returning one. The auth token's <code>(iss, sub)</code> pair is a stable identifier per user per PS — the resource looks up the tuple and creates a new user record on a miss, matches an existing one on a hit. As in many OIDC deployments, registration and login are the same flow; the resource's own logic distinguishes the two outcomes. In multi-tenant deployments the auth token MAY also carry a <code>tenant</code> claim (<span>[<a href="#OpenID.Enterprise" class="cite xref">OpenID.Enterprise</a>]</span>); <code>(iss, tenant, sub)</code> identifies a user within an organization, and <code>(iss, tenant)</code> identifies the organization itself — useful for grouping users from the same employer or account.<a href="#section-14.9-2" class="pilcrow">¶</a></p>
+<p id="section-14.9-3">The PS MUST protect its signing keys with appropriate rigor — compromise of a PS's signing key allows forgery of identity claims for every resource that accepts that PS.<a href="#section-14.9-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="agent-person-binding">
@@ -5508,7 +5584,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <a href="#section-14.10" class="section-number selfRef">14.10. </a><a href="#name-agent-person-binding" class="section-name selfRef">Agent-Person Binding</a>
         </h3>
 <p id="section-14.10-1">The PS MUST ensure that each agent is associated with exactly one person. This one-to-one binding is a trust invariant — it ensures that every action an agent takes is attributable to a single accountable party.<a href="#section-14.10-1" class="pilcrow">¶</a></p>
-<p id="section-14.10-2">The binding is typically established when the person first authorizes the agent at the PS via the interaction flow. An organization administrator may pre-authorize agents for the organization. Once established, the PS MUST NOT allow a different person to claim the same agent. If an agent's association needs to change (e.g., an employee leaves an organization), the existing binding MUST be revoked and a new binding established.<a href="#section-14.10-2" class="pilcrow">¶</a></p>
+<p id="section-14.10-2">The binding is typically established lazily — when the person first authorizes the agent at the PS via the interaction flow. The PS recognizes a returning agent by <code>(agent_token.iss, agent_token.sub)</code>; on first interaction with a new tuple for a person, the PS SHOULD treat it as a new-agent enrollment and surface this clearly at the consent screen, displaying the agent provider's name and logo (from agent provider metadata) alongside any agent-supplied display values (<code>platform</code>, <code>device</code>) provided in the request. An organization administrator may pre-authorize agents for the organization. Once established, the PS MUST NOT allow a different person to claim the same agent. If an agent's association needs to change (e.g., an employee leaves an organization), the existing binding MUST be revoked and a new binding established.<a href="#section-14.10-2" class="pilcrow">¶</a></p>
 <p id="section-14.10-3">This invariant enables:<a href="#section-14.10-3" class="pilcrow">¶</a></p>
 <ul class="compact">
 <li class="compact" id="section-14.10-4.1">
@@ -5548,7 +5624,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
         <h3 id="name-token-revocation-and-lifecy">
 <a href="#section-14.13" class="section-number selfRef">14.13. </a><a href="#name-token-revocation-and-lifecy" class="section-name selfRef">Token Revocation and Lifecycle</a>
         </h3>
-<p id="section-14.13-1">Real-time revocation <a href="#token-revocation" class="auto internal xref">Section 12.6</a> and short token lifetimes provide layered access control. Organizations have multiple control points — agent server, PS, and AS — each of which can deny renewal or revoke tokens independently. Shorter auth token lifetimes reduce the window between a control action and natural expiration.<a href="#section-14.13-1" class="pilcrow">¶</a></p>
+<p id="section-14.13-1">Real-time revocation <a href="#token-revocation" class="auto internal xref">Section 12.6</a> and short token lifetimes provide layered access control. Organizations have multiple control points — agent provider, PS, and AS — each of which can deny renewal or revoke tokens independently. Shorter auth token lifetimes reduce the window between a control action and natural expiration.<a href="#section-14.13-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="tls-requirements">
@@ -5687,7 +5763,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
                 <code>aauth-agent.json</code>
 </td>
               <td class="text-left" rowspan="1" colspan="1">IETF</td>
-              <td class="text-left" rowspan="1" colspan="1">This document, <a href="#agent-server-metadata" class="auto internal xref">Section 12.10.1</a>
+              <td class="text-left" rowspan="1" colspan="1">This document, <a href="#agent-provider-metadata" class="auto internal xref">Section 12.10.1</a>
 </td>
             </tr>
             <tr>
@@ -6000,27 +6076,82 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
         </table>
 </section>
 </div>
-<div id="uri-scheme-registration">
+<div id="aauth-platform-value-registry">
 <section id="section-16.9">
-        <h3 id="name-uri-scheme-registration">
-<a href="#section-16.9" class="section-number selfRef">16.9. </a><a href="#name-uri-scheme-registration" class="section-name selfRef">URI Scheme Registration</a>
+        <h3 id="name-aauth-platform-value-regist">
+<a href="#section-16.9" class="section-number selfRef">16.9. </a><a href="#name-aauth-platform-value-regist" class="section-name selfRef">AAuth Platform Value Registry</a>
         </h3>
-<p id="section-16.9-1">This specification registers the <code>aauth</code> URI scheme in the "Uniform Resource Identifier (URI) Schemes" registry (<span>[<a href="#RFC7595" class="cite xref">RFC7595</a>]</span>):<a href="#section-16.9-1" class="pilcrow">¶</a></p>
+<p id="section-16.9-1">This specification establishes the AAuth Platform Value Registry, used as values of the <code>platform</code> request parameter sent to the PS token endpoint <a href="#ps-token-endpoint" class="auto internal xref">Section 7.1</a>. The registry policy is Specification Required (<span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-16.9-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-15">
+          <caption><a href="#table-15" class="selfRef">Table 15</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Value</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>web</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Browser-hosted web application</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>mobile</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Native mobile application (iOS, Android)</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>desktop</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Native desktop application (macOS, Windows, Linux)</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>workload</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Headless server-class workload (backend service, CI runner, scheduled job, edge function)</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>self-hosted</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">User-controlled deployment under a domain the user controls</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+          </tbody>
+        </table>
+</section>
+</div>
+<div id="uri-scheme-registration">
+<section id="section-16.10">
+        <h3 id="name-uri-scheme-registration">
+<a href="#section-16.10" class="section-number selfRef">16.10. </a><a href="#name-uri-scheme-registration" class="section-name selfRef">URI Scheme Registration</a>
+        </h3>
+<p id="section-16.10-1">This specification registers the <code>aauth</code> URI scheme in the "Uniform Resource Identifier (URI) Schemes" registry (<span>[<a href="#RFC7595" class="cite xref">RFC7595</a>]</span>):<a href="#section-16.10-1" class="pilcrow">¶</a></p>
 <ul class="compact">
-<li class="compact" id="section-16.9-2.1">Scheme name: <code>aauth</code><a href="#section-16.9-2.1" class="pilcrow">¶</a>
+<li class="compact" id="section-16.10-2.1">Scheme name: <code>aauth</code><a href="#section-16.10-2.1" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-16.9-2.2">Status: Permanent<a href="#section-16.9-2.2" class="pilcrow">¶</a>
+          <li class="compact" id="section-16.10-2.2">Status: Permanent<a href="#section-16.10-2.2" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-16.9-2.3">Applications/protocols that use this scheme: AAuth Protocol<a href="#section-16.9-2.3" class="pilcrow">¶</a>
+          <li class="compact" id="section-16.10-2.3">Applications/protocols that use this scheme: AAuth Protocol<a href="#section-16.10-2.3" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-16.9-2.4">Contact: IETF<a href="#section-16.9-2.4" class="pilcrow">¶</a>
+          <li class="compact" id="section-16.10-2.4">Contact: IETF<a href="#section-16.10-2.4" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-16.9-2.5">Change controller: IETF<a href="#section-16.9-2.5" class="pilcrow">¶</a>
+          <li class="compact" id="section-16.10-2.5">Change controller: IETF<a href="#section-16.10-2.5" class="pilcrow">¶</a>
 </li>
-          <li class="compact" id="section-16.9-2.6">Reference: This document, <a href="#agent-identifiers" class="auto internal xref">Section 5.1</a><a href="#section-16.9-2.6" class="pilcrow">¶</a>
+          <li class="compact" id="section-16.10-2.6">Reference: This document, <a href="#agent-identifiers" class="auto internal xref">Section 5.1</a><a href="#section-16.10-2.6" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-16.9-3">The <code>aauth</code> URI scheme follows the pattern established by the <code>acct</code> scheme (<span>[<a href="#RFC7565" class="cite xref">RFC7565</a>]</span>). An <code>aauth</code> URI identifies an agent instance and has the syntax <code>aauth:local@domain</code>, where <code>local</code> is the agent-specific part and <code>domain</code> is the agent server's domain name. The <code>aauth</code> URI is used in the <code>sub</code> claim of agent tokens, the <code>agent</code> field of resource tokens and mission objects, and the <code>act.sub</code> claim of auth tokens.<a href="#section-16.9-3" class="pilcrow">¶</a></p>
+<p id="section-16.10-3">The <code>aauth</code> URI scheme follows the pattern established by the <code>acct</code> scheme (<span>[<a href="#RFC7565" class="cite xref">RFC7565</a>]</span>). An <code>aauth</code> URI identifies an agent instance and has the syntax <code>aauth:local@domain</code>, where <code>local</code> is the agent-specific part and <code>domain</code> is the agent provider's domain name. The <code>aauth</code> URI is used in the <code>sub</code> claim of agent tokens, the <code>agent</code> field of resource tokens and mission objects, and the <code>act.sub</code> claim of auth tokens.<a href="#section-16.10-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -6052,11 +6183,36 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <a href="#section-18" class="section-number selfRef">18. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
       </h2>
 <p id="section-18-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-18-1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-18-2.1">
-          <p id="section-18-2.1.1">draft-hardt-oauth-aauth-protocol-00<a href="#section-18-2.1.1" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="section-18-2.1.2.1">Initial draft. Replaces <a href="https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol/02/">draft-hardt-aauth-protocol-02</a>; no technical changes.<a href="#section-18-2.1.2.1" class="pilcrow">¶</a>
+<ul class="normal">
+<li class="normal" id="section-18-2.1">
+          <p id="section-18-2.1.1">draft-hardt-oauth-aauth-protocol-01<a href="#section-18-2.1.1" class="pilcrow">¶</a></p>
+<ul class="compact normal">
+<li class="compact normal" id="section-18-2.1.2.1">Renamed PS-managed access to PS-asserted access throughout, reflecting the trust posture: the resource accepts identity claims and consent from the agent's PS while applying its own access policy.<a href="#section-18-2.1.2.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.2">Renamed Agent Server to Agent Provider (AP) throughout, including in agent identifier definition, well-known metadata, and IANA registrations.<a href="#section-18-2.1.2.2" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.3">Added Roles section describing collocation patterns (PS+AS, Resource+Agent, AP+Resource, Agent+AP, org-wide bundles).<a href="#section-18-2.1.2.3" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.4">Added Policy Evaluation Points section describing how AP, PS, AS, and Resource each evaluate the agent from their own vantage point.<a href="#section-18-2.1.2.4" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.5">Added PS-AS Collapse subsection distinguishing it from three-party access.<a href="#section-18-2.1.2.5" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.6">Added Trust Posture in PS-Asserted Access security section.<a href="#section-18-2.1.2.6" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.7">Added optional <code>platform</code> request parameter (with new IANA AAuth Platform Value Registry: <code>web</code>, <code>mobile</code>, <code>desktop</code>, <code>workload</code>, <code>self-hosted</code>) and <code>device</code> request parameter at the PS token endpoint, both agent-attested and used for display at the consent screen and connected-agents dashboard.<a href="#section-18-2.1.2.7" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.8">Replaced ad hoc <code>org</code> references with the <code>tenant</code> claim from OpenID Connect Enterprise Extensions; added <code>tenant</code> as an optional auth token claim.<a href="#section-18-2.1.2.8" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.9">Consistency pass: identity-based access now requires an agent token (collapsed agent adoption path from 4 to 3 steps); audit's mission requirement no longer hidden by the "missions, permissions, audit" shorthand; <code>capabilities</code> array on mission approval is "MAY include"; <code>ps</code> claim in agent token is "MUST include" for three-party and above; auth token usage clarified (agent presents auth token, not agent token, on subsequent requests to a resource).<a href="#section-18-2.1.2.9" class="pilcrow">¶</a>
+</li>
+            <li class="compact normal" id="section-18-2.1.2.10">Demoted the AAuth Bootstrap reference from normative to informative.<a href="#section-18-2.1.2.10" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="section-18-2.2">
+          <p id="section-18-2.2.1">draft-hardt-oauth-aauth-protocol-00<a href="#section-18-2.2.1" class="pilcrow">¶</a></p>
+<ul class="compact normal">
+<li class="compact normal" id="section-18-2.2.2.1">Initial draft. Replaces <a href="https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol/02/">draft-hardt-aauth-protocol-02</a>; no technical changes.<a href="#section-18-2.2.2.1" class="pilcrow">¶</a>
 </li>
           </ul>
 </li>
@@ -6080,10 +6236,6 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <a href="#section-20.1" class="section-number selfRef">20.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
         </h3>
 <dl class="references">
-<dt id="I-D.hardt-aauth-bootstrap">[I-D.hardt-aauth-bootstrap]</dt>
-        <dd>
-<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"AAuth Bootstrap"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>&gt;</span>. </dd>
-<dd class="break"></dd>
 <dt id="I-D.hardt-httpbis-signature-key">[I-D.hardt-httpbis-signature-key]</dt>
         <dd>
 <span class="refAuthor">Hardt, D.</span> and <span class="refAuthor">T. Meunier</span>, <span class="refTitle">"HTTP Signature Keys"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://dickhardt.github.io/signature-key/draft-hardt-httpbis-signature-key.html">https://dickhardt.github.io/signature-key/draft-hardt-httpbis-signature-key.html</a>&gt;</span>. </dd>
@@ -6187,6 +6339,10 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
         <dd>
 <span class="refAuthor">MacFarlane, J.</span>, <span class="refTitle">"CommonMark Spec"</span>, <time datetime="2024" class="refDate">2024</time>, <span>&lt;<a href="https://spec.commonmark.org/0.31.2/">https://spec.commonmark.org/0.31.2/</a>&gt;</span>. </dd>
 <dd class="break"></dd>
+<dt id="I-D.hardt-aauth-bootstrap">[I-D.hardt-aauth-bootstrap]</dt>
+        <dd>
+<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"AAuth Bootstrap Guidance"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>&gt;</span>. </dd>
+<dd class="break"></dd>
 <dt id="OpenID.Enterprise">[OpenID.Enterprise]</dt>
         <dd>
 <span class="refAuthor">Hardt, D.</span> and <span class="refAuthor">K. McGuinness</span>, <span class="refTitle">"OpenID Connect Enterprise Extensions 1.0"</span>, <time datetime="2025" class="refDate">2025</time>, <span>&lt;<a href="https://openid.net/specs/openid-connect-enterprise-extensions-1_0.html">https://openid.net/specs/openid-connect-enterprise-extensions-1_0.html</a>&gt;</span>. </dd>
@@ -6210,6 +6366,10 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
 <dt id="RFC7636">[RFC7636]</dt>
         <dd>
 <span class="refAuthor">Sakimura, N., Ed.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">N. Agarwal</span>, <span class="refTitle">"Proof Key for Code Exchange by OAuth Public Clients"</span>, <span class="seriesInfo">RFC 7636</span>, <span class="seriesInfo">DOI 10.17487/RFC7636</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7636">https://www.rfc-editor.org/info/rfc7636</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7643">[RFC7643]</dt>
+        <dd>
+<span class="refAuthor">Hunt, P., Ed.</span>, <span class="refAuthor">Grizzle, K.</span>, <span class="refAuthor">Wahlstroem, E.</span>, and <span class="refAuthor">C. Mortimore</span>, <span class="refTitle">"System for Cross-domain Identity Management: Core Schema"</span>, <span class="seriesInfo">RFC 7643</span>, <span class="seriesInfo">DOI 10.17487/RFC7643</span>, <time datetime="2015-09" class="refDate">September 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7643">https://www.rfc-editor.org/info/rfc7643</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC7942">[RFC7942]</dt>
         <dd>
@@ -6397,7 +6557,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
           <h4 id="name-why-per-instance-agent-iden">
 <a href="#appendix-B.1.2" class="section-number selfRef">B.1.2. </a><a href="#name-why-per-instance-agent-iden" class="section-name selfRef">Why Per-Instance Agent Identity</a>
           </h4>
-<p id="appendix-B.1.2-1">OAuth's <code>client_id</code> identifies an application — every instance of the same app shares a single identifier and typically a single set of credentials. AAuth's <code>aauth:local@domain</code> agent identifier identifies a specific instance with its own signing key. This enables per-instance authorization (grant access to this specific agent process, not all instances of the app), per-instance revocation (revoke one compromised instance without affecting others), and per-instance audit (trace every action to the specific instance that performed it). The agent server controls which instances receive agent tokens, providing centralized governance over a distributed agent fleet.<a href="#appendix-B.1.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-B.1.2-1">OAuth's <code>client_id</code> identifies an application — every instance of the same app shares a single identifier and typically a single set of credentials. AAuth's <code>aauth:local@domain</code> agent identifier identifies a specific instance with its own signing key. This enables per-instance authorization (grant access to this specific agent process, not all instances of the app), per-instance revocation (revoke one compromised instance without affecting others), and per-instance audit (trace every action to the specific instance that performed it). The agent provider controls which instances receive agent tokens, providing centralized governance over a distributed agent fleet.<a href="#appendix-B.1.2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="why-every-agent-has-a-person">
@@ -6499,7 +6659,7 @@ Signature-Key: sig=jwt;jwt="eyJhbGc..."
           <h4 id="name-why-four-adoption-modes">
 <a href="#appendix-B.3.2" class="section-number selfRef">B.3.2. </a><a href="#name-why-four-adoption-modes" class="section-name selfRef">Why Four Adoption Modes</a>
           </h4>
-<p id="appendix-B.3.2-1">The protocol supports identity-based, resource-managed (two-party), PS-managed (three-party), and federated (four-party) resource access modes, with agent governance as an orthogonal layer. A resource that only verifies agent signatures can start using AAuth today without deploying a PS or AS. As the ecosystem matures, the same resource can issue resource tokens to the agent's PS (three-party) and eventually deploy its own AS (four-party). Each mode is self-contained and useful — not a stepping stone to the "real" protocol. Agent governance (missions, permissions, audit) works independently of resource access modes.<a href="#appendix-B.3.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-B.3.2-1">The protocol supports identity-based, resource-managed (two-party), PS-asserted (three-party), and federated (four-party) resource access modes, with agent governance as an orthogonal layer. A resource that only verifies agent signatures can start using AAuth today without deploying a PS or AS. As the ecosystem matures, the same resource can accept identity claims from any agent's PS (three-party) and eventually deploy its own AS (four-party). Each mode is self-contained and useful — not a stepping stone to the "real" protocol. Agent governance (missions plus permission, audit, and interaction relay) works independently of resource access modes.<a href="#appendix-B.3.2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="why-resource-tokens">
