@@ -13,7 +13,7 @@ name = "Internet-Draft"
 value = "draft-hardt-aauth-bootstrap-latest"
 stream = "IETF"
 
-date = 2026-05-03T00:00:00Z
+date = 2026-05-06T00:00:00Z
 
 [[author]]
 initials = "D."
@@ -88,7 +88,7 @@ organization = "Hellō"
 
 .# Abstract
 
-This document provides informational guidance for agent providers (APs) on enrolling agents and issuing AAuth agent tokens defined in [@!I-D.hardt-oauth-aauth-protocol]. It covers per-platform key handling, optional platform attestation, agent identifier strategies, agent-attested display values (`platform`, `device`), and refresh patterns. The mechanisms described here are not normative protocol — they are common patterns that interoperable AP implementations can adopt or adapt.
+This document provides informational guidance for agent providers (APs) on enrolling agents and issuing AAuth agent tokens defined in [@!I-D.hardt-oauth-aauth-protocol]. It covers per-platform key handling, optional platform attestation, agent identifier strategies, and refresh patterns. The mechanisms described here are not normative protocol — they are common patterns that interoperable AP implementations can adopt or adapt.
 
 .# Discussion Venues
 
@@ -120,7 +120,6 @@ After bootstrap the agent can participate in AAuth: it can sign HTTP messages pe
 - **Per-platform key handling** — where the agent's signing key lives and how strongly it is protected on web, mobile, and self-hosted deployments; desktop and workload coverage is TBD (#per-platform-keys).
 - **Optional platform attestation** — when and why to require WebAuthn, App Attest, or Play Integrity (#optional-attestation).
 - **Agent identifier strategies** — how to construct the `sub` claim's local part (#identifier-strategies).
-- **Agent-attested display values** — `platform` and `device` request parameters the agent supplies to the PS on each call (#agent-display-values).
 - **Refresh patterns** — issuing fresh agent tokens for renewal (#refresh-patterns).
 
 Throughout, when this document refers to "the durable key" and "the ephemeral key" it means the keys defined in (#per-platform-keys). The ephemeral key's public part appears in `agent_token.cnf.jwk` and signs HTTP messages from the agent per [@!I-D.hardt-httpbis-signature-key]; the durable key serves as the AP's stable enrollment anchor and signs only at refresh. APs that use a single durable key for all signatures (#per-platform-keys) can read references to "the ephemeral key" as referring to that same durable key.
@@ -246,30 +245,9 @@ Each install's durable key is the basis for one agent identity. A returning user
 
 Multi-device users will see multiple agent entries in their PS dashboard. Grouping or merging those entries belongs at the PS, which already authenticates the user and is the correct layer for cross-device correlation. Rotation of the durable key produces a new agent identity; rotation of the ephemeral key (on every refresh) does not — the agent's `sub` is stable across ephemeral rotations. PS-side regrouping is the recovery path for durable-key changes.
 
-# Agent-Attested Display Values {#agent-display-values}
+# Example Agent Token Claims
 
-The AAuth Protocol [@!I-D.hardt-oauth-aauth-protocol] defines `platform` and `device` as optional request parameters the agent supplies to the PS token endpoint on each call. They are display-only — the PS uses them at first binding to populate the consent screen, and on subsequent calls to populate the connected-agents dashboard. They are agent-attested; the PS does not treat them as cryptographically verified.
-
-This section gives implementation guidance for agents (and the APs that configure them) on choosing reasonable values.
-
-## `platform` Values
-
-`platform` values are drawn from the AAuth Platform Value Registry established in [@!I-D.hardt-oauth-aauth-protocol]. The initial registry covers `web`, `mobile`, `desktop`, `workload`, and `self-hosted`; new values are added under Specification Required policy [@!RFC8126].
-
-Agents should pick the registered value that most accurately describes the runtime platform. `platform` is a coarse classifier — it describes the runtime environment but does not by itself convey what security measures were applied within it.
-
-## `device` Values
-
-`device` is a free-form display string with normative constraints (≤64 characters, printable, no PII beyond user-supplied nicknames). Examples of useful values:
-
-- `Chrome on macOS`
-- `Safari on iPhone`
-- `Pixel 8 (App)`
-- `Personal MacBook`
-
-User-supplied nicknames are the most useful form of identification when the agent allows the user to name their install. A generic browser/OS string is acceptable. When there is nothing meaningful to set, the parameter is omitted; the PS displays the agent provider's name and logo (from the AP's metadata document) alongside `platform` to identify the entry.
-
-## Example Agent Token Claims
+A typical agent token issued by an AP, illustrating the claims described in [@!I-D.hardt-oauth-aauth-protocol] and the identifier strategies in (#identifier-strategies).
 
 JWT header:
 
@@ -373,7 +351,7 @@ There is no separate enrollment step — publication of the JWKS is the enrollme
 
 ## Trust in the AP
 
-Every AP-attested claim in the agent token is only as trustworthy as the AP that signed the token. Receivers should apply policy proportional to their trust in the AP. An unfamiliar AP making strong attestation claims may warrant additional caution at the PS consent screen. The `platform` and `device` request parameters the agent sends to the PS are agent-attested, not AP-attested; they are display-only and the PS treats them accordingly.
+Every AP-attested claim in the agent token is only as trustworthy as the AP that signed the token. Receivers should apply policy proportional to their trust in the AP. An unfamiliar AP making strong attestation claims may warrant additional caution at the PS consent screen.
 
 ## Ephemeral Key Compromise
 
@@ -399,10 +377,6 @@ Compromise of the self-hosted JWKS key allows the attacker to mint agent tokens 
 
 An agent's `sub` is the same value at every PS the agent contacts, not a per-PS pairwise identifier. A stable `sub` lets each PS reliably re-identify the agent across sessions — that is the intended property — but it also means colluding PSes (or any party with cross-PS telemetry) can correlate the agent's activity across them. Under per-install identity (#per-install-identity), durable-key rotation produces a new `sub`, giving users a natural "fresh start" capability.
 
-## Agent-Attested Display Values
-
-`platform` values come from a fixed registry and carry no PII. `device` is a free-form display string; the AAuth Protocol [@!I-D.hardt-oauth-aauth-protocol] prohibits including personally identifying information in it beyond what the user has chosen. User-supplied nicknames are acceptable; OS-reported device names that include the user's real name are not.
-
 ## AP Visibility Into Agent Activity
 
 The AP that issued an agent token does not see the agent's subsequent traffic to PSes, resources, or ASes (they verify against the AP's published JWKS, not by calling the AP). The AP's view is limited to enrollment and refresh requests. APs should document their data retention practices for those events.
@@ -423,8 +397,12 @@ TBD
 
 *Note: This section is to be removed before publishing as an RFC.*
 
-- draft-hardt-aauth-bootstrap-00
+- draft-hardt-aauth-bootstrap-01
   - Major rewrite. The document is now informational guidance for AP implementers. The previously-normative PS bootstrap protocol (PS `/bootstrap` endpoint, `bootstrap_token`, bootstrap announcement, agent server [now Agent Provider] `bootstrap_endpoint` / `refresh_endpoint` / `webauthn_endpoint`) has been removed. PS-side binding to a person now happens lazily on the agent's first interaction with the PS per the AAuth Protocol; the bootstrap document covers AP-side enrollment patterns only.
+  - Removed Agent-Attested Display Values section; the `platform` and `device` parameters are defined and described in the AAuth Protocol.
+
+- draft-hardt-aauth-bootstrap-00
+  - Initial draft.
 
 # Acknowledgments
 

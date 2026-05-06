@@ -12,7 +12,7 @@ name = "Internet-Draft"
 value = "draft-hardt-oauth-aauth-protocol-latest"
 stream = "IETF"
 
-date = 2026-04-29T00:00:00Z
+date = 2026-05-06T00:00:00Z
 
 [[author]]
 initials = "D."
@@ -2578,6 +2578,18 @@ The following implementations are known:
 # Document History
 
 *Note: This section is to be removed before publishing as an RFC.*
+
+- draft-hardt-oauth-aauth-protocol-01
+  - Renamed PS-managed access to PS-asserted access throughout, reflecting the trust posture: the resource accepts identity claims and consent from the agent's PS while applying its own access policy.
+  - Renamed Agent Server to Agent Provider (AP) throughout, including in agent identifier definition, well-known metadata, and IANA registrations.
+  - Added Roles section describing collocation patterns (PS+AS, Resource+Agent, AP+Resource, Agent+AP, org-wide bundles).
+  - Added Policy Evaluation Points section describing how AP, PS, AS, and Resource each evaluate the agent from their own vantage point.
+  - Added PS-AS Collapse subsection distinguishing it from three-party access.
+  - Added Trust Posture in PS-Asserted Access security section.
+  - Added optional `platform` request parameter (with new IANA AAuth Platform Value Registry: `web`, `mobile`, `desktop`, `workload`, `self-hosted`) and `device` request parameter at the PS token endpoint, both agent-attested and used for display at the consent screen and connected-agents dashboard.
+  - Replaced ad hoc `org` references with the `tenant` claim from OpenID Connect Enterprise Extensions; added `tenant` as an optional auth token claim.
+  - Consistency pass: identity-based access now requires an agent token (collapsed agent adoption path from 4 to 3 steps); audit's mission requirement no longer hidden by the "missions, permissions, audit" shorthand; `capabilities` array on mission approval is "MAY include"; `ps` claim in agent token is "MUST include" for three-party and above; auth token usage clarified (agent presents auth token, not agent token, on subsequent requests to a resource).
+  - Demoted the AAuth Bootstrap reference from normative to informative.
 
 - draft-hardt-oauth-aauth-protocol-00
   - Initial draft. Replaces [draft-hardt-aauth-protocol-02](https://datatracker.ietf.org/doc/draft-hardt-aauth-protocol/02/); no technical changes.

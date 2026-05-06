@@ -44,18 +44,9 @@ Agents don't work this way. They discover resources at runtime. They execute lon
 
 ## Specifications
 
-### HTTP Signature Keys (Foundation)
-
-A standalone HTTP specification that AAuth builds on. Defines well-known key discovery, the `Signature-Key` header for conveying public keying material alongside HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)), and the `Signature-Error` header for structured error reporting.
-
-* [Editor's Copy](https://dickhardt.github.io/signature-key/draft-hardt-httpbis-signature-key.html)
-* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key)
-* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-httpbis-signature-key)
-* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/signature-key/#go.draft-hardt-httpbis-signature-key.diff)
-
 ### AAuth Protocol
 
-The authorization protocol for agent-to-resource access. Defines four resource access modes (identity-based, resource-managed, PS-managed, federated), three proof-of-possession token types (agent, resource, auth), agent governance (missions, permissions, audit), deferred responses with clarification chat, and call chaining for multi-hop resource access.
+The authorization protocol for agent-to-resource access. Defines four resource access modes (identity-based, resource-managed, PS-asserted, federated), three proof-of-possession token types (agent, resource, auth), agent governance (missions, permissions, audit), deferred responses with clarification chat, and call chaining for multi-hop resource access.
 
 * [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-oauth-aauth-protocol.html)
 * [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-oauth-aauth-protocol)
@@ -70,17 +61,26 @@ The authorization protocol for agent-to-resource access. Defines four resource a
 | Python | [github.com/christian-posta/aauth-full-demo](https://github.com/christian-posta/aauth-full-demo) |
 | Java (Keycloak) | [github.com/christian-posta/keycloak-aauth-extension](https://github.com/christian-posta/keycloak-aauth-extension) |
 
+### HTTP Signature Keys (Foundation)
+
+A standalone HTTP specification that AAuth builds on. Defines well-known key discovery, the `Signature-Key` header for conveying public keying material alongside HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)), and the `Signature-Error` header for structured error reporting.
+
+* [Editor's Copy](https://dickhardt.github.io/signature-key/draft-hardt-httpbis-signature-key.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-httpbis-signature-key)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-hardt-httpbis-signature-key)
+* [Compare Editor's Copy to Individual Draft](https://dickhardt.github.io/signature-key/#go.draft-hardt-httpbis-signature-key.diff)
+
 ### AAuth R3 (Exploratory)
 
 **[draft-hardt-aauth-r3](draft-hardt-aauth-r3.md)**
 
 Rich Resource Requests. Vocabulary-based authorization using formats agents already understand (MCP, OpenAPI, gRPC, GraphQL). Content-addressed R3 documents provide human-readable consent display and permanent audit provenance.
 
-### AAuth Bootstrap (Exploratory)
+### AAuth Bootstrap Guidance (Informational)
 
 **[draft-hardt-aauth-bootstrap](draft-hardt-aauth-bootstrap.md)**
 
-Bootstrap ceremony for SaaS browser, SaaS mobile, and B2B SaaS agents. Defines the `bootstrap_token`, the PS and agent-server bootstrap endpoints, per-platform attestation (WebAuthn, App Attest, Play Integrity), and renewal flows that bypass the PS after the initial binding is established.
+Informational guidance for Agent Providers (APs) on enrolling agents and issuing AAuth agent tokens. Covers per-platform key handling (web, mobile, self-hosted), optional platform attestation (WebAuthn, App Attest, Play Integrity), agent identifier strategies (per-install identity), and refresh patterns.
 
 * [Editor's Copy](https://dickhardt.github.io/AAuth/draft-hardt-aauth-bootstrap.html)
 * [Datatracker Page](https://datatracker.ietf.org/doc/draft-hardt-aauth-bootstrap)
