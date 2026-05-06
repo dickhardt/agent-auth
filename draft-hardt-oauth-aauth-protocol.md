@@ -135,7 +135,7 @@ Agents don't work this way. They discover resources at runtime. They execute lon
 
 - **Agent identity without pre-registration**: A domain, static metadata, and a JWKS establish identity with no portal, no bilateral agreement, no shared secret.
 - **Per-instance identity**: Each agent instance gets its own identifier (`aauth:local@domain`) and signing key.
-- **Proof-of-possession on every request**: HTTP Message Signatures ([@!RFC9421]) bind every request to the agent's key — a stolen token is useless without the private key.
+- **Proof-of-possession on every request**: HTTP Message Signatures ([@!RFC9421]) bind every request the agent makes to the agent's key — a stolen token is useless without the private key.
 - **Two-party mode with first-call registration**: An agent calls a resource it has never contacted before; the resource returns `AAuth-Requirement`; a browser interaction handles account creation, payment, and consent. The first API call is the registration.
 - **Tool-call governance**: A person server (PS) represents the user and manages what tools the agent can call, providing permission and audit for tool use — no resource involved.
 - **Missions**: Optional scoped authorization contexts that span multiple resources. The agent proposes what it intends to do in natural language; the person server provides full context — mission, history, justification — to the appropriate decision-maker (human or AI); every resource access is evaluated in context. Missions enable governance over decisions that cannot be reduced to predefined machine-evaluable rules.
@@ -159,7 +159,7 @@ AAuth builds on existing standards and design patterns:
 
 The HTTP Signature Keys specification ([@!I-D.hardt-httpbis-signature-key]) defines how signing keys are bound to JWTs and discovered via well-known metadata, and how agents present cryptographic identity using HTTP Message Signatures ([@!RFC9421]). This specification defines the `AAuth-Requirement`, `AAuth-Access`, and `AAuth-Capabilities` headers, and the authorization protocol across four resource access modes.
 
-Because agent identity is independent and self-contained, AAuth is designed for incremental adoption — each party can add support independently, and rollout does not need to be coordinated. A resource that verifies an agent's signature can manage access by identity alone, with no other infrastructure. When a resource manages its own authorization — via interaction, consent, or existing infrastructure — it operates in resource-managed access (two-party). Issuing resource tokens to the agent's person server enables PS-asserted access (three-party): the PS asserts identity claims about the user (`sub`, optionally `email`, `tenant`, `groups`, `roles`) and confirms user consent for the scope the resource requested; the resource applies its own policy on the resulting claims. Any PS can assert identity claims to any resource without bilateral setup; the resource namespaces those claims by the asserting PS. Deploying an access server enables federated access (four-party) with cross-domain policy enforcement. Agent governance — missions, permissions, audit — is an orthogonal layer that any agent with a PS can add, from a simple prompt to full autonomous agent oversight. See (#incremental-adoption) for details.
+Because agent identity is independent and self-contained, AAuth is designed for incremental adoption — each party can add support independently, and rollout does not need to be coordinated. A resource that verifies an agent's signature can manage access by identity alone, with no other infrastructure. When a resource manages its own authorization — via interaction, consent, or existing infrastructure — it operates in resource-managed access (two-party). Issuing resource tokens to the agent's person server enables PS-asserted access (three-party): the PS asserts identity claims about the user (`sub`, optionally `email`, `tenant`, `groups`, `roles`) and confirms user consent for the scope the resource requested; the resource applies its own policy on the resulting claims. Any PS can assert identity claims to any resource without bilateral setup; the resource namespaces those claims by the asserting PS. Deploying an access server enables federated access (four-party) with cross-domain policy enforcement. Agent governance — missions, plus per-action permission, audit, and interaction relay through a PS — is an orthogonal layer that any agent with a PS can add, from a simple prompt to full autonomous agent oversight. See (#incremental-adoption) for details.
 
 # Conventions and Definitions
 
@@ -198,7 +198,7 @@ Protocol concepts:
 
 All AAuth tokens are JWTs verified using a JWK retrieved from the `jwks_uri` in the issuer's well-known metadata, binding each token to the server that issued it.
 
-AAuth has two dimensions: **resource access modes** and **agent governance**. Resource access modes define how an agent gets authorized at a resource. Agent governance — missions, permissions, audit — is an orthogonal layer that any agent with a person server can add, independent of which access mode the resource supports.
+AAuth has two dimensions: **resource access modes** and **agent governance**. Resource access modes define how an agent gets authorized at a resource. Agent governance — missions, plus per-action permission, audit, and interaction relay through a person server — is an orthogonal layer that any agent with a person server can add, independent of which access mode the resource supports.
 
 ## Resource Access Modes
 
@@ -487,7 +487,7 @@ Before protocol flows begin, each entity must be established with its identity, 
 
 **PS-asserted access (three-party) and above:**
 
-- The agent's agent token includes the `ps` claim identifying its person server. This is configured during agent setup (e.g., set by the agent provider or chosen by the person deploying the agent).
+- The agent's agent token MUST include the `ps` claim identifying its person server. This is configured during agent setup (e.g., set by the agent provider or chosen by the person deploying the agent).
 - The PS maintains the association between an agent and its person. This association is typically established when the person first authorizes the agent at the PS via the interaction flow. An organization administrator may also pre-authorize agents for the organization.
 - The PS MAY establish a direct communication channel with the user (e.g., email, push notification, or messaging) to support out-of-band authorization, approval notifications, and revocation alerts.
 - Person servers publish metadata at `/.well-known/aauth-person.json` (#ps-metadata).
@@ -1602,6 +1602,8 @@ Signature-Key: sig=jwt;
     jwt="eyJhbGciOiJFZERTQSIsInR5cCI6ImF1dGgr..."
 ```
 
+Once an auth token has been issued for a resource, the agent presents the auth token (not the agent token) via `Signature-Key` on subsequent requests to that resource. The auth token's `cnf.jwk` is the same key that signed the request, so HTTP Message Signature verification proceeds identically to the agent-token case.
+
 ### Auth Token Verification
 
 When a resource receives an auth token, verify per [@!RFC7515] and [@!RFC7519]:
@@ -1769,7 +1771,7 @@ This specification defines the following capability values:
 | `clarification` | Agent can engage in back-and-forth clarification chat |
 | `payment` | Agent can handle `402` payment flows — either directly or via its PS's interaction endpoint |
 
-The agent determines its capabilities by combining what it can do directly with what its PS can do on its behalf. When the agent has a PS and has created a mission, the mission approval response includes a `capabilities` array listing what the PS can handle for this user/session (#mission-approval). The agent unions its own capabilities with the PS's capabilities to produce the `AAuth-Capabilities` header value.
+The agent determines its capabilities by combining what it can do directly with what its PS can do on its behalf. When the agent has a PS and has created a mission, the mission approval response MAY include a `capabilities` array listing what the PS can handle for this user/session (#mission-approval). When present, the agent unions those capabilities with its own to produce the `AAuth-Capabilities` header value.
 
 Agents SHOULD include the `AAuth-Capabilities` header on signed requests to resources. The header is not used on requests to PS endpoints — the PS learns the agent's capabilities through the mission approval flow. Recipients MUST ignore unrecognized capability values. When the header is absent, recipients MUST NOT assume any capabilities — the agent may not support interaction, clarification, or payment flows.
 
@@ -2287,10 +2289,9 @@ AAuth is designed for incremental adoption. Each party — agent, resource, PS, 
 
 Each step builds on the previous one. An agent that adopts any step gains immediate value.
 
-1. **Sign requests with HTTP Message Signatures**: The agent signs requests using the Signature-Key specification ([@!I-D.hardt-httpbis-signature-key]). Resources that recognize signatures can verify the agent's key and respond with `Accept-Signature` headers. Resources that don't recognize signatures ignore the headers — existing auth mechanisms continue to work.
-2. **Obtain an agent token** (`scheme=jwt`, `typ: aa-agent+jwt`): The agent has a full AAuth identity with an `aauth:local@domain` identifier issued by an agent provider, providing a stable, managed identity lifecycle. The agent token is presented via the `Signature-Key` header using `scheme=jwt`.
-3. **Add a person server** (include `ps` claim in agent token): The agent can obtain auth tokens from its PS directly. Resources in three-party and four-party modes can issue resource tokens targeting the PS. Enables PS-issued auth tokens with user identity, `tenant`, `groups`, and `roles` claims.
-4. **Add governance** (create a mission): The agent creates a mission at its PS, gaining permissions, audit, PS-relayed interactions, and consent-managed resource access. The mission can be as simple as the user's prompt.
+1. **Obtain an agent token and sign requests** (`scheme=jwt`, `typ: aa-agent+jwt`): The agent has a full AAuth identity with an `aauth:local@domain` identifier issued by an agent provider. It signs requests using HTTP Message Signatures ([@!RFC9421]) per the Signature-Key specification ([@!I-D.hardt-httpbis-signature-key]) and presents its agent token via the `Signature-Key` header using `scheme=jwt`. Resources that recognize signatures can verify the agent's identity and apply access control. Resources that don't ignore the signature and `Signature-Key` headers — existing auth mechanisms continue to work. This enables identity-based access.
+2. **Add a person server** (include `ps` claim in agent token): The agent can obtain auth tokens from its PS directly. Resources in three-party and four-party modes can issue resource tokens targeting the PS. Enables PS-issued auth tokens with user identity, `tenant`, `groups`, and `roles` claims.
+3. **Add governance** (create a mission): The agent creates a mission at its PS, gaining permissions, audit, PS-relayed interactions, and consent-managed resource access. The mission can be as simple as the user's prompt.
 
 ## Resource Adoption Path
 
@@ -2305,7 +2306,7 @@ Each step builds on the previous one. A resource that adopts any step works with
 
 | Agent | Resource | Mode | What Works |
 |-------|----------|------|------------|
-| Signed requests | Recognizes signatures | Identity-based | Identity verification, access control by agent identity |
+| Agent token | Recognizes signatures | Identity-based | Identity verification, access control by agent identity |
 | Agent token | Manages authorization | Resource-managed | Resource-handled auth, interaction, `AAuth-Access` |
 | Agent token + `ps` | Issues resource tokens | PS-asserted | PS asserts user identity, `tenant`, `groups`, `roles`; resource applies its own policy |
 | Agent token + `ps` | AS deployed | Federated | Full federation, AS policy enforcement |
@@ -2763,7 +2764,7 @@ The PS is distinct from the AS because they serve different parties with differe
 
 ### Why Four Adoption Modes
 
-The protocol supports identity-based, resource-managed (two-party), PS-asserted (three-party), and federated (four-party) resource access modes, with agent governance as an orthogonal layer. A resource that only verifies agent signatures can start using AAuth today without deploying a PS or AS. As the ecosystem matures, the same resource can accept identity claims from any agent's PS (three-party) and eventually deploy its own AS (four-party). Each mode is self-contained and useful — not a stepping stone to the "real" protocol. Agent governance (missions, permissions, audit) works independently of resource access modes.
+The protocol supports identity-based, resource-managed (two-party), PS-asserted (three-party), and federated (four-party) resource access modes, with agent governance as an orthogonal layer. A resource that only verifies agent signatures can start using AAuth today without deploying a PS or AS. As the ecosystem matures, the same resource can accept identity claims from any agent's PS (three-party) and eventually deploy its own AS (four-party). Each mode is self-contained and useful — not a stepping stone to the "real" protocol. Agent governance (missions plus permission, audit, and interaction relay) works independently of resource access modes.
 
 ### Why Resource Tokens
 
