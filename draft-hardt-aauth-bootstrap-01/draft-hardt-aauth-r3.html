@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>AAuth Rich Resource Requests (R3)</title>
+<meta content="Dick Hardt" name="author">
+<meta content="
+       This document defines AAuth Rich Resource Requests (R3), an extension to the AAuth Protocol ( ) that enables structured, vocabulary-based authorization for resource access. Resources publish R3 documents (content-addressed authorization definitions) and advertise vocabularies describing their operations. Agents request access using those vocabularies. Auth tokens carry granted operations in the same vocabulary format, enabling resources to enforce authorization directly from the token. R3 provides human-displayable context for consent decisions and content-addressed audit provenance via the  r3_s256  hash in auth tokens. 
+    " name="description">
+<meta content="xml2rfc 3.33.0" name="generator">
+<meta content="agent" name="keyword">
+<meta content="authorization" name="keyword">
+<meta content="http" name="keyword">
+<meta content="resource" name="keyword">
+<meta content="draft-hardt-aauth-r3-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.33.0
+    Python 3.12.13
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.2
+    platformdirs 4.9.6
+    pycountry 24.6.1
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.7.0
+-->
+<link href="draft-hardt-aauth-r3.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+    }
+  }
+  &.olPercent > dt {
+    float: none;
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+}
+dl:not(.dlNewline) > dt {
+  float: left;
+  margin-right: 2ch;
+  min-width: 8ch;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href].selfRef, .iref + a[href].internal {
+  color: var(--text-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+}
+@media not print {
+  :hover > a.pilcrow, a.pilcrow:focus {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* Comments */
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc nav {
+    font-family: var(--font-title);
+    font-weight: 360;
+    & > ul { margin-bottom: 2em; }
+    & ul {
+      margin: 0 0 0 4px;
+      & :is(p, li) {
+        margin: 2px 0;
+      }
+    }
+  }
+  #toc a.toplink {
+    float: right;
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+    &::before { /* css hamburger */
+      float: right;
+      position: relative;
+      width: 1em;
+      height: 1px;
+      left: -164px;
+      margin: 8px 0 0 0;
+      background: white none repeat scroll 0 0;
+      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+      content: "";
+    }
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active {
+    opacity: 1;
+    & nav { display: block; }
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:is(:link, :focus, :hover),
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin: 2px 0.5em 0;
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+  #toc a.toplink {
+    margin: 8px 0.5em 0;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([fill="white"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">AAuth-R3</td>
+<td class="right">May 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Hardt</td>
+<td class="center">Expires 7 November 2026</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">TBD</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-hardt-aauth-r3-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-05-06" class="published">6 May 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2026-11-07">7 November 2026</time></dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">D. Hardt</div>
+<div class="org">Hellō</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">AAuth Rich Resource Requests (R3)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines AAuth Rich Resource Requests (R3), an extension to the AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) that enables structured, vocabulary-based authorization for resource access. Resources publish R3 documents (content-addressed authorization definitions) and advertise vocabularies describing their operations. Agents request access using those vocabularies. Auth tokens carry granted operations in the same vocabulary format, enabling resources to enforce authorization directly from the token. R3 provides human-displayable context for consent decisions and content-addressed audit provenance via the <code>r3_s256</code> hash in auth tokens.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note" id="section-note.1">
+      <h2 id="name-discussion-venues">
+<a href="#name-discussion-venues" class="section-name selfRef">Discussion Venues</a>
+      </h2>
+<p id="section-note.1-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">This document is part of the AAuth specification family. Source for this draft and an issue tracker can be found at <a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 7 November 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-vocabularies" class="internal xref">Vocabularies</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-resource-metadata-extension" class="internal xref">Resource Metadata Extensions</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-standard-vocabularies" class="internal xref">Standard Vocabularies</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-mcp-vocabulary-urnaauthvoca" class="internal xref">MCP Vocabulary (<code>urn:aauth:vocabulary:mcp</code>)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-openapi-vocabulary-urnaauth" class="internal xref">OpenAPI Vocabulary (<code>urn:aauth:vocabulary:openapi</code>)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
+                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-grpc-vocabulary-urnaauthvoc" class="internal xref">gRPC Vocabulary (<code>urn:aauth:vocabulary:grpc</code>)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.4">
+                    <p id="section-toc.1-1.4.2.2.2.4.1"><a href="#section-4.2.4" class="auto internal xref">4.2.4</a>.  <a href="#name-graphql-vocabulary-urnaauth" class="internal xref">GraphQL Vocabulary (<code>urn:aauth:vocabulary:graphql</code>)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.5">
+                    <p id="section-toc.1-1.4.2.2.2.5.1"><a href="#section-4.2.5" class="auto internal xref">4.2.5</a>.  <a href="#name-asyncapi-vocabulary-urnaaut" class="internal xref">AsyncAPI Vocabulary (<code>urn:aauth:vocabulary:asyncapi</code>)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.6">
+                    <p id="section-toc.1-1.4.2.2.2.6.1"><a href="#section-4.2.6" class="auto internal xref">4.2.6</a>.  <a href="#name-wsdl-vocabulary-urnaauthvoc" class="internal xref">WSDL Vocabulary (<code>urn:aauth:vocabulary:wsdl</code>)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.7">
+                    <p id="section-toc.1-1.4.2.2.2.7.1"><a href="#section-4.2.7" class="auto internal xref">4.2.7</a>.  <a href="#name-odata-vocabulary-urnaauthvo" class="internal xref">OData Vocabulary (<code>urn:aauth:vocabulary:odata</code>)</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-authorization-endpoint-exte" class="internal xref">Authorization Endpoint Extensions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-request" class="internal xref">Request</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-response" class="internal xref">Response</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-r3-document" class="internal xref">R3 Document</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-fields" class="internal xref">Fields</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-content-addressing" class="internal xref">Content Addressing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-resource-token-extensions" class="internal xref">Resource Token Extensions</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-r3-processing" class="internal xref">R3 Processing</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-as-processing" class="internal xref">AS Processing</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-caching" class="internal xref">Caching</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-auth-token-extensions" class="internal xref">Auth Token Extensions</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-resource-enforcement" class="internal xref">Resource Enforcement</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-r3-document-access-restrict" class="internal xref">R3 Document Access Restriction</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-r3-endpoint-access-control" class="internal xref">R3 Endpoint Access Control</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3">
+                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-hash-verification" class="internal xref">Hash Verification</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.4">
+                <p id="section-toc.1-1.9.2.4.1"><a href="#section-9.4" class="auto internal xref">9.4</a>.  <a href="#name-audit-log-integrity" class="internal xref">Audit Log Integrity</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.5">
+                <p id="section-toc.1-1.9.2.5.1"><a href="#section-9.5" class="auto internal xref">9.5</a>.  <a href="#name-operation-validation" class="internal xref">Operation Validation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.6">
+                <p id="section-toc.1-1.9.2.6.1"><a href="#section-9.6" class="auto internal xref">9.6</a>.  <a href="#name-grant-enforcement" class="internal xref">Grant Enforcement</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-jwt-claims-registration" class="internal xref">JWT Claims Registration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-r3-vocabulary-registry" class="internal xref">R3 Vocabulary Registry</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-document-history" class="internal xref">Document History</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.1">
+                <p id="section-toc.1-1.14.2.1.1"><a href="#section-14.1" class="auto internal xref">14.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.2">
+                <p id="section-toc.1-1.14.2.2.1"><a href="#section-14.2" class="auto internal xref">14.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-design-rationale" class="internal xref">Design Rationale</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.1">
+                <p id="section-toc.1-1.15.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-why-not-rar" class="internal xref">Why Not RAR</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-vocabulary-summary" class="internal xref">Vocabulary Summary</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17">
+            <p id="section-toc.1-1.17.1"><a href="#appendix-C" class="auto internal xref">Appendix C</a>.  <a href="#name-comparison-with-rar" class="internal xref">Comparison with RAR</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18">
+            <p id="section-toc.1-1.18.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1"><strong>Status: Exploratory Draft</strong><a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) defines resource tokens as the mechanism by which resources declare what authorization is needed to access them, and scope strings as the primary way to express what operations are available. Scopes are sufficient for simple, well-known access patterns but are limited in three respects:<a href="#section-1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1-3">
+<li id="section-1-3.1">
+          <p id="section-1-3.1.1"><strong>Human comprehension.</strong> Scope strings like <code>calendar:write</code> are not self-describing to users or auth agents making approval decisions.<a href="#section-1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-1-3.2">
+          <p id="section-1-3.2.1"><strong>Machine precision.</strong> Scopes do not express which specific operations are being authorized or distinguish operations that need per-call approval.<a href="#section-1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-1-3.3">
+          <p id="section-1-3.3.1"><strong>Audit completeness.</strong> Scopes do not identify which specific version of an authorization definition was in effect at the time of approval.<a href="#section-1-3.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ol>
+<p id="section-1-4">R3 addresses these by introducing:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-1-5.1">
+          <strong>Vocabularies</strong> that describe a resource's operations in terms the agent already understands (MCP tools, OpenAPI operations, gRPC methods, etc.)<a href="#section-1-5.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-1-5.2">
+          <strong>R3 documents</strong>: structured, content-addressed authorization definitions published by the resource and fetched by the AS<a href="#section-1-5.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-1-5.3">
+          <strong>Vocabulary-based grants</strong> in auth tokens, so resources can enforce authorization directly from claims they understand<a href="#section-1-5.3" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-2">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-2-1">{::boilerplate bcp14-tagged}<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="terminology">
+<section id="section-3">
+      <h2 id="name-terminology">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<ul class="compact">
+<li class="compact" id="section-3-1.1">
+          <strong>Vocabulary</strong>: A defined scheme for expressing resource operations. Each vocabulary corresponds to an API description format (MCP, OpenAPI, gRPC, GraphQL, AsyncAPI, WSDL, OData). Resources advertise which vocabularies they support; agents use them to request access.<a href="#section-3-1.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-3-1.2">
+          <strong>R3 Document</strong>: A JSON document published by a resource, describing the operations it provides and the consequences of granting access. Identified by the SHA-256 hash of its content. Fetched by both the MM (for user consent using <code>display</code> fields) and the AS (for policy evaluation using <code>operations</code>); not accessible to agents.<a href="#section-3-1.2" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-3-1.3">
+          <strong>R3 URI (<code>r3_uri</code>)</strong>: A URI identifying an R3 document. Included in a resource token.<a href="#section-3-1.3" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-3-1.4">
+          <strong>R3 Hash (<code>r3_s256</code>)</strong>: A SHA-256 hash of the R3 document, base64url-encoded without padding. Included alongside <code>r3_uri</code> in the resource token and the auth token.<a href="#section-3-1.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="vocabularies">
+<section id="section-4">
+      <h2 id="name-vocabularies">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-vocabularies" class="section-name selfRef">Vocabularies</a>
+      </h2>
+<p id="section-4-1">Resources advertise their supported vocabularies in well-known metadata. Each vocabulary maps to an API description format that agents already know how to discover and parse.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="resource-metadata-extensions">
+<section id="section-4.1">
+        <h3 id="name-resource-metadata-extension">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-resource-metadata-extension" class="section-name selfRef">Resource Metadata Extensions</a>
+        </h3>
+<p id="section-4.1-1">R3 extends the <code>/.well-known/aauth-resource.json</code> document defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>):<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-4.1-2">
+<pre>{
+  "resource": "https://calendar.example.com",
+  "r3_vocabularies": {
+    "urn:aauth:vocabulary:mcp": "https://calendar.example.com/mcp",
+    "urn:aauth:vocabulary:openapi": "https://calendar.example.com/openapi.json"
+  }
+}
+
+</pre><a href="#section-4.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-3"><strong><code>r3_vocabularies</code></strong> (OPTIONAL). A JSON object mapping vocabulary URIs to their discovery endpoints. Keys MUST be vocabulary URIs from the <code>urn:aauth:vocabulary:</code> namespace for standard vocabularies defined in this document, or third-party URI namespaces for proprietary vocabularies. Values are vocabulary-specific discovery endpoints (the MCP server URL, the OpenAPI spec URL, the gRPC reflection endpoint, etc.). A resource MAY advertise multiple vocabularies simultaneously.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="standard-vocabularies">
+<section id="section-4.2">
+        <h3 id="name-standard-vocabularies">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-standard-vocabularies" class="section-name selfRef">Standard Vocabularies</a>
+        </h3>
+<p id="section-4.2-1">This document defines seven standard vocabularies. Third parties MAY define additional vocabularies using their own URI namespaces. Each vocabulary defines: the vocabulary URI, the structure of operation requests, how the resource maps operations to R3 documents, and the discovery endpoint.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">Standard vocabularies use the <code>urn:aauth:vocabulary:</code> namespace.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<div id="mcp-vocabulary">
+<section id="section-4.2.1">
+          <h4 id="name-mcp-vocabulary-urnaauthvoca">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-mcp-vocabulary-urnaauthvoca" class="section-name selfRef">MCP Vocabulary (<code>urn:aauth:vocabulary:mcp</code>)</a>
+          </h4>
+<p id="section-4.2.1-1">For resources that expose an MCP server. The discovery endpoint is the MCP server URL. Agents discover available tool names via MCP tool discovery.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-2">Each operation entry contains:<a href="#section-4.2.1-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.1-3.1">
+              <strong><code>tool</code></strong> (REQUIRED). The MCP tool name as advertised by the MCP server's tool discovery.<a href="#section-4.2.1-3.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.1-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:mcp",
+  "operations": [
+    { "tool": "create_calendar_event" },
+    { "tool": "modify_calendar_event" }
+  ]
+}
+
+</pre><a href="#section-4.2.1-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="openapi-vocabulary">
+<section id="section-4.2.2">
+          <h4 id="name-openapi-vocabulary-urnaauth">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-openapi-vocabulary-urnaauth" class="section-name selfRef">OpenAPI Vocabulary (<code>urn:aauth:vocabulary:openapi</code>)</a>
+          </h4>
+<p id="section-4.2.2-1">For resources that expose an OpenAPI-described HTTP API. The discovery endpoint is the OpenAPI specification URL. Agents discover available operations by fetching and parsing the spec.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">Each operation entry contains:<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.2-3.1">
+              <strong><code>operationId</code></strong> (REQUIRED). The <code>operationId</code> as defined in the OpenAPI specification.<a href="#section-4.2.2-3.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.2-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:openapi",
+  "operations": [
+    { "operationId": "createEvent" },
+    { "operationId": "updateEvent" }
+  ]
+}
+
+</pre><a href="#section-4.2.2-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="grpc-vocabulary">
+<section id="section-4.2.3">
+          <h4 id="name-grpc-vocabulary-urnaauthvoc">
+<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-grpc-vocabulary-urnaauthvoc" class="section-name selfRef">gRPC Vocabulary (<code>urn:aauth:vocabulary:grpc</code>)</a>
+          </h4>
+<p id="section-4.2.3-1">For resources that expose a gRPC server. The discovery endpoint is the gRPC server reflection endpoint (supporting <code>grpc.reflection.v1.ServerReflection</code>) or a hosted <code>.proto</code> file URL.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.3-2">Each operation entry contains:<a href="#section-4.2.3-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.3-3.1">
+              <strong><code>method</code></strong> (REQUIRED). The fully qualified gRPC method name in the form <code>package.ServiceName/MethodName</code>.<a href="#section-4.2.3-3.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.3-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:grpc",
+  "operations": [
+    { "method": "calendar.CalendarService/CreateEvent" },
+    { "method": "calendar.CalendarService/UpdateEvent" }
+  ]
+}
+
+</pre><a href="#section-4.2.3-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="graphql-vocabulary">
+<section id="section-4.2.4">
+          <h4 id="name-graphql-vocabulary-urnaauth">
+<a href="#section-4.2.4" class="section-number selfRef">4.2.4. </a><a href="#name-graphql-vocabulary-urnaauth" class="section-name selfRef">GraphQL Vocabulary (<code>urn:aauth:vocabulary:graphql</code>)</a>
+          </h4>
+<p id="section-4.2.4-1">For resources that expose a GraphQL API. The discovery endpoint is the GraphQL endpoint. Agents discover available operations via GraphQL introspection (<code>__schema</code> query).<a href="#section-4.2.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.4-2">Each operation entry contains:<a href="#section-4.2.4-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.4-3.1">
+              <strong><code>operation</code></strong> (REQUIRED). The GraphQL operation name. MUST be a named query, mutation, or subscription.<a href="#section-4.2.4-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-4.2.4-3.2">
+              <strong><code>type</code></strong> (REQUIRED). One of <code>query</code>, <code>mutation</code>, or <code>subscription</code>.<a href="#section-4.2.4-3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.4-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:graphql",
+  "operations": [
+    { "operation": "CreateCalendarEvent", "type": "mutation" },
+    { "operation": "GetCalendarEvents", "type": "query" }
+  ]
+}
+
+</pre><a href="#section-4.2.4-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="asyncapi-vocabulary">
+<section id="section-4.2.5">
+          <h4 id="name-asyncapi-vocabulary-urnaaut">
+<a href="#section-4.2.5" class="section-number selfRef">4.2.5. </a><a href="#name-asyncapi-vocabulary-urnaaut" class="section-name selfRef">AsyncAPI Vocabulary (<code>urn:aauth:vocabulary:asyncapi</code>)</a>
+          </h4>
+<p id="section-4.2.5-1">For resources that expose an event-driven interface described by AsyncAPI. The discovery endpoint is the AsyncAPI specification URL.<a href="#section-4.2.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.5-2">Each operation entry contains:<a href="#section-4.2.5-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.5-3.1">
+              <strong><code>operationId</code></strong> (REQUIRED). The <code>operationId</code> as defined in the AsyncAPI specification.<a href="#section-4.2.5-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-4.2.5-3.2">
+              <strong><code>action</code></strong> (REQUIRED). One of <code>send</code> or <code>receive</code>.<a href="#section-4.2.5-3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.5-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:asyncapi",
+  "operations": [
+    { "operationId": "publishCalendarUpdate", "action": "send" },
+    { "operationId": "receiveCalendarEvent", "action": "receive" }
+  ]
+}
+
+</pre><a href="#section-4.2.5-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="wsdl-vocabulary">
+<section id="section-4.2.6">
+          <h4 id="name-wsdl-vocabulary-urnaauthvoc">
+<a href="#section-4.2.6" class="section-number selfRef">4.2.6. </a><a href="#name-wsdl-vocabulary-urnaauthvoc" class="section-name selfRef">WSDL Vocabulary (<code>urn:aauth:vocabulary:wsdl</code>)</a>
+          </h4>
+<p id="section-4.2.6-1">For resources that expose a SOAP/WSDL-described web service. The discovery endpoint is the WSDL document URL.<a href="#section-4.2.6-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.6-2">Each operation entry contains:<a href="#section-4.2.6-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.6-3.1">
+              <strong><code>operation</code></strong> (REQUIRED). The operation name as defined in the WSDL <code>portType</code> or <code>binding</code>.<a href="#section-4.2.6-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-4.2.6-3.2">
+              <strong><code>service</code></strong> (OPTIONAL). The WSDL service name, for disambiguation when multiple services expose the same operation name.<a href="#section-4.2.6-3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.6-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:wsdl",
+  "operations": [
+    { "operation": "CreateCalendarEvent", "service": "CalendarService" }
+  ]
+}
+
+</pre><a href="#section-4.2.6-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="odata-vocabulary">
+<section id="section-4.2.7">
+          <h4 id="name-odata-vocabulary-urnaauthvo">
+<a href="#section-4.2.7" class="section-number selfRef">4.2.7. </a><a href="#name-odata-vocabulary-urnaauthvo" class="section-name selfRef">OData Vocabulary (<code>urn:aauth:vocabulary:odata</code>)</a>
+          </h4>
+<p id="section-4.2.7-1">For resources that expose an OData service. The discovery endpoint is the OData service root URL. Agents discover entity sets, functions, and actions via the <code>$metadata</code> document.<a href="#section-4.2.7-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.7-2">Each operation entry contains:<a href="#section-4.2.7-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-4.2.7-3.1">
+              <strong><code>operation</code></strong> (REQUIRED). An entity set name, a bound function (<code>EntitySet/FunctionName</code>), or a bound action (<code>EntitySet/ActionName</code>).<a href="#section-4.2.7-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="compact" id="section-4.2.7-3.2">
+              <strong><code>methods</code></strong> (OPTIONAL). An array of HTTP methods for entity set CRUD (e.g., <code>["GET", "POST"]</code>). Omitted for bound functions and actions.<a href="#section-4.2.7-3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-json sourcecode" id="section-4.2.7-4">
+<pre>{
+  "vocabulary": "urn:aauth:vocabulary:odata",
+  "operations": [
+    { "operation": "Events", "methods": ["GET", "POST", "PATCH"] },
+    { "operation": "Events/SendCancellation" }
+  ]
+}
+
+</pre><a href="#section-4.2.7-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="authorization-endpoint-extensions">
+<section id="section-5">
+      <h2 id="name-authorization-endpoint-exte">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-authorization-endpoint-exte" class="section-name selfRef">Authorization Endpoint Extensions</a>
+      </h2>
+<p id="section-5-1">R3 extends the authorization endpoint defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) with an <code>r3_operations</code> request parameter. When an agent wants to declare intended operations using a resource's vocabulary, it includes <code>r3_operations</code> in the authorization endpoint request body.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="request">
+<section id="section-5.1">
+        <h3 id="name-request">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-request" class="section-name selfRef">Request</a>
+        </h3>
+<p id="section-5.1-1">The agent sends <code>r3_operations</code> in the authorization endpoint request:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<div class="lang-http sourcecode" id="section-5.1-2">
+<pre>POST /authorize HTTP/1.1
+Host: calendar.example.com
+Content-Type: application/json
+Signature-Input: sig=("@method" "@authority" "@path" "signature-key");created=1741824000
+Signature: sig=:...signature bytes...:
+Signature-Key: sig=jwt;jwt="eyJhbGc..."
+
+{
+  "r3_operations": {
+    "vocabulary": "urn:aauth:vocabulary:openapi",
+    "operations": [
+      { "operationId": "createEvent" },
+      { "operationId": "updateEvent" }
+    ]
+  }
+}
+
+</pre><a href="#section-5.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-5.1-3"><strong><code>r3_operations</code></strong> (OPTIONAL). An object containing:<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-5.1-4.1">
+            <strong><code>vocabulary</code></strong> (REQUIRED). A URI identifying the vocabulary. MUST be supported by the resource as advertised in <code>r3_vocabularies</code>.<a href="#section-5.1-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-5.1-4.2">
+            <strong><code>operations</code></strong> (REQUIRED). An array of operation requests. Structure is vocabulary-specific; see {{mcp-vocabulary}} through {{odata-vocabulary}}.<a href="#section-5.1-4.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-5.1-5">When <code>r3_operations</code> is present, the resource maps the declared operations to an appropriate R3 document and includes <code>r3_uri</code> and <code>r3_s256</code> in the resource token. When <code>r3_operations</code> is absent, the resource MAY still include R3 claims in the resource token based on its own policy.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="response">
+<section id="section-5.2">
+        <h3 id="name-response">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-response" class="section-name selfRef">Response</a>
+        </h3>
+<p id="section-5.2-1">The resource returns a resource token as defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>), extended with R3 claims:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-5.2-2">
+<pre>{
+  "resource_token": "eyJhbGciOiJFUzI1NiJ9..."
+}
+
+</pre><a href="#section-5.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-5.2-3">The resource token contains <code>r3_uri</code> and <code>r3_s256</code> identifying the R3 document that covers the requested operations. The resource's internal mapping from operations to R3 documents is opaque to the agent.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="r3-document">
+<section id="section-6">
+      <h2 id="name-r3-document">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-r3-document" class="section-name selfRef">R3 Document</a>
+      </h2>
+<p id="section-6-1">An R3 document is a JSON object published by the resource at a URI. It describes the authorization semantics for a class of access: what operations are covered (in vocabulary format), what the access means in human terms, and what consequences it carries.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The document MUST be served over HTTPS. The resource MUST require a valid HTTP Message Signature on requests to R3 document URIs, and MUST reject requests that are not signed by the resource's AS. Agents cannot fetch R3 documents.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-6-3">
+<pre>{
+  "version": "2",
+  "vocabulary": "urn:aauth:vocabulary:mcp",
+  "operations": [
+    { "tool": "create_calendar_event" },
+    { "tool": "modify_calendar_event" }
+  ],
+  "display": {
+    "summary": "Create and modify events on your work calendar",
+    "implications": "Meetings can be scheduled or rescheduled. Existing events can be modified.",
+    "data_accessed": "Event titles, times, attendees, and descriptions in the work calendar",
+    "irreversible": "Sent meeting invitations cannot be unsent"
+  }
+}
+
+</pre><a href="#section-6-3" class="pilcrow">¶</a>
+</div>
+<div id="fields">
+<section id="section-6.1">
+        <h3 id="name-fields">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-fields" class="section-name selfRef">Fields</a>
+        </h3>
+<p id="section-6.1-1"><strong><code>version</code></strong> (RECOMMENDED). A string identifying the version of this R3 document. The combination of <code>r3_uri</code> + SHA-256 hash provides content-addressing independent of this field; <code>version</code> is for human readability.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2"><strong><code>vocabulary</code></strong> (REQUIRED). The vocabulary URI identifying how operations are expressed. MUST match one of the vocabularies the resource advertises in <code>r3_vocabularies</code>.<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.1-3"><strong><code>operations</code></strong> (REQUIRED). An array of operations covered by this R3 document, using the vocabulary-specific structure defined in {{mcp-vocabulary}} through {{odata-vocabulary}}. This is the same format used in the agent's <code>r3_operations</code> request and in the auth token's <code>r3_granted</code> and <code>r3_conditional</code> claims.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+<p id="section-6.1-4"><strong><code>display</code></strong> (RECOMMENDED). Human-readable descriptions of the consequences of granting this access. The resource describes what <em>it</em> does, not what the agent intends:<a href="#section-6.1-4" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-6.1-5.1">
+            <code>summary</code> (REQUIRED if <code>display</code> present). A short plain-language description suitable for a consent UI or auth agent.<a href="#section-6.1-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-6.1-5.2">
+            <code>implications</code> (OPTIONAL). Side effects of granting this access: emails sent, records modified, costs incurred.<a href="#section-6.1-5.2" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-6.1-5.3">
+            <code>data_accessed</code> (OPTIONAL). What data becomes visible to the caller.<a href="#section-6.1-5.3" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-6.1-5.4">
+            <code>irreversible</code> (OPTIONAL). Plain-language description of actions that cannot be undone.<a href="#section-6.1-5.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="content-addressing">
+<section id="section-6.2">
+        <h3 id="name-content-addressing">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-content-addressing" class="section-name selfRef">Content Addressing</a>
+        </h3>
+<p id="section-6.2-1">The R3 hash (<code>r3_s256</code>) is computed as the SHA-256 hash of the canonical JSON serialization (<span>[<a href="#RFC8785" class="cite xref">RFC8785</a>]</span>) of the R3 document, base64url-encoded without padding.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2">The <code>r3_s256</code> hash is the document's identity, not the URI. The AS caches documents by hash. If a resource updates the document at the same URI, existing auth tokens still reference the previous hash (which the AS has cached). New resource tokens reference the new hash. This enables:<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-6.2-3.1">
+            <strong>Infinite caching by the AS.</strong> A document that verifies against its hash need never be re-fetched.<a href="#section-6.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="compact" id="section-6.2-3.2">
+            <strong>Permanent audit records.</strong> An auth token carrying <code>r3_s256</code> identifies the exact authorization semantics that were approved, regardless of subsequent changes at the same URI.<a href="#section-6.2-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="resource-token-extensions">
+<section id="section-6.3">
+        <h3 id="name-resource-token-extensions">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-resource-token-extensions" class="section-name selfRef">Resource Token Extensions</a>
+        </h3>
+<p id="section-6.3-1">R3 extends the resource token defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) (a JWT with <code>typ: resource+jwt</code>) with two additional payload claims. When a resource includes R3 information, it MUST include both.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2">Base claims (from AAuth Protocol):
+- <code>iss</code>: Resource URL
+- <code>dwk</code>: <code>aauth-resource.json</code>
+- <code>aud</code>: Auth server URL
+- <code>jti</code>: Unique token identifier
+- <code>agent</code>: Agent identifier
+- <code>agent_jkt</code>: JWK Thumbprint of the agent's signing key
+- <code>iat</code>: Issued at timestamp
+- <code>exp</code>: Expiration timestamp
+- <code>scope</code>: Requested scopes (optional)<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<p id="section-6.3-3">R3 extension claims:
+- <strong><code>r3_uri</code></strong> (REQUIRED for R3): The URI where the AS can fetch the R3 document. The AS authenticates itself using an HTTP Message Signature.
+- <strong><code>r3_s256</code></strong> (REQUIRED for R3): The SHA-256 hash of the R3 document at <code>r3_uri</code>, base64url-encoded without padding.<a href="#section-6.3-3" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-6.3-4">
+<pre>{
+  "typ": "resource+jwt",
+  "alg": "ES256",
+  "kid": "resource-key-1"
+}
+
+</pre><a href="#section-6.3-4" class="pilcrow">¶</a>
+</div>
+<div class="lang-json sourcecode" id="section-6.3-5">
+<pre>{
+  "iss": "https://calendar.example.com",
+  "dwk": "aauth-resource.json",
+  "aud": "https://as.example.com",
+  "jti": "rt-8f3a2b",
+  "agent": "assistant@agent.example",
+  "agent_jkt": "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs",
+  "r3_uri": "https://calendar.example.com/r3/a1b2c3d4",
+  "r3_s256": "aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcd",
+  "iat": 1741824000,
+  "exp": 1741824300
+}
+
+</pre><a href="#section-6.3-5" class="pilcrow">¶</a>
+</div>
+<p id="section-6.3-6">Resource tokens MAY include both <code>scope</code> (as defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>)) and R3 claims. When both are present, the AS MUST enforce both independently.<a href="#section-6.3-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="r3-processing">
+<section id="section-7">
+      <h2 id="name-r3-processing">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-r3-processing" class="section-name selfRef">R3 Processing</a>
+      </h2>
+<p id="section-7-1">Both the MM and the AS fetch R3 documents, but for different purposes:<a href="#section-7-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-7-2.1">
+          <strong>The MM</strong> fetches R3 to present the <code>display</code> section to the user during consent — summary, implications, data accessed, irreversibility. The MM uses this information to determine whether the request fits the mission scope and to obtain informed user consent.<a href="#section-7-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-7-2.2">
+          <strong>The AS</strong> fetches R3 to evaluate <code>operations</code> for policy decisions and to populate <code>r3_granted</code> and <code>r3_conditional</code> in the auth token.<a href="#section-7-2.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-7-3">Both independently verify <code>r3_s256</code> against the fetched document. Because R3 documents are content-addressed, both can cache aggressively by hash.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<div id="as-processing">
+<section id="section-7.1">
+        <h3 id="name-as-processing">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-as-processing" class="section-name selfRef">AS Processing</a>
+        </h3>
+<p id="section-7.1-1">When the AS receives a resource token containing <code>r3_uri</code> and <code>r3_s256</code>, it MUST:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-7.1-2">
+<li id="section-7.1-2.1">Validate the resource token signature per AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>).<a href="#section-7.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.2">Fetch the R3 document at <code>r3_uri</code>. The AS MAY use a cached copy if the cache entry was stored with the same <code>r3_s256</code> value.<a href="#section-7.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.3">Compute the SHA-256 hash of the fetched document using canonical JSON serialization (<span>[<a href="#RFC8785" class="cite xref">RFC8785</a>]</span>) and compare it to <code>r3_s256</code>. If the hashes do not match, the AS MUST reject the resource token.<a href="#section-7.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.4">Record <code>r3_uri</code> and <code>r3_s256</code> in its audit log alongside the token issuance event, the agent identifier, and the timestamp.<a href="#section-7.1-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.5">Use the <code>operations</code> section for policy evaluation.<a href="#section-7.1-2.5" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.6">Include <code>r3_uri</code>, <code>r3_s256</code>, <code>r3_granted</code>, and (if applicable) <code>r3_conditional</code> in the issued auth token.<a href="#section-7.1-2.6" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="caching">
+<section id="section-7.2">
+        <h3 id="name-caching">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-caching" class="section-name selfRef">Caching</a>
+        </h3>
+<p id="section-7.2-1">Because R3 documents are content-addressed, the AS MAY cache them by <code>r3_s256</code> to avoid redundant fetches. When serving a cached entry, the AS MUST verify that the stored document produces the expected hash. The AS is not required to retain R3 documents beyond their immediate use in token issuance — the AS's audit log records <code>r3_uri</code> and <code>r3_s256</code>, which is sufficient for later verification by re-fetching.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="auth-token-extensions">
+<section id="section-8">
+      <h2 id="name-auth-token-extensions">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-auth-token-extensions" class="section-name selfRef">Auth Token Extensions</a>
+      </h2>
+<p id="section-8-1">R3 extends the auth token defined in AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>) (a JWT with <code>typ: auth+jwt</code>) with claims for audit provenance and vocabulary-based grants. The resource can enforce authorization directly from these claims.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Base claims (from AAuth Protocol):
+- <code>iss</code>: Auth server URL
+- <code>dwk</code>: <code>aauth-issuer.json</code>
+- <code>aud</code>: Resource URL
+- <code>jti</code>: Unique token identifier
+- <code>agent</code>: Agent identifier
+- <code>cnf</code>: Confirmation claim with <code>jwk</code> containing the agent's public key
+- <code>iat</code>: Issued at timestamp
+- <code>exp</code>: Expiration timestamp
+- <code>sub</code>: User identifier (conditional)
+- <code>scope</code>: Authorized scopes (conditional)<a href="#section-8-2" class="pilcrow">¶</a></p>
+<p id="section-8-3">R3 extension claims:
+- <strong><code>r3_uri</code></strong> (REQUIRED for R3): The URI of the R3 document that was in effect at approval time.
+- <strong><code>r3_s256</code></strong> (REQUIRED for R3): The SHA-256 hash of that R3 document.
+- <strong><code>r3_granted</code></strong> (REQUIRED for R3): Operations the AS fully authorized. The resource serves these immediately.
+- <strong><code>r3_conditional</code></strong> (OPTIONAL): Operations authorized in principle but requiring per-call approval based on the specific parameters the agent provides.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-8-4">
+<pre>{
+  "typ": "auth+jwt",
+  "alg": "ES256",
+  "kid": "as-key-1"
+}
+
+</pre><a href="#section-8-4" class="pilcrow">¶</a>
+</div>
+<div class="lang-json sourcecode" id="section-8-5">
+<pre>{
+  "iss": "https://as.example.com",
+  "dwk": "aauth-issuer.json",
+  "aud": "https://calendar.example.com",
+  "jti": "at-9d4c1e",
+  "agent": "assistant@agent.example",
+  "sub": "user:alice@example.com",
+  "cnf": { "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "NzbLsXh8uDCcd..." } },
+  "r3_uri": "https://calendar.example.com/r3/a1b2c3d4",
+  "r3_s256": "aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcd",
+  "r3_granted": {
+    "vocabulary": "urn:aauth:vocabulary:mcp",
+    "operations": [
+      { "tool": "list_calendar_events" },
+      { "tool": "modify_calendar_event" }
+    ]
+  },
+  "r3_conditional": {
+    "vocabulary": "urn:aauth:vocabulary:mcp",
+    "operations": [
+      { "tool": "create_calendar_event" }
+    ]
+  },
+  "iat": 1741824000,
+  "exp": 1741824900
+}
+
+</pre><a href="#section-8-5" class="pilcrow">¶</a>
+</div>
+<p id="section-8-6"><strong><code>r3_uri</code></strong> and <strong><code>r3_s256</code></strong> provide audit provenance: a permanent, verifiable record of which R3 document was in effect at approval time. The AS can verify the R3 document by fetching <code>r3_uri</code> and checking <code>r3_s256</code>.<a href="#section-8-6" class="pilcrow">¶</a></p>
+<p id="section-8-7"><strong><code>r3_granted</code></strong> and <strong><code>r3_conditional</code></strong> use the same vocabulary-specific operation format as the R3 document's <code>operations</code> field and the agent's <code>r3_operations</code> request:<a href="#section-8-7" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-8-8.1">
+          <strong><code>vocabulary</code></strong> (REQUIRED). The vocabulary URI.<a href="#section-8-8.1" class="pilcrow">¶</a>
+</li>
+        <li class="compact" id="section-8-8.2">
+          <strong><code>operations</code></strong> (REQUIRED). An array of operations using the vocabulary-specific structure. The AS MAY narrow the grant to fewer operations than defined in the R3 document.<a href="#section-8-8.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-8-9">The distinction: <code>r3_granted</code> operations are fully authorized and the resource serves them. <code>r3_conditional</code> operations require the resource to challenge when the agent actually calls, including the specific parameters from the agent's API request in the resource token. The AS then evaluates those concrete parameters before issuing a per-call auth token.<a href="#section-8-9" class="pilcrow">¶</a></p>
+<div id="resource-enforcement">
+<section id="section-8.1">
+        <h3 id="name-resource-enforcement">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-resource-enforcement" class="section-name selfRef">Resource Enforcement</a>
+        </h3>
+<p id="section-8.1-1">The resource matches each incoming API call against the auth token claims:<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="compact type-1" id="section-8.1-2">
+<li id="section-8.1-2.1">
+            <strong>Match in <code>r3_granted</code></strong>: serve the request.<a href="#section-8.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.1-2.2">
+            <strong>Match in <code>r3_conditional</code></strong>: return <code>AAuth-Requirement</code> with a resource token containing the actual parameters the agent provided. The AS evaluates the specific call.<a href="#section-8.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.1-2.3">
+            <strong>No match</strong>: reject the request.<a href="#section-8.1-2.3" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-8.1-3">No token introspection or R3 document fetch is needed at enforcement time. The resource uses the vocabulary it already understands.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+<p id="section-8.1-4">When <code>r3_operations</code> was not used (the agent received the resource token via a 401 rather than the authorization endpoint), the AS populates <code>r3_granted</code> and <code>r3_conditional</code> based on the operations defined in the R3 document and its own policy. The AS decides which operations to grant outright and which to make conditional.<a href="#section-8.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="r3-document-access-restriction">
+<section id="section-9.1">
+        <h3 id="name-r3-document-access-restrict">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-r3-document-access-restrict" class="section-name selfRef">R3 Document Access Restriction</a>
+        </h3>
+<p id="section-9.1-1">The AS MUST authenticate itself when fetching <code>r3_uri</code> using an HTTP Message Signature as defined in the AAuth Protocol (<span>[<a href="#I-D.hardt-aauth-protocol" class="cite xref">I-D.hardt-aauth-protocol</a>]</span>). The resource MUST reject requests not signed by its AS.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+<p id="section-9.1-2">This prevents agents from fetching R3 documents by following the <code>r3_uri</code> they carry in the resource token. Since a resource has exactly one AS, the resource only needs to recognize signatures from that AS. The agent opacity property (agents carry the hash of a document they cannot read) depends on this restriction.<a href="#section-9.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="r3-endpoint-access-control">
+<section id="section-9.2">
+        <h3 id="name-r3-endpoint-access-control">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-r3-endpoint-access-control" class="section-name selfRef">R3 Endpoint Access Control</a>
+        </h3>
+<p id="section-9.2-1">The agent opacity property — agents carry the hash of a document they cannot read — depends entirely on the resource correctly restricting access to R3 document endpoints. If the resource fails to require a valid HTTP Message Signature from its AS on R3 document requests, or accepts signatures from keys other than its AS's, agents can fetch and read R3 documents, breaking the opacity guarantee. Implementations MUST treat R3 endpoint access control as a critical security requirement and SHOULD verify this restriction during deployment testing.<a href="#section-9.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="hash-verification">
+<section id="section-9.3">
+        <h3 id="name-hash-verification">
+<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-hash-verification" class="section-name selfRef">Hash Verification</a>
+        </h3>
+<p id="section-9.3-1">The AS MUST verify <code>r3_s256</code> against the fetched document before using it. Failure to verify allows a resource to serve different content than what was hashed in the resource token.<a href="#section-9.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="audit-log-integrity">
+<section id="section-9.4">
+        <h3 id="name-audit-log-integrity">
+<a href="#section-9.4" class="section-number selfRef">9.4. </a><a href="#name-audit-log-integrity" class="section-name selfRef">Audit Log Integrity</a>
+        </h3>
+<p id="section-9.4-1">The AS MUST write audit log entries atomically with token issuance. An auth token issued without a corresponding audit log entry creates an undetectable gap in the observability record. Implementations SHOULD use transactional writes or equivalent mechanisms.<a href="#section-9.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="operation-validation">
+<section id="section-9.5">
+        <h3 id="name-operation-validation">
+<a href="#section-9.5" class="section-number selfRef">9.5. </a><a href="#name-operation-validation" class="section-name selfRef">Operation Validation</a>
+        </h3>
+<p id="section-9.5-1">For all vocabularies, the resource MUST validate declared operations against its authoritative definition (MCP tool list, OpenAPI spec, <code>.proto</code> file, GraphQL schema, AsyncAPI spec, WSDL document, or OData <code>$metadata</code>) before issuing a resource token.<a href="#section-9.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="grant-enforcement">
+<section id="section-9.6">
+        <h3 id="name-grant-enforcement">
+<a href="#section-9.6" class="section-number selfRef">9.6. </a><a href="#name-grant-enforcement" class="section-name selfRef">Grant Enforcement</a>
+        </h3>
+<p id="section-9.6-1">Resources MUST enforce <code>r3_granted</code> and <code>r3_conditional</code> claims in auth tokens. Operations in <code>r3_granted</code> define fully authorized access. Operations in <code>r3_conditional</code> MUST trigger an <code>AAuth-Requirement</code> before being served. The resource MUST reject API calls that do not match an operation in either claim.<a href="#section-9.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<div id="jwt-claims-registration">
+<section id="section-10.1">
+        <h3 id="name-jwt-claims-registration">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-jwt-claims-registration" class="section-name selfRef">JWT Claims Registration</a>
+        </h3>
+<p id="section-10.1-1">This document requests registration of the following JWT claims in the IANA JSON Web Token Claims registry:<a href="#section-10.1-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+          <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Claim</th>
+              <th class="text-left" rowspan="1" colspan="1">Description</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>r3_uri</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">R3 document URI</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>r3_s256</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">R3 document SHA-256 hash</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>r3_granted</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully authorized operations in vocabulary format</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>r3_conditional</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Conditionally authorized operations requiring per-call approval</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+          </tbody>
+        </table>
+</section>
+</div>
+<div id="r3-vocabulary-registry">
+<section id="section-10.2">
+        <h3 id="name-r3-vocabulary-registry">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-r3-vocabulary-registry" class="section-name selfRef">R3 Vocabulary Registry</a>
+        </h3>
+<p id="section-10.2-1">This specification establishes the AAuth R3 Vocabulary Registry. The initial contents are:<a href="#section-10.2-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-2">
+          <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Vocabulary URI</th>
+              <th class="text-left" rowspan="1" colspan="1">Interface Type</th>
+              <th class="text-left" rowspan="1" colspan="1">Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:mcp</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">MCP server</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:openapi</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">HTTP/REST</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:grpc</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">gRPC</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:graphql</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">GraphQL</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:asyncapi</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Event-driven</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:wsdl</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">SOAP/WSDL</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>urn:aauth:vocabulary:odata</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">OData</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+          </tbody>
+        </table>
+<p id="section-10.2-3">New values may be registered following the Specification Required policy (<span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-10.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="implementation-status">
+<section id="section-11">
+      <h2 id="name-implementation-status">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
+      </h2>
+<p id="section-11-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-11-1" class="pilcrow">¶</a></p>
+<p id="section-11-2">This section records the status of known implementations of the protocol defined by this specification at the time of posting of this Internet-Draft, and is based on a proposal described in <span>[<a href="#RFC7942" class="cite xref">RFC7942</a>]</span>. The description of implementations in this section is intended to assist the IETF in its decision processes in progressing drafts to RFCs.<a href="#section-11-2" class="pilcrow">¶</a></p>
+<p id="section-11-3">There are currently no known implementations.<a href="#section-11-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="document-history">
+<section id="section-12">
+      <h2 id="name-document-history">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
+      </h2>
+<p id="section-12-1"><em>Note: This section is to be removed before publishing as an RFC.</em><a href="#section-12-1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-12-2.1">
+          <p id="section-12-2.1.1">draft-hardt-aauth-r3-00<a href="#section-12-2.1.1" class="pilcrow">¶</a></p>
+<ul class="compact">
+<li class="compact" id="section-12-2.1.2.1">Initial submission<a href="#section-12-2.1.2.1" class="pilcrow">¶</a>
+</li>
+          </ul>
+</li>
+      </ul>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="section-13">
+      <h2 id="name-acknowledgments">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="section-13-1">The author would like to thank reviewers for their feedback.<a href="#section-13-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-14">
+      <h2 id="name-references">
+<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-14.1">
+        <h3 id="name-normative-references">
+<a href="#section-14.1" class="section-number selfRef">14.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.hardt-aauth-protocol">[I-D.hardt-aauth-protocol]</dt>
+        <dd>
+<span class="refAuthor">Hardt, D.</span>, <span class="refTitle">"AAuth Protocol"</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://github.com/dickhardt/AAuth">https://github.com/dickhardt/AAuth</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8126">[RFC8126]</dt>
+        <dd>
+<span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Leiba, B.</span>, and <span class="refAuthor">T. Narten</span>, <span class="refTitle">"Guidelines for Writing an IANA Considerations Section in RFCs"</span>, <span class="seriesInfo">BCP 26</span>, <span class="seriesInfo">RFC 8126</span>, <span class="seriesInfo">DOI 10.17487/RFC8126</span>, <time datetime="2017-06" class="refDate">June 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8126">https://www.rfc-editor.org/info/rfc8126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8785">[RFC8785]</dt>
+      <dd>
+<span class="refAuthor">Rundgren, A.</span>, <span class="refAuthor">Jordan, B.</span>, and <span class="refAuthor">S. Erdtman</span>, <span class="refTitle">"JSON Canonicalization Scheme (JCS)"</span>, <span class="seriesInfo">RFC 8785</span>, <span class="seriesInfo">DOI 10.17487/RFC8785</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8785">https://www.rfc-editor.org/info/rfc8785</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-14.2">
+        <h3 id="name-informative-references">
+<a href="#section-14.2" class="section-number selfRef">14.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC7942">[RFC7942]</dt>
+        <dd>
+<span class="refAuthor">Sheffer, Y.</span> and <span class="refAuthor">A. Farrel</span>, <span class="refTitle">"Improving Awareness of Running Code: The Implementation Status Section"</span>, <span class="seriesInfo">BCP 205</span>, <span class="seriesInfo">RFC 7942</span>, <span class="seriesInfo">DOI 10.17487/RFC7942</span>, <time datetime="2016-07" class="refDate">July 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7942">https://www.rfc-editor.org/info/rfc7942</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9396">[RFC9396]</dt>
+      <dd>
+<span class="refAuthor">Lodderstedt, T.</span>, <span class="refAuthor">Richer, J.</span>, and <span class="refAuthor">B. Campbell</span>, <span class="refTitle">"OAuth 2.0 Rich Authorization Requests"</span>, <span class="seriesInfo">RFC 9396</span>, <span class="seriesInfo">DOI 10.17487/RFC9396</span>, <time datetime="2023-05" class="refDate">May 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9396">https://www.rfc-editor.org/info/rfc9396</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="design-rationale">
+<section id="appendix-A">
+      <h2 id="name-design-rationale">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-design-rationale" class="section-name selfRef">Design Rationale</a>
+      </h2>
+<div id="why-not-rar">
+<section id="appendix-A.1">
+        <h3 id="name-why-not-rar">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-why-not-rar" class="section-name selfRef">Why Not RAR</a>
+        </h3>
+<p id="appendix-A.1-1">OAuth 2.0 Rich Authorization Requests (<span>[<a href="#RFC9396" class="cite xref">RFC9396</a>]</span>) defines <code>authorization_details</code> as a structured extension to authorization requests. RAR is a natural reference point for this work. R3 deliberately does not use or profile RAR for the following reasons:<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-2"><strong>Directionality.</strong> RAR is client-declared: the agent constructs <code>authorization_details</code> and sends it to the AS. The agent defines what it wants. R3 is resource-declared: the resource defines what access it provides and signs that definition. The agent cannot modify or reframe it. This is the opposite directionality, and the security properties depend on it.<a href="#appendix-A.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-3"><strong>Agent opacity.</strong> In R3, the R3 document is fetched by the AS directly from the resource, restricted to AS-only access. The agent carries a hash of a document it cannot read. RAR has no equivalent because the client constructs the authorization details and necessarily knows their content.<a href="#appendix-A.1-3" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-4"><strong>Content addressing.</strong> R3 uses a content-addressed URI plus SHA-256 hash to pin the exact authorization semantics in effect at approval time. An auth token carrying <code>r3_uri</code> and <code>r3_s256</code> is a permanent, verifiable record. RAR carries no equivalent versioning or integrity guarantee.<a href="#appendix-A.1-4" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-5"><strong>Audit trail.</strong> The AS records <code>r3_uri</code> in its audit log, creating a durable reference to the exact R3 document version. This is not possible with RAR's inline <code>authorization_details</code> structure.<a href="#appendix-A.1-5" class="pilcrow">¶</a></p>
+<p id="appendix-A.1-6">RAR and R3 are complementary. RAR remains appropriate for client-declared authorization detail. R3 addresses the resource-declared case that RAR was not designed for.<a href="#appendix-A.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="vocabulary-summary">
+<section id="appendix-B">
+      <h2 id="name-vocabulary-summary">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-vocabulary-summary" class="section-name selfRef">Vocabulary Summary</a>
+      </h2>
+<table class="center" id="table-3">
+        <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Vocabulary URI</th>
+            <th class="text-left" rowspan="1" colspan="1">Interface Type</th>
+            <th class="text-left" rowspan="1" colspan="1">Operation Identifier</th>
+            <th class="text-left" rowspan="1" colspan="1">Discovery Mechanism</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:mcp</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">MCP server</td>
+            <td class="text-left" rowspan="1" colspan="1">Tool name</td>
+            <td class="text-left" rowspan="1" colspan="1">MCP tool discovery</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:openapi</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">HTTP/REST</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>operationId</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">OpenAPI spec URL</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:grpc</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">gRPC</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>package.Service/Method</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Server reflection or <code>.proto</code> URL</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:graphql</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">GraphQL</td>
+            <td class="text-left" rowspan="1" colspan="1">Operation name</td>
+            <td class="text-left" rowspan="1" colspan="1">GraphQL introspection</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:asyncapi</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">Event-driven</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>operationId</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">AsyncAPI spec URL</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:wsdl</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">SOAP/WSDL</td>
+            <td class="text-left" rowspan="1" colspan="1">Operation name</td>
+            <td class="text-left" rowspan="1" colspan="1">WSDL document URL</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>urn:aauth:vocabulary:odata</code>
+</td>
+            <td class="text-left" rowspan="1" colspan="1">OData</td>
+            <td class="text-left" rowspan="1" colspan="1">Entity set or bound operation</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>$metadata</code> URL</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<div id="comparison-with-rar">
+<section id="appendix-C">
+      <h2 id="name-comparison-with-rar">
+<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-comparison-with-rar" class="section-name selfRef">Comparison with RAR</a>
+      </h2>
+<table class="center" id="table-4">
+        <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Property</th>
+            <th class="text-left" rowspan="1" colspan="1">RAR (<span>[<a href="#RFC9396" class="cite xref">RFC9396</a>]</span>)</th>
+            <th class="text-left" rowspan="1" colspan="1">R3</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Who declares</td>
+            <td class="text-left" rowspan="1" colspan="1">Client (agent)</td>
+            <td class="text-left" rowspan="1" colspan="1">Resource</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Direction</td>
+            <td class="text-left" rowspan="1" colspan="1">Client -&gt; AS</td>
+            <td class="text-left" rowspan="1" colspan="1">Resource -&gt; AS (via agent carrier)</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Agent visibility</td>
+            <td class="text-left" rowspan="1" colspan="1">Agent constructs the detail</td>
+            <td class="text-left" rowspan="1" colspan="1">Agent carries opaque token</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Versioning</td>
+            <td class="text-left" rowspan="1" colspan="1">None</td>
+            <td class="text-left" rowspan="1" colspan="1">Content-addressed URI + hash</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Audit trail</td>
+            <td class="text-left" rowspan="1" colspan="1">Inline in request</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>r3_uri</code> recorded by AS</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Human display</td>
+            <td class="text-left" rowspan="1" colspan="1">Not specified</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>display</code> section in R3 document</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Irreversibility signal</td>
+            <td class="text-left" rowspan="1" colspan="1">Not specified</td>
+            <td class="text-left" rowspan="1" colspan="1">
+              <code>display.irreversible</code> field</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Dick Hardt</span></div>
+<div dir="auto" class="left"><span class="org">Hellō</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:dick.hardt@gmail.com" class="email">dick.hardt@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
